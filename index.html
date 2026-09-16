@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Passerelle GTFS · HASTUS</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
+    <strong>Ouverture directe détectée : les cartes OpenStreetMap peuvent être refusées.</strong>
+    <span>Sous Windows, fermez cette page puis lancez <code>launch_windows.bat</code>. L’application doit s’ouvrir sur une adresse commençant par <code>http://127.0.0.1:</code>, et non par <code>file:///</code>.</span>
+  </aside>
+  <header class="hero">
+    <div class="hero-top"><div class="brand"><span class="brand-mark">H</span><span>HASTUS · OUTILS</span></div><label class="theme-switch"><input id="genz-theme" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><b>Mode Gen Z</b><small>Simple + visuel</small></span></label></div>
+    <div class="hero-copy">
+      <p class="eyebrow">PASSERELLE DE DONNÉES</p>
+      <h1>Rattacher les points horaires<br>sans multiplier les places.</h1>
+      <p class="lede">Analyse locale d'un flux GTFS, rapprochement géographique et export contrôlé.</p>
+    </div>
+    <div class="steps" aria-label="Étapes">
+      <span class="active">01 · Sources</span><span>02 · Analyse</span><span>03 · Décisions</span><span>04 · Export</span>
+    </div>
+  </header>
+
+  <nav id="navigation-dock" class="navigation-dock" aria-label="Navigation rapide et recherche">
+    <div class="navigation-jumps">
+      <button type="button" data-nav-target="top">↑ Haut</button>
+      <button type="button" data-nav-target="feed-section">Sources</button>
+      <button type="button" data-nav-target="mode-section">Contextes</button>
+      <button type="button" data-nav-target="mapping-section">Analyse</button>
+      <button type="button" data-nav-target="radius-conflict-summary">Conflits</button>
+      <button type="button" data-nav-target="decision-list">Places / stops</button>
+      <button type="button" data-nav-target="export-bar">Export</button>
+      <button type="button" data-nav-target="bottom">Bas ↓</button>
+    </div>
+    <div class="global-search">
+      <label for="global-search-input">Rechercher</label>
+      <input id="global-search-input" type="search" placeholder="Stop, place, route, code…" autocomplete="off">
+      <select id="global-search-scope" aria-label="Filtrer le type de données"><option value="all">Toutes les données</option><option value="stops">Stops</option><option value="places">Places</option><option value="conflicts">Conflits</option><option value="routes">Routes</option></select>
+      <button id="global-search-clear" type="button" aria-label="Effacer la recherche">Effacer</button>
+      <output id="global-search-count" aria-live="polite"></output>
+    </div>
+  </nav>
+
+  <main>
+    <section id="feed-section" class="panel feed-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">SOURCE UNIQUE</p><h2>Charger le GTFS complet</h2></div>
+        <p>Une seule fois, avant de choisir le contexte d'analyse.</p>
+      </div>
+      <section class="workspace-setup" aria-labelledby="workspace-title">
+        <div class="workspace-copy"><span class="workspace-icon">⌂</span><div><strong id="workspace-title">Espace de travail local</strong><small>Copie les originaux, conserve les fichiers modifiés et permet de reprendre après la fermeture du navigateur.</small></div></div>
+        <div class="workspace-controls">
+          <label><span>Mode de sauvegarde</span><select id="workspace-choice"><option value="new">Créer un nouvel espace local</option><option value="open">Ouvrir un dossier de travail existant</option><option value="browser">Sauvegarde dans ce navigateur uniquement</option></select></label>
+          <button id="workspace-open" type="button" class="secondary">Choisir le dossier parent</button>
+          <button id="workspace-save" type="button" class="secondary" disabled>Sauvegarder maintenant</button>
+          <button id="workspace-forget" type="button" class="secondary" disabled>Retirer des récents</button>
+        </div>
+        <div id="workspace-status" class="workspace-status"><span class="save-dot"></span><div><strong>Aucun espace local ouvert</strong><small>Par défaut, un sous-dossier GTFS_HASTUS sera créé dans le dossier parent choisi.</small></div></div>
+      </section>
+      <div class="feed-upload-grid">
+        <label class="dropzone"><span class="file-no">ZIP</span><strong>Fichier GTFS compressé</strong><small>Sélectionnez le fichier .zip complet</small><input id="gtfs-zip" type="file" accept=".zip"></label>
+        <label class="dropzone"><span class="file-no">DIR</span><strong>Dossier GTFS extrait</strong><small>Sélectionnez le dossier contenant les fichiers .txt</small><input id="gtfs-folder" type="file" multiple webkitdirectory directory accept=".txt"></label>
+      </div>
+      <div id="gtfs-status" class="status-line">Aucun GTFS chargé</div>
+      <div id="gtfs-files" class="file-chips"></div>
+    </section>
+
+    <section id="mode-section" class="mode-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">AVANT DE COMMENCER</p><h2>Choisir le contexte d'import</h2></div>
+        <p>Le parcours et les contrôles s'adaptent à la situation du client.</p>
+      </div>
+      <div class="mode-grid">
+        <button class="mode-card active" data-mode="geographic" aria-pressed="true">
+          <span class="mode-number">01</span><span><strong>Regroupement géographique</strong><small>Regrouper les points horaires proches, avec ou sans données HASTUS existantes.</small></span><span class="mode-check">✓</span>
+        </button>
+        <button class="mode-card" data-mode="maps" aria-pressed="false">
+          <span class="mode-number">02</span><span><strong>Cartes des points horaires par route</strong><small>Tracer les shapes et afficher les points horaires avec leur description.</small></span><span class="mode-check">✓</span>
+        </button>
+        <button class="mode-card" data-mode="timetables" aria-pressed="false">
+          <span class="mode-number">03</span><span><strong>Comparaison des horaires</strong><small>Comparer les volumes quotidiens et produire des timetables de variations.</small></span><span class="mode-check">✓</span>
+        </button>
+        <button id="working-timetable-mode" class="mode-card locked" data-mode="workingTimetables" aria-pressed="false" disabled>
+          <span class="mode-number">04</span><span><strong>Timetables du dossier working</strong><small id="working-timetable-detail">Disponible dès qu’un parent_station est enregistré dans working/stops.txt.</small></span><span class="mode-lock">Verrouillé</span><span class="mode-check">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="source-section" class="panel hidden">
+      <div class="section-heading">
+        <div><p class="eyebrow">COMPLÉMENT</p><h2>Données HASTUS existantes</h2></div>
+        <p>Les données restent sur cet ordinateur.</p>
+      </div>
+      <div class="source-back-row"><button id="back-to-new-client" type="button" class="secondary">← Revenir à « Nouveau client »</button><small>Vous pourrez sélectionner de nouveau « Client existant » plus tard.</small></div>
+      <div id="upload-grid" class="upload-grid">
+        <label class="dropzone gtfs-part hidden"><span class="file-no">01</span><strong>GTFS · stops.txt</strong><small>Référentiel des arrêts et coordonnées</small><input id="stops-file" type="file" accept=".txt,.csv"></label>
+        <label class="dropzone gtfs-part hidden"><span class="file-no">02</span><strong>GTFS · stop_times.txt</strong><small>Passages et indicateur timepoint</small><input id="times-file" type="file" accept=".txt,.csv"></label>
+        <label id="hastus-upload" class="dropzone"><span class="file-no">03</span><strong>Export HASTUS · CSV</strong><small>Stops, places et coordonnées</small><input id="hastus-file" type="file" accept=".txt,.csv"></label>
+        <label id="routes-upload" class="dropzone gtfs-part hidden"><span class="file-no">03</span><strong>GTFS · routes.txt</strong><small>Identifiants, noms et couleurs des routes</small><input id="routes-file" type="file" accept=".txt,.csv"></label>
+        <label id="trips-upload" class="dropzone gtfs-part hidden"><span class="file-no">04</span><strong>GTFS · trips.txt</strong><small>Lien entre routes, voyages et shapes</small><input id="trips-file" type="file" accept=".txt,.csv"></label>
+        <label id="shapes-upload" class="dropzone gtfs-part hidden"><span class="file-no">05</span><strong>GTFS · shapes.txt</strong><small>Géométrie des tracés de routes</small><input id="shapes-file" type="file" accept=".txt,.csv"></label>
+      </div>
+      <div id="file-status" class="status-line">0 fichier sur 3 chargé</div>
+    </section>
+
+    <section id="mapping-section" class="panel hidden">
+      <div class="section-heading">
+        <div><p id="mapping-eyebrow" class="eyebrow">CORRESPONDANCE</p><h2 id="mapping-title">Colonnes HASTUS</h2></div>
+        <p id="mapping-subtitle">Vérifiez les colonnes détectées automatiquement.</p>
+      </div>
+      <div id="mapping-grid" class="mapping-grid"></div>
+      <label id="smart-radius-setting" class="smart-toggle hidden"><input id="smart-radius" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Rayon intelligent</strong><small id="smart-radius-detail">Adapte chaque rayon à la densité des timing points et aux voyages du GTFS.</small></span></label>
+      <div class="settings-row">
+        <label id="geographic-client-setting" class="select-label hidden"><span>Type de regroupement</span><select id="geographic-client-type"><option value="new">Nouveau client · partir de zéro</option><option value="existing">Client existant dans HASTUS</option></select></label>
+        <label id="radius-setting" class="range-label"><span>Rayon de recherche</span><output id="radius-output">300 m</output><input id="radius" type="range" min="1" max="500" step="1" value="300"></label>
+        <label id="association-setting" class="select-label"><span>Clé d'association GTFS → HASTUS</span><select id="association-key"><option value="stop_id">stop_id</option><option value="stop_code">stop_code</option></select></label>
+        <label id="map-display-setting" class="select-label hidden"><span>Affichage des routes</span><select id="map-display"><option value="individual">Une carte par route</option><option value="combined" selected>Toutes les routes sur une carte</option><option value="both">Carte réseau et cartes séparées</option></select></label>
+        <label id="map-labels-setting" class="select-label hidden"><span>Libellé général des points horaires</span><select id="map-label-mode"><option value="description">Description du stop</option><option value="stop_code" selected>stop_code</option><option value="stop_id">stop_id</option><option value="none">Aucun libellé</option></select></label>
+        <label id="blank-setting" class="check-label"><input id="blank-timepoints" type="checkbox"><span>Considérer un <code>timepoint</code> vide comme point horaire</span></label>
+        <div id="timepoint-fallback" class="fallback-note hidden"><strong>Colonne timepoint absente</strong><span>Les passages dont l'heure se termine par <code>:00</code> seront utilisés.</span></div>
+        <button id="analyze" class="primary">Analyser les points horaires <span>→</span></button>
+      </div>
+    </section>
+
+    <section id="results-section" class="hidden">
+      <div class="summary-grid" id="summary-grid"></div>
+      <div class="toolbar">
+        <div><p class="eyebrow">ÉTAPE 03</p><h2 id="results-title">Décisions d'affectation</h2></div>
+        <div id="filters" class="filters"><button class="filter active" data-filter="all">Tous</button><button class="filter" data-filter="review">À décider</button><button class="filter" data-filter="assigned">Affectés</button></div>
+      </div>
+      <div id="notices"></div>
+      <div id="decision-list" class="decision-list"></div>
+      <div id="export-bar" class="export-bar">
+        <div><strong id="export-title">Prêt à exporter</strong><small id="export-detail"></small></div>
+        <div class="export-actions"><button id="download-collisions" class="secondary hidden">Correspondance des ID</button><button id="download-report" class="secondary">Rapport CSV</button><button id="download-places" class="secondary">Places à créer</button><button id="download-times" class="primary">Télécharger stop_times_enrichi.txt</button><button id="download-gtfs" class="primary">Télécharger stops_enrichi.txt</button></div>
+      </div>
+    </section>
+  </main>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS</footer>
+  <script src="app.js"></script>
+</body>
+</html>

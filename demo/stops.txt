@@ -1,0 +1,5 @@
+stop_id,stop_code,stop_name,stop_lat,stop_lon,location_type,parent_station
+S1,H100,Gare Centrale Quai A,45.500000,-73.570000,0,
+S2,H200,Sepulveda Plaza,45.501000,-73.571000,0,
+S3,H300,Marché du Canal,45.510000,-73.580000,0,
+S4,H400,Arrêt interpolé,45.520000,-73.590000,0,

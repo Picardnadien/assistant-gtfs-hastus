@@ -1,0 +1,4 @@
+stop_id;stop_description;latitude;longitude;place_id;place_description
+S1;Gare Centrale Quai A;45.500000;-73.570000;GARCEN;Gare Centrale
+A20;Gare Centrale Quai B;45.500250;-73.570100;GARCEN;Gare Centrale
+A30;Place du Musée;45.501300;-73.571100;MUSEEX;Place du Musée

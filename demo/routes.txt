@@ -1,0 +1,3 @@
+route_id,route_short_name,route_long_name,route_type,route_color,route_text_color
+R1,10,Centre vers Canal,3,006D67,FFFFFF
+R2,20,Canal vers Centre,3,D05A3A,FFFFFF

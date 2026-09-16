@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+
+# Espaces de travail générés localement par l'application
+GTFS_HASTUS_*/
+.hastus-workspace.json
+
+# Fichiers usuels de Windows et des éditeurs
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
