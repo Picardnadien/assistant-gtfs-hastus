@@ -83,6 +83,13 @@ détecté automatiquement.
 La clé d'association utilisée par l'import HASTUS peut être réglée sur
 `stop_id` ou `stop_code`.
 
+Dans le contexte de regroupement géographique, une option permet de remplacer
+uniquement les `stop_id` techniques au format UUID ou `remix_UUID` par une
+séquence numérique configurable, limitée à six chiffres. Les identifiants déjà
+lisibles sont conservés. Le remplacement est appliqué à `stops.txt`, à
+`stop_times.txt` et aux `parent_station`, puis ajouté au rapport de
+correspondance des identifiants.
+
 Le mode cartographique demande également `routes.txt`, `trips.txt` et
 `shapes.txt`. Le fichier `trips.txt` est indispensable pour relier chaque
 `trip_id` de `stop_times.txt` à son `route_id` et à son `shape_id`.

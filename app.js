@@ -21,7 +21,7 @@ function workspaceTimestamp(){const d=new Date(),part=n=>String(n).padStart(2,"0
 function baseFileName(name){return String(name||"").split(/[\\/]/).pop().replace(/[^a-zA-Z0-9._-]/g,"_")||"fichier.txt";}
 async function writeWorkspaceFile(directory,name,content){const fileHandle=await directory.getFileHandle(baseFileName(name),{create:true}),writer=await fileHandle.createWritable();await writer.write(content);await writer.close();}
 async function workspacePermission(handle,request=false){if(!handle)return false;const options={mode:"readwrite"};if(await handle.queryPermission(options)==="granted")return true;return request&&(await handle.requestPermission(options))==="granted";}
-function workspaceSnapshot(){if(state.mode==="geographic"&&state.geographicReady)captureGeographicState();return {version:2,savedAt:new Date().toISOString(),mode:state.mode,geographicClientType:state.geographicClientType,geographicReady:state.geographicReady,geographicCache:state.geographicCache,files:state.files,parsed:state.parsed,originalEntries:state.originalEntries,mapping:state.mapping,decisions:state.decisions,groups:state.groups,routeMaps:state.routeMaps,places:state.places,gtfsStops:state.gtfsStops,workingStops:state.workingStops,workingParentStations:state.workingParentStations,collisions:state.collisions,stopIdRemap:[...state.stopIdRemap],associationKey:state.associationKey,mapDisplay:state.mapDisplay,mapLabelMode:state.mapLabelMode,timepointFallback:state.timepointFallback,settings:{radius:Number($("radius")?.value||300),blankTimepoints:Boolean($("blank-timepoints")?.checked),smartRadius:Boolean($("smart-radius")?.checked),genZTheme:Boolean($("genz-theme")?.checked)}};}
+function workspaceSnapshot(){if(state.mode==="geographic"&&state.geographicReady)captureGeographicState();return {version:3,savedAt:new Date().toISOString(),mode:state.mode,geographicClientType:state.geographicClientType,geographicReady:state.geographicReady,geographicCache:state.geographicCache,files:state.files,parsed:state.parsed,originalEntries:state.originalEntries,mapping:state.mapping,decisions:state.decisions,groups:state.groups,routeMaps:state.routeMaps,places:state.places,gtfsStops:state.gtfsStops,workingStops:state.workingStops,workingParentStations:state.workingParentStations,collisions:state.collisions,stopIdRemap:[...state.stopIdRemap],associationKey:state.associationKey,mapDisplay:state.mapDisplay,mapLabelMode:state.mapLabelMode,timepointFallback:state.timepointFallback,settings:{radius:Number($("radius")?.value||300),blankTimepoints:Boolean($("blank-timepoints")?.checked),smartRadius:Boolean($("smart-radius")?.checked),renumberStopIds:Boolean($("renumber-stop-ids")?.checked),renumberStopIdStart:Number($("renumber-stop-id-start")?.value||100001),genZTheme:Boolean($("genz-theme")?.checked)}};}
 function updateLoadedGtfsUi(){const found=Object.entries(GTFS_FILE_KEYS).filter(([,key])=>state.parsed[key]);$("gtfs-status").textContent=found.length?`GTFS chargé · ${found.length} fichier${found.length>1?'s':''} reconnu${found.length>1?'s':''}`:"Aucun GTFS chargé";$("gtfs-files").innerHTML=found.map(([name])=>`<span class="file-chip ${["calendar_dates.txt","frequencies.txt"].includes(name)?'optional':''}">${name}</span>`).join("");}
 function countWorkingParents(stops){return (stops?.rows||[]).filter(row=>normalize(row.parent_station)&&normalize(row.location_type)!=="1").length;}
 function refreshWorkingTimetableAccess(){const button=$("working-timetable-mode"),count=state.workingParentStations||0,ready=count>0,schedulesReady=Boolean(state.parsed.routes&&state.parsed.trips&&state.parsed.times);button.disabled=!ready;button.classList.toggle("locked",!ready);button.querySelector(".mode-lock").textContent=ready?"Disponible":"Verrouillé";$("working-timetable-detail").textContent=ready?`${count} stop${count>1?'s':''} avec parent_station${schedulesReady?".":" · routes.txt et trips.txt requis pour les horaires."}`:"Disponible dès qu’un parent_station est enregistré dans working/stops.txt.";}
@@ -32,7 +32,7 @@ function restoreWorkspaceSnapshot(snapshot){
   state.geographicCache=snapshot.geographicCache||(ready?{clientType,mapping:snapshot.mapping||{},decisions:snapshot.decisions||[],groups:snapshot.groups||[],places:snapshot.places||[],gtfsStops:snapshot.gtfsStops||state.parsed.stops.rows,collisions:snapshot.collisions||[],stopIdRemap:snapshot.stopIdRemap||[],associationKey:snapshot.associationKey||"stop_id",timepointFallback:Boolean(snapshot.timepointFallback)}:null);
   state.mapping=snapshot.mapping||{};state.decisions=snapshot.decisions||[];state.groups=snapshot.groups||[];state.routeMaps=snapshot.routeMaps||[];state.places=snapshot.places||[];state.gtfsStops=snapshot.gtfsStops||state.parsed.stops.rows;state.workingStops=snapshot.workingStops||null;state.workingParentStations=snapshot.workingParentStations||countWorkingParents(state.workingStops);state.collisions=snapshot.collisions||[];state.stopIdRemap=new Map(snapshot.stopIdRemap||[]);state.associationKey=snapshot.associationKey||"stop_id";state.mapDisplay=snapshot.mapDisplay||"combined";state.mapLabelMode=snapshot.mapLabelMode||"stop_code";state.timepointFallback=Boolean(snapshot.timepointFallback);
   $("map-display").value=state.mapDisplay;$("map-label-mode").value=state.mapLabelMode;
-  if(snapshot.settings){$("radius").value=snapshot.settings.radius||300;$("radius-output").textContent=`${$("radius").value} m`;$("blank-timepoints").checked=Boolean(snapshot.settings.blankTimepoints);$("smart-radius").checked=Boolean(snapshot.settings.smartRadius);$("genz-theme").checked=Boolean(snapshot.settings.genZTheme);document.body.classList.toggle("genz-theme",$("genz-theme").checked);}
+  if(snapshot.settings){$("radius").value=snapshot.settings.radius||300;$("radius-output").textContent=`${$("radius").value} m`;$("blank-timepoints").checked=Boolean(snapshot.settings.blankTimepoints);$("smart-radius").checked=Boolean(snapshot.settings.smartRadius);$("renumber-stop-ids").checked=Boolean(snapshot.settings.renumberStopIds);$("renumber-stop-id-start").value=snapshot.settings.renumberStopIdStart||100001;$("genz-theme").checked=Boolean(snapshot.settings.genZTheme);document.body.classList.toggle("genz-theme",$("genz-theme").checked);}
   updateLoadedGtfsUi();refreshWorkingTimetableAccess();state.mode="__restore__";setMode(restoredMode);
   if(restoredMode!=="geographic"&&(state.decisions.length||state.groups.length||state.routeMaps.length)){render();$("results-section").classList.remove("hidden");}
 }
@@ -145,6 +145,28 @@ function uniqueStopId(original, usedUpper) {
   usedUpper.add(candidate.toUpperCase());
   return candidate;
 }
+const TECHNICAL_STOP_ID_PATTERN=/^(?:remix_)?[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function technicalStopRows(){return (state.parsed.stops?.rows||[]).filter(row=>TECHNICAL_STOP_ID_PATTERN.test(normalize(row.stop_id)));}
+function refreshStopIdRenumberSetting(){
+  const rows=technicalStopRows(),detail=$("stop-id-renumber-detail"),checkbox=$("renumber-stop-ids");
+  checkbox.disabled=rows.length===0;
+  if(!rows.length)checkbox.checked=false;
+  detail.textContent=rows.length?`${rows.length} identifiant${rows.length>1?'s':''} UUID ou remix_UUID détecté${rows.length>1?'s':''}. Les autres stop_id seront conservés.`:"Aucun identifiant UUID ou remix_UUID détecté dans stops.txt.";
+}
+function applyTechnicalStopRenumbering(additionalReservedIds=[]){
+  if(!$("renumber-stop-ids").checked)return;
+  const rows=technicalStopRows(),start=Number($("renumber-stop-id-start").value);
+  if(!Number.isInteger(start)||start<1||start>999999)throw new Error("Le premier numéro de stop doit être un entier compris entre 1 et 999999.");
+  const targets=new Set(rows.map(row=>normalize(row.stop_id))),used=new Set(additionalReservedIds.map(id=>normalize(id)).filter(Boolean));
+  for(const row of state.parsed.stops.rows){const id=normalize(row.stop_id);if(id&&!targets.has(id))used.add(id);}
+  let candidate=start;
+  for(const row of rows){
+    while(candidate<=999999&&used.has(String(candidate)))candidate++;
+    if(candidate>999999)throw new Error("La séquence choisie dépasse la limite de six chiffres. Choisissez un premier numéro plus petit.");
+    const oldId=normalize(row.stop_id),newId=String(candidate++);used.add(newId);state.stopIdRemap.set(oldId,newId);
+    state.collisions.push({old_stop_id:oldId,new_stop_id:newId,stop_code:normalize(row.stop_code),stop_name:normalize(row.stop_name),hastus_description:"",reason:"RENUMEROTATION_UUID"});
+  }
+}
 function guess(headers, patterns, required=true) {
   const lower = headers.map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
   for (const p of patterns) { const i = lower.findIndex(h => h === p || h.includes(p)); if (i >= 0) return headers[i]; }
@@ -210,6 +232,8 @@ const fields = [
 function setupMapping() {
   const hasTimepoint=state.parsed.times?.headers.includes("timepoint");
   const usesTimepoints=state.mode!=="timetables"&&state.mode!=="workingTimetables";
+  $("stop-id-renumber-setting").classList.toggle("hidden",state.mode!=="geographic");
+  refreshStopIdRenumberSetting();
   $("blank-setting").classList.toggle("hidden",!hasTimepoint||!usesTimepoints); $("timepoint-fallback").classList.toggle("hidden",hasTimepoint||!usesTimepoints);
   $("radius-setting").classList.toggle("hidden",state.mode==="maps"||state.mode==="timetables"||state.mode==="workingTimetables");
   $("geographic-client-setting").classList.toggle("hidden",state.mode!=="geographic");
@@ -413,6 +437,7 @@ function analyze() {
 
     if(isGeographicNew()){
       state.mapping={}; state.places=[];
+      applyTechnicalStopRenumbering();
       const items=[];
       for(const id of [...timingIds].sort()){
         const s=stopById.get(id);
@@ -428,6 +453,7 @@ function analyze() {
 
     state.mapping = Object.fromEntries(fields.map(([key])=>[key,$(`map-${key}`).value]));
     const m=state.mapping, hastus=state.parsed.hastus.rows;
+    applyTechnicalStopRenumbering(hastus.map(row=>row[m.stopId]));
     state.associationKey=$("association-key").value;
     if(state.associationKey==="stop_code"&&!gtfs.headers.includes("stop_code")) throw new Error("La clé stop_code est sélectionnée, mais stops.txt ne contient pas cette colonne.");
     if (Object.entries(m).filter(([k])=>!k.startsWith("place")).some(([,v])=>!v)) throw new Error("Toutes les colonnes obligatoires HASTUS doivent être associées.");
@@ -438,8 +464,9 @@ function analyze() {
     for(const row of gtfs.rows){
       const oldId=normalize(row.stop_id), hastusRow=hastusByStopUpper.get(oldId.toUpperCase());
       if(!hastusRow) continue;
+      if(state.stopIdRemap.has(oldId)){const change=state.collisions.find(item=>item.old_stop_id===oldId);if(change){change.hastus_description=normalize(hastusRow[m.stopDesc]);change.reason="RENUMEROTATION_UUID_ET_COLLISION_HASTUS";}continue;}
       const newId=uniqueStopId(oldId,usedStopIdsUpper); state.stopIdRemap.set(oldId,newId);
-      state.collisions.push({old_stop_id:oldId,new_stop_id:newId,stop_code:normalize(row.stop_code),stop_name:normalize(row.stop_name),hastus_description:normalize(hastusRow[m.stopDesc])});
+      state.collisions.push({old_stop_id:oldId,new_stop_id:newId,stop_code:normalize(row.stop_code),stop_name:normalize(row.stop_name),hastus_description:normalize(hastusRow[m.stopDesc]),reason:"COLLISION_HASTUS"});
     }
     const used=new Set([...state.places.map(p=>p.id),...gtfs.rows.map(r=>normalize(r.stop_id))].filter(Boolean).map(x=>x.toUpperCase()));
     for (const id of [...timingIds].sort()) {
@@ -623,6 +650,13 @@ function workingTimetableModule(){const models=state.workingTimetableModels||[],
 function refreshPamphletOffer(){const current=$("pamphlet-offer");if(current)current.outerHTML=pamphletOffer();}
 function refreshGroupErrorSummary(){const summary=$("place-error-summary");if(summary)summary.outerHTML=groupErrorSummary();}
 function smartRadiusNotice(){const stats=state.smartRadiusStats;if(!stats)return "";return `<div class="notice smart-radius-notice"><strong>Rayon intelligent actif.</strong> Les rayons locaux varient de ${stats.minimum} à ${stats.maximum} m (moyenne ${stats.average} m) selon la densité des ${stats.stops} timing points, leur fréquence de passage et les routes issues de trips.txt. Le rayon général reste le plafond.</div>`;}
+function stopIdChangeNotice(){
+  if(!state.collisions.length)return "";
+  const uuidCount=state.collisions.filter(change=>change.reason?.includes("UUID")).length,hastusCount=state.collisions.filter(change=>change.reason?.includes("HASTUS")).length;
+  const reasons=[uuidCount?`${uuidCount} UUID renuméroté${uuidCount>1?'s':''}`:"",hastusCount?`${hastusCount} collision${hastusCount>1?'s':''} HASTUS`:""].filter(Boolean).join(" · ");
+  return `<div class="notice danger"><strong>${state.collisions.length} identifiant${state.collisions.length>1?'s':''} GTFS remplacé${state.collisions.length>1?'s':''}.</strong> ${escapeHtml(reasons)}.<br>${state.collisions.slice(0,6).map(change=>`<code>${escapeHtml(change.old_stop_id)}</code> → <code>${escapeHtml(change.new_stop_id)}</code>`).join(', ')}${state.collisions.length>6?'…':''}. Les mêmes remplacements seront appliqués à stop_times.txt et aux parent_station.</div>`;
+}
+function displayStopId(id){return state.stopIdRemap.get(id)||id;}
 function render() {
   document.body.classList.toggle("map-fullscreen-open",Boolean(state.fullscreenMapId));
   if(state.mode==="workingTimetables"){
@@ -649,12 +683,12 @@ function render() {
   $("export-bar").classList.remove("hidden");
   if(isGeographicNew()){
     const valid=state.decisions.filter(d=>d.status!=="error"), errors=state.decisions.filter(d=>d.status==="error"), grouped=state.groups.filter(g=>g.items.length>1).length, singles=state.groups.filter(g=>g.items.length===1).length;
-    $("summary-grid").innerHTML=[[valid.length,"points horaires",""],[state.groups.length,"places proposées",""],[grouped,"groupes multi-stops","warn"],[singles,"places avec un stop",""],[state.smartRadiusStats?`${state.smartRadiusStats.average} m`:`${$("radius").value} m`,state.smartRadiusStats?"rayon intelligent moyen":"rayon appliqué",""]].map(([n,l,c])=>`<div class="metric ${c}"><strong>${n}</strong><span>${l}</span></div>`).join("");
+    $("summary-grid").innerHTML=[[valid.length,"points horaires",""],[state.groups.length,"places proposées",""],[grouped,"groupes multi-stops","warn"],[singles,"places avec un stop",""],[state.collisions.length,"stop_id remplacés",state.collisions.length?"danger":""],[state.smartRadiusStats?`${state.smartRadiusStats.average} m`:`${$("radius").value} m`,state.smartRadiusStats?"rayon intelligent moyen":"rayon appliqué",""]].map(([n,l,c])=>`<div class="metric ${c}"><strong>${n}</strong><span>${l}</span></div>`).join("");
     const fallback=state.timepointFallback?`<div class="notice"><strong>Points horaires déduits des heures.</strong> La colonne <code>timepoint</code> est absente : les passages à 00 seconde ont été retenus.</div>`:'';
-    $("notices").innerHTML=fallback+smartRadiusNotice()+`<div class="notice"><strong>Regroupement sans données HASTUS.</strong> Deux stops ne sont placés ensemble que si chacun reste dans le rayon choisi de tous les autres stops du groupe.</div>`+groupErrorSummary()+radiusConflictSummary()+errors.map(d=>`<div class="notice danger"><strong>${escapeHtml(d.id)}</strong> — ${escapeHtml(d.error)}</div>`).join("");
+    $("notices").innerHTML=fallback+smartRadiusNotice()+stopIdChangeNotice()+`<div class="notice"><strong>Regroupement sans données HASTUS.</strong> Deux stops ne sont placés ensemble que si chacun reste dans le rayon choisi de tous les autres stops du groupe.</div>`+groupErrorSummary()+radiusConflictSummary()+errors.map(d=>`<div class="notice danger"><strong>${escapeHtml(d.id)}</strong> — ${escapeHtml(d.error)}</div>`).join("");
     $("decision-list").innerHTML=state.groups.map(groupCard).join("")+pamphletOffer();
-    $("results-title").textContent="Places proposées et stops regroupés"; $("filters").classList.add("hidden"); $("download-collisions").classList.add("hidden");
-    $("export-title").textContent="Prêt à exporter"; $("export-detail").textContent=`${state.groups.length} place${state.groups.length!==1?'s':''} à créer · ${valid.length} stops rattachés`;
+    $("results-title").textContent="Places proposées et stops regroupés"; $("filters").classList.add("hidden"); $("download-collisions").classList.toggle("hidden",state.collisions.length===0);
+    $("export-title").textContent="Prêt à exporter"; $("export-detail").textContent=`${state.groups.length} place${state.groups.length!==1?'s':''} à créer · ${valid.length} stops rattachés · ${state.collisions.length} ID remplacé${state.collisions.length!==1?'s':''}`;
     return;
   }
   const valid=state.decisions.filter(d=>d.status!=="error"), assigned=valid.filter(d=>d.source==="existing").length, review=valid.filter(d=>d.status==="review").length, noCandidate=valid.filter(d=>d.status==="review"&&!d.candidates.length).length;
@@ -662,9 +696,8 @@ function render() {
     [state.decisions.length,"points horaires",""],[assigned,"déjà rattachés",""],[review,"à confirmer","warn"],[noCandidate,"sans place proche","warn"],[state.collisions.length,"ID régénérés",state.collisions.length?"danger":""]
   ].map(([n,l,c])=>`<div class="metric ${c}"><strong>${n}</strong><span>${l}</span></div>`).join("");
   const errors=state.decisions.filter(d=>d.status==="error");
-  const collisionNotice=state.collisions.length?`<div class="notice danger"><strong>${state.collisions.length} identifiant${state.collisions.length>1?'s':''} GTFS régénéré${state.collisions.length>1?'s':''} automatiquement.</strong><br>Ces identifiants existaient déjà dans HASTUS. Remplacements : ${state.collisions.slice(0,6).map(c=>`<code>${escapeHtml(c.old_stop_id)}</code> → <code>${escapeHtml(c.new_stop_id)}</code>`).join(', ')}${state.collisions.length>6?'…':''}. Les mêmes remplacements seront appliqués à stop_times.txt.</div>`:'';
   const fallbackNotice=state.timepointFallback?`<div class="notice"><strong>Points horaires déduits des heures.</strong> La colonne <code>timepoint</code> est absente : les passages à 00 seconde ont été retenus.</div>`:'';
-  $("notices").innerHTML=fallbackNotice+smartRadiusNotice()+collisionNotice+errors.map(d=>`<div class="notice"><strong>${escapeHtml(d.id)}</strong> — ${escapeHtml(d.error)}</div>`).join("");
+  $("notices").innerHTML=fallbackNotice+smartRadiusNotice()+stopIdChangeNotice()+errors.map(d=>`<div class="notice"><strong>${escapeHtml(d.id)}</strong> — ${escapeHtml(d.error)}</div>`).join("");
   const shown=valid.filter(d=>state.filter==="all"||(state.filter==="review"&&d.status==="review")||(state.filter==="assigned"&&d.source==="existing"));
   $("decision-list").innerHTML=shown.map(decisionCard).join("");
   const creates=valid.filter(d=>d.choice==="__new__").length;
@@ -742,7 +775,7 @@ function combinedConflictMap(conflicts){
 function radiusConflictSummary(){
   const conflicts=allRadiusConflicts(),retainedGroup=state.activeConflictGroupSnapshot?.key===state.activeConflictGroupId?state.activeConflictGroupSnapshot:null;
   if(!conflicts.length&&!retainedGroup)return `<div id="radius-conflict-summary" class="hidden"></div>`;
-  const rows=conflicts.map(conflict=>{const {item,source,targets}=conflict,color=conflictPlaceColor(source),possible=[source,...targets.map(target=>target.group)].filter((group,index,all)=>all.findIndex(other=>other.id===group.id)===index),options=possible.map(group=>`<option value="${escapeHtml(group.id)}" ${group.id===source.id?'selected':''}>${escapeHtml(group.code)} · ${escapeHtml(group.description)}${group.id===source.id?' · actuelle':''}</option>`).join("");return `<article class="radius-conflict-item" style="--assigned-color:${color};--assigned-bg:${colorWithAlpha(color,.18)}"><div class="radius-conflict-choice-row"><button type="button" class="radius-conflict-link" onclick="focusAssignedGroup('${jsString(source.id)}')"><span><code>${escapeHtml(item.id)}</code><strong>${escapeHtml(item.description||item.id)}</strong></span><small>Rattaché à <b>${escapeHtml(source.code)} · ${escapeHtml(source.description)}</b> · conflit avec ${targets.map(target=>`${escapeHtml(target.group.code)} (${Math.round(target.distance)} m)`).join(" · ")}</small><i>Afficher sa place →</i></button><label class="radius-conflict-select">Place associée<select aria-label="Place associée au stop ${escapeHtml(item.id)}" onchange="reassignStop('${jsString(item.id)}',this.value)">${options}</select></label></div>${conflictPlacesMap(conflict)}</article>`;}).join("");
+  const rows=conflicts.map(conflict=>{const {item,source,targets}=conflict,color=conflictPlaceColor(source),outputId=displayStopId(item.id),possible=[source,...targets.map(target=>target.group)].filter((group,index,all)=>all.findIndex(other=>other.id===group.id)===index),options=possible.map(group=>`<option value="${escapeHtml(group.id)}" ${group.id===source.id?'selected':''}>${escapeHtml(group.code)} · ${escapeHtml(group.description)}${group.id===source.id?' · actuelle':''}</option>`).join("");return `<article class="radius-conflict-item" style="--assigned-color:${color};--assigned-bg:${colorWithAlpha(color,.18)}"><div class="radius-conflict-choice-row"><button type="button" class="radius-conflict-link" onclick="focusAssignedGroup('${jsString(source.id)}')"><span><code>${escapeHtml(outputId)}</code><strong>${escapeHtml(item.description||outputId)}</strong></span><small>Rattaché à <b>${escapeHtml(source.code)} · ${escapeHtml(source.description)}</b> · conflit avec ${targets.map(target=>`${escapeHtml(target.group.code)} (${Math.round(target.distance)} m)`).join(" · ")}</small><i>Afficher sa place →</i></button><label class="radius-conflict-select">Place associée<select aria-label="Place associée au stop ${escapeHtml(outputId)}" onchange="reassignStop('${jsString(item.id)}',this.value)">${options}</select></label></div>${conflictPlacesMap(conflict)}</article>`;}).join("");
   const displayedCount=conflicts.length||retainedGroup?.stopIds.length||0,statusText=conflicts.length?'en conflit de rayon':'dans le groupe analysé · conflit résolu';
   return `<section id="radius-conflict-summary" class="radius-conflict-summary"><div class="radius-conflict-summary-head"><span class="error-summary-icon">!</span><div><strong>${displayedCount} stop${displayedCount>1?'s':''} ${statusText}</strong><small>${conflicts.length?'Chaque stop reste associé à une seule place. Cliquez sur un stop pour afficher sa place actuelle.':'Le groupe initial reste ouvert afin de poursuivre ou annuler les réaffectations.'}</small></div><div class="conflict-summary-actions"><button type="button" class="secondary" onclick="toggleCombinedConflictMap()">${state.showCombinedConflictMap?'Masquer la carte consolidée':'Afficher tous les conflits sur une carte'}</button><button type="button" class="primary conflict-4k-button" onclick="toggleConflictResolutionFullscreen()">${state.conflictResolutionFullscreen?'Quitter le plein écran':'Résolution plein écran 4K'}</button></div></div>${state.showCombinedConflictMap?combinedConflictMap(conflicts):''}<div class="radius-conflict-list">${rows}</div></section>`;
 }
@@ -750,7 +783,7 @@ function refreshRadiusConflictSummary(){const summary=$("radius-conflict-summary
 function groupRadiusConflicts(group,radius){
   const conflicts=stopsConflictingWithGroup(group,radius);
   if(!conflicts.length)return `<div class="group-radius-conflicts clear"><strong>Aucun conflit d’affectation dans ce rayon.</strong><small>Chaque stop conserve un seul parent_station.</small></div>`;
-  const rows=conflicts.map(({item,source,distance})=>`<div class="radius-conflict-stop"><div><code>${escapeHtml(item.id)}</code><strong>${escapeHtml(item.description||item.id)}</strong><small>${Math.round(distance)} m · actuellement associé à ${escapeHtml(source.code)} · ${escapeHtml(source.description)}</small></div><button type="button" class="secondary" onclick="reassignStop('${jsString(item.id)}','${jsString(group.id)}')">Affecter à cette place</button></div>`).join("");
+  const rows=conflicts.map(({item,source,distance})=>`<div class="radius-conflict-stop"><div><code>${escapeHtml(displayStopId(item.id))}</code><strong>${escapeHtml(item.description||displayStopId(item.id))}</strong><small>${Math.round(distance)} m · actuellement associé à ${escapeHtml(source.code)} · ${escapeHtml(source.description)}</small></div><button type="button" class="secondary" onclick="reassignStop('${jsString(item.id)}','${jsString(group.id)}')">Affecter à cette place</button></div>`).join("");
   return `<div class="group-radius-conflicts danger"><div><strong>${conflicts.length} conflit${conflicts.length>1?'s':''} potentiel${conflicts.length>1?'s':''} dans le rayon</strong><small>Ces stops appartiennent déjà à une autre place. Une réaffectation les déplacera afin de conserver un parent_station unique.</small></div>${rows}</div>`;
 }
 function miniPlaceMap(group,radius){
@@ -781,7 +814,8 @@ function groupCard(group){
   const stops=group.items.map(item=>{
     const possible=state.groups.map(candidate=>({...candidate,distance:haversine(item.lat,item.lon,candidate.lat,candidate.lon),searchRadius:Number(candidate.radius??generalRadius)})).filter(candidate=>candidate.id===group.id||candidate.distance<=candidate.searchRadius).sort((a,b)=>a.distance-b.distance);
     const options=possible.map(candidate=>`<option value="${candidate.id}" ${candidate.id===group.id?'selected':''}>${escapeHtml(candidate.code)} · ${escapeHtml(candidate.description)} (${Math.round(candidate.distance)} m)</option>`).join("");
-    return `<div class="group-stop"><code>${escapeHtml(item.id)}</code><span>${escapeHtml(item.description)}</span><small>${Math.round(haversine(item.lat,item.lon,group.lat,group.lon))} m du centre${item.smartRadius?` · rayon auto ${item.smartRadius} m · ${item.smartTrips} voyage${item.smartTrips>1?'s':''} · ${item.smartRoutes} route${item.smartRoutes>1?'s':''}`:''}</small><label><span class="place-select-title">Place associée <strong>${possible.length} place${possible.length>1?'s':''} possible${possible.length>1?'s':''}</strong></span><select aria-label="Place associée à ${escapeHtml(item.id)}" onchange="reassignStop('${jsString(item.id)}',this.value)">${options}</select></label></div>`;
+    const outputId=displayStopId(item.id);
+    return `<div class="group-stop"><code>${escapeHtml(outputId)}</code><span>${escapeHtml(item.description)}</span><small>${Math.round(haversine(item.lat,item.lon,group.lat,group.lon))} m du centre${item.smartRadius?` · rayon auto ${item.smartRadius} m · ${item.smartTrips} voyage${item.smartTrips>1?'s':''} · ${item.smartRoutes} route${item.smartRoutes>1?'s':''}`:''}</small><label><span class="place-select-title">Place associée <strong>${possible.length} place${possible.length>1?'s':''} possible${possible.length>1?'s':''}</strong></span><select aria-label="Place associée à ${escapeHtml(outputId)}" onchange="reassignStop('${jsString(item.id)}',this.value)">${options}</select></label></div>`;
   }).join("");
   const normalizedDescription=cleanCode(group.description),normalizedCode=normalize(group.code).toUpperCase(),duplicateCode=state.groups.some(other=>other.id!==group.id&&normalize(other.code).toUpperCase()===normalizedCode),duplicateDescription=state.groups.some(other=>other.id!==group.id&&cleanCode(other.description)===normalizedDescription),gtfsCodeCollision=state.gtfsStops.some(stop=>normalize(stop.stop_id).toUpperCase()===normalizedCode),invalidCode=!/^[A-Z0-9]{6}$/.test(normalizedCode),emptyDescription=!normalize(group.description),codeWarning=duplicateCode?'Ce code est déjà proposé.':gtfsCodeCollision?'Ce code est déjà utilisé comme stop_id.':invalidCode?'Le code doit contenir exactement 6 caractères.':'',descriptionWarning=duplicateDescription?'Cette description est déjà proposée.':emptyDescription?'La description est obligatoire.':'',proposals=state.groups.map(other=>`<option value="${other.id}">${escapeHtml(other.code)} · ${escapeHtml(other.description)}${other.id===group.id?' — cette place':''}</option>`).join("");
   return `<article id="group-card-${escapeHtml(group.id)}" class="group-card"><div class="group-head"><div><span class="badge review">Place proposée</span>${group.smart?'<span class="badge smart">Rayon intelligent</span>':''}<h3>${group.items.length} stop${group.items.length>1?'s':''} dans le même groupe</h3></div><span class="distance">rayon local ${radius} m</span></div><div class="group-fields"><label>Description de la place<input class="${descriptionWarning?'invalid':''}" value="${escapeHtml(group.description)}" oninput="renameGroupDescription('${group.id}',this)" onblur="render()"><small class="field-warning">${descriptionWarning}</small></label><label>Code place<input class="code-input ${codeWarning?'invalid':''}" maxlength="6" value="${escapeHtml(group.code)}" oninput="renameGroupCode('${group.id}',this)" onblur="render()"><small class="field-warning">${codeWarning}</small></label><label class="proposal-list">Codes et descriptions proposés<select aria-label="Codes et descriptions de places proposés">${proposals}</select></label></div><label class="group-radius"><span><strong>Rayon individuel de cette place</strong><small>${group.smart?'Calcul intelligent initial':'Rayon général initial'} : ${group.smart?group.smartInitialRadius:generalRadius} m</small></span><output class="group-radius-value">${radius} m</output><input type="range" min="1" max="500" value="${radius}" aria-label="Rayon individuel de ${escapeHtml(group.description)}" oninput="previewGroupRadius('${group.id}',this)" onchange="render()"></label>${miniPlaceMap(group,radius)}${groupRadiusConflicts(group,radius)}<div class="group-stops">${stops}</div></article>`;
@@ -880,11 +914,11 @@ function buildExports() {
       const base=`${isGeographicNew()?"GTFS":"HASTUS"}_PLACE_${p.id}`; parentId=base; let suffix=2;
       while(byId.has(parentId)||placeRows.has(parentId)) parentId=`${base}_${suffix++}`;
     }
-    const stop=byId.get(d.id); if(stop) stop.parent_station=parentId;
-    report.push({original_stop_id:d.originalId,stop_id:d.id,stop_description:d.description,decision:p.isNew?"CREER_PLACE":(d.source==="existing"?"PLACE_EXISTANTE":"PLACE_PROCHE"),place_id:p.id,place_description:p.description,distance_m:p.isNew?"":Math.round(d.candidates.find(x=>x.id===p.id)?.distance??0)});
+    const outputStopId=state.stopIdRemap.get(d.originalId||d.id)||d.id,stop=byId.get(outputStopId); if(stop) stop.parent_station=parentId;
+    report.push({original_stop_id:d.originalId,stop_id:outputStopId,stop_description:d.description,decision:p.isNew?"CREER_PLACE":(d.source==="existing"?"PLACE_EXISTANTE":"PLACE_PROCHE"),place_id:p.id,place_description:p.description,distance_m:p.isNew?"":Math.round(d.candidates.find(x=>x.id===p.id)?.distance??0)});
     if(p.isNew&&!creations.has(p.id)){
       const groupedStops=isGeographicNew()?state.groups.find(g=>g.id===d.groupId)?.items||[]:[d];
-      creations.set(p.id,{place_id:p.id,place_description:p.description,stop_ids:groupedStops.map(stop=>stop.id).join(";"),stop_descriptions:groupedStops.map(stop=>normalize(stop.description)).join(";"),stop_lat:p.lat,stop_lon:p.lon});
+      creations.set(p.id,{place_id:p.id,place_description:p.description,stop_ids:groupedStops.map(stop=>state.stopIdRemap.get(stop.id)||stop.id).join(";"),stop_descriptions:groupedStops.map(stop=>normalize(stop.description)).join(";"),stop_lat:p.lat,stop_lon:p.lon});
     }
     if(!byId.has(parentId)&&!placeRows.has(parentId)){
       const nr=Object.fromEntries(headers.map(h=>[h,""])); nr.stop_id=parentId; nr.stop_name=p.description; nr.stop_lat=p.lat; nr.stop_lon=p.lon; nr.location_type="1"; nr.parent_station=""; placeRows.set(parentId,nr);
@@ -895,7 +929,7 @@ function buildExports() {
 }
 function download(name,text,type="text/csv"){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:`${type};charset=utf-8`}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function exportFile(kind,name){try{download(name,buildExports()[kind]);}catch(e){alert(e.message);}}
-function exportCollisions(){download("correspondance_stop_id_hastus_gtfs.csv",toCSV(["old_stop_id","new_stop_id","stop_code","stop_name","hastus_description"],state.collisions));}
+function exportCollisions(){download("correspondance_stop_id_hastus_gtfs.csv",toCSV(["old_stop_id","new_stop_id","reason","stop_code","stop_name","hastus_description"],state.collisions));}
 
 const decisionList=$("decision-list");
 let activeMapDrag=null,wheelPanFrame=0,wheelPanRequest=null,lastWheelZoomAt=0;
@@ -979,6 +1013,9 @@ $("radius").addEventListener("input",event=>{
   if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML=`Regrouper avec un rayon de ${event.target.value} m <span>→</span>`;$("analyze").classList.remove("hidden");captureGeographicState();queueQuickSave();}
 });
 $("smart-radius").addEventListener("change",event=>{if(event.target.checked&&!state.parsed.trips){event.target.checked=false;alert("trips.txt est requis pour activer le rayon intelligent.");return;}if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML=`Recalculer avec le rayon ${event.target.checked?'intelligent':'manuel'} <span>→</span>`;$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();});
+function markStopIdRenumberingChanged(){if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer avec la nouvelle numérotation <span>→</span>';$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();}
+$("renumber-stop-ids").addEventListener("change",markStopIdRenumberingChanged);
+$("renumber-stop-id-start").addEventListener("input",markStopIdRenumberingChanged);
 $("genz-theme").addEventListener("change",event=>{document.body.classList.toggle("genz-theme",event.target.checked);localStorage.setItem("hastus-genz-theme",event.target.checked?"1":"0");queueQuickSave();});
 $("map-label-mode").addEventListener("change",e=>{state.mapLabelMode=e.target.value;if(state.mode==="maps"&&state.routeMaps.length)render();});
 $("analyze").addEventListener("click",analyze);

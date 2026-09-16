@@ -112,6 +112,10 @@
       </div>
       <div id="mapping-grid" class="mapping-grid"></div>
       <label id="smart-radius-setting" class="smart-toggle hidden"><input id="smart-radius" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Rayon intelligent</strong><small id="smart-radius-detail">Adapte chaque rayon à la densité des timing points et aux voyages du GTFS.</small></span></label>
+      <section id="stop-id-renumber-setting" class="stop-id-renumber-setting hidden" aria-labelledby="stop-id-renumber-title">
+        <label class="stop-id-renumber-toggle"><input id="renumber-stop-ids" type="checkbox"><span><strong id="stop-id-renumber-title">Renuméroter les stop_id techniques</strong><small id="stop-id-renumber-detail">Remplace uniquement les UUID et les identifiants remix_UUID par des nombres de six chiffres maximum.</small></span></label>
+        <label class="stop-id-renumber-start"><span>Premier numéro</span><input id="renumber-stop-id-start" type="number" min="1" max="999999" step="1" value="100001" inputmode="numeric"></label>
+      </section>
       <div class="settings-row">
         <label id="geographic-client-setting" class="select-label hidden"><span>Type de regroupement</span><select id="geographic-client-type"><option value="new">Nouveau client · partir de zéro</option><option value="existing">Client existant dans HASTUS</option></select></label>
         <label id="radius-setting" class="range-label"><span>Rayon de recherche</span><output id="radius-output">300 m</output><input id="radius" type="range" min="1" max="500" step="1" value="300"></label>
