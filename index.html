@@ -46,8 +46,12 @@
   <main>
     <section id="feed-section" class="panel feed-section">
       <div class="section-heading">
-        <div><p class="eyebrow">SOURCE UNIQUE</p><h2>Charger le GTFS complet</h2></div>
-        <p>Une seule fois, avant de choisir le contexte d'analyse.</p>
+        <div><p class="eyebrow">SOURCE D’ANALYSE</p><h2 id="feed-title">Choisir les données à utiliser</h2></div>
+        <p id="feed-subtitle">Le regroupement peut partir d’un GTFS ou directement des exports HASTUS.</p>
+      </div>
+      <div id="geographic-source-choice" class="data-source-choice">
+        <button type="button" class="data-source-card active" data-source="gtfs" aria-pressed="true"><span>01</span><strong>Utiliser un GTFS</strong><small>ZIP ou dossier extrait. Recommandé pour un nouveau réseau ou les outils GTFS complets.</small></button>
+        <button type="button" class="data-source-card" data-source="hastus" aria-pressed="false"><span>02</span><strong>Versions de routes + liste de stops HASTUS</strong><small>Aucun GTFS requis. Les TP viennent des versions et les coordonnées de la liste de stops.</small></button>
       </div>
       <section class="workspace-setup" aria-labelledby="workspace-title">
         <div class="workspace-copy"><span class="workspace-icon">⌂</span><div><strong id="workspace-title">Espace de travail local</strong><small>Copie les originaux, conserve les fichiers modifiés et permet de reprendre après la fermeture du navigateur.</small></div></div>
@@ -59,12 +63,11 @@
         </div>
         <div id="workspace-status" class="workspace-status"><span class="save-dot"></span><div><strong>Aucun espace local ouvert</strong><small>Par défaut, un sous-dossier GTFS_HASTUS sera créé dans le dossier parent choisi.</small></div></div>
       </section>
-      <div class="feed-upload-grid">
+      <div id="gtfs-source-inputs" class="feed-upload-grid">
         <label class="dropzone"><span class="file-no">ZIP</span><strong>Fichier GTFS compressé</strong><small>Sélectionnez le fichier .zip complet</small><input id="gtfs-zip" type="file" accept=".zip"></label>
         <label class="dropzone"><span class="file-no">DIR</span><strong>Dossier GTFS extrait</strong><small>Sélectionnez le dossier contenant les fichiers .txt</small><input id="gtfs-folder" type="file" multiple webkitdirectory directory accept=".txt"></label>
       </div>
-      <div id="gtfs-status" class="status-line">Aucun GTFS chargé</div>
-      <div id="gtfs-files" class="file-chips"></div>
+      <div id="gtfs-source-status"><div id="gtfs-status" class="status-line">Aucun GTFS chargé</div><div id="gtfs-files" class="file-chips"></div></div>
     </section>
 
     <section id="mode-section" class="mode-section">
@@ -90,14 +93,15 @@
 
     <section id="source-section" class="panel hidden">
       <div class="section-heading">
-        <div><p class="eyebrow">COMPLÉMENT</p><h2>Données HASTUS existantes</h2></div>
+        <div><p class="eyebrow">DONNÉES HASTUS</p><h2 id="hastus-source-title">Liste de stops et places</h2></div>
         <p>Les données restent sur cet ordinateur.</p>
       </div>
-      <div class="source-back-row"><button id="back-to-new-client" type="button" class="secondary">← Revenir à « Nouveau client »</button><small>Vous pourrez sélectionner de nouveau « Client existant » plus tard.</small></div>
+      <div id="source-back-row" class="source-back-row"><button id="back-to-new-client" type="button" class="secondary">← Revenir à « Nouveau client »</button><small>Vous pourrez sélectionner de nouveau « Client existant » plus tard.</small></div>
       <div id="upload-grid" class="upload-grid">
         <label class="dropzone gtfs-part hidden"><span class="file-no">01</span><strong>GTFS · stops.txt</strong><small>Référentiel des arrêts et coordonnées</small><input id="stops-file" type="file" accept=".txt,.csv"></label>
         <label class="dropzone gtfs-part hidden"><span class="file-no">02</span><strong>GTFS · stop_times.txt</strong><small>Passages et indicateur timepoint</small><input id="times-file" type="file" accept=".txt,.csv"></label>
-        <label id="hastus-upload" class="dropzone"><span class="file-no">03</span><strong>Export HASTUS · CSV</strong><small>Stops, places et coordonnées</small><input id="hastus-file" type="file" accept=".txt,.csv"></label>
+        <label id="hastus-upload" class="dropzone"><span class="file-no">03</span><strong>Export HASTUS · CSV ou Excel</strong><small>Stops, places et coordonnées</small><input id="hastus-file" type="file" accept=".txt,.csv,.xlsx"></label>
+        <label id="variants-upload" class="dropzone"><span class="file-no">04</span><strong>Versions de routes HASTUS · Excel ou CSV</strong><small>Stop, TP, Position, route et variante</small><input id="variants-file" type="file" accept=".txt,.csv,.xlsx"></label>
         <label id="routes-upload" class="dropzone gtfs-part hidden"><span class="file-no">03</span><strong>GTFS · routes.txt</strong><small>Identifiants, noms et couleurs des routes</small><input id="routes-file" type="file" accept=".txt,.csv"></label>
         <label id="trips-upload" class="dropzone gtfs-part hidden"><span class="file-no">04</span><strong>GTFS · trips.txt</strong><small>Lien entre routes, voyages et shapes</small><input id="trips-file" type="file" accept=".txt,.csv"></label>
         <label id="shapes-upload" class="dropzone gtfs-part hidden"><span class="file-no">05</span><strong>GTFS · shapes.txt</strong><small>Géométrie des tracés de routes</small><input id="shapes-file" type="file" accept=".txt,.csv"></label>
@@ -113,12 +117,20 @@
       <div id="mapping-grid" class="mapping-grid"></div>
       <label id="smart-radius-setting" class="smart-toggle hidden"><input id="smart-radius" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Rayon intelligent</strong><small id="smart-radius-detail">Adapte chaque rayon à la densité des timing points et aux voyages du GTFS.</small></span></label>
       <section id="stop-id-renumber-setting" class="stop-id-renumber-setting hidden" aria-labelledby="stop-id-renumber-title">
-        <label class="stop-id-renumber-toggle"><input id="renumber-stop-ids" type="checkbox"><span><strong id="stop-id-renumber-title">Renuméroter les stop_id techniques</strong><small id="stop-id-renumber-detail">Remplace uniquement les UUID et les identifiants remix_UUID par des nombres de six chiffres maximum.</small></span></label>
+        <label class="stop-id-renumber-toggle"><input id="renumber-stop-ids" type="checkbox"><span><strong id="stop-id-renumber-title">Renuméroter les stop_id techniques</strong><small id="stop-id-renumber-detail">Option désactivée par défaut : tous les stop_id sont conservés. Si elle est activée, seuls les UUID et remix_UUID sont remplacés.</small></span></label>
         <label class="stop-id-renumber-start"><span>Premier numéro</span><input id="renumber-stop-id-start" type="number" min="1" max="999999" step="1" value="100001" inputmode="numeric"></label>
+      </section>
+      <label id="review-existing-setting" class="smart-toggle hidden"><input id="review-existing-places" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Réévaluer les places déjà affectées</strong><small>Conserve la place HASTUS actuelle par défaut, mais propose les autres places dont le centre se trouve dans le rayon choisi.</small></span></label>
+      <section id="place-naming-setting" class="place-naming-setting" aria-labelledby="place-naming-title">
+        <div><strong id="place-naming-title">Création des codes de place</strong><small>Les codes proposés contiennent de 1 à 6 lettres ou chiffres. Ils restent modifiables dans chaque fiche.</small></div>
+        <label><span>Casse des codes proposés</span><select id="place-code-case"><option value="upper" selected>Tout en majuscules</option><option value="lower">Tout en minuscules</option></select></label>
+        <label class="place-catalog-toggle"><input id="use-canada-post-abbreviations" type="checkbox"><span><strong>Utiliser les abréviations de Postes Canada</strong><small>Applique les abréviations officielles de types de rue et de points cardinaux avant de proposer un code. <a href="https://www.canadapost-postescanada.ca/scp/fr/soutien/sujet/directives-adressage/symboles-et-abreviations.page" target="_blank" rel="noopener">Consulter le catalogue</a></small></span></label>
       </section>
       <div class="settings-row">
         <label id="geographic-client-setting" class="select-label hidden"><span>Type de regroupement</span><select id="geographic-client-type"><option value="new">Nouveau client · partir de zéro</option><option value="existing">Client existant dans HASTUS</option></select></label>
+        <label id="timing-source-setting" class="select-label hidden"><span>Source des timing points</span><select id="timing-point-source"><option value="gtfs">GTFS · stop_times.txt</option><option value="variants">HASTUS · versions de routes</option></select><small id="timing-source-detail">Chargez l’export de versions pour activer cette source.</small></label>
         <label id="radius-setting" class="range-label"><span>Rayon de recherche</span><output id="radius-output">300 m</output><input id="radius" type="range" min="1" max="500" step="1" value="300"></label>
+        <label id="reference-distance-setting" class="range-label hidden"><span>Seuil d’alerte des références</span><output id="reference-distance-output">500 m</output><input id="reference-distance" type="range" min="100" max="2000" step="25" value="500"></label>
         <label id="association-setting" class="select-label"><span>Clé d'association GTFS → HASTUS</span><select id="association-key"><option value="stop_id">stop_id</option><option value="stop_code">stop_code</option></select></label>
         <label id="map-display-setting" class="select-label hidden"><span>Affichage des routes</span><select id="map-display"><option value="individual">Une carte par route</option><option value="combined" selected>Toutes les routes sur une carte</option><option value="both">Carte réseau et cartes séparées</option></select></label>
         <label id="map-labels-setting" class="select-label hidden"><span>Libellé général des points horaires</span><select id="map-label-mode"><option value="description">Description du stop</option><option value="stop_code" selected>stop_code</option><option value="stop_id">stop_id</option><option value="none">Aucun libellé</option></select></label>
@@ -136,13 +148,26 @@
       </div>
       <div id="notices"></div>
       <div id="decision-list" class="decision-list"></div>
+      <section id="place-report-panel" class="place-report-panel hidden" aria-labelledby="place-report-title">
+        <div class="place-report-copy"><p class="eyebrow">RAPPORT DE VALIDATION</p><h3 id="place-report-title">Une place par page, prête à valider avec le client</h3><small>Une synthèse classe d’abord les places par besoin de décision. Chaque fiche présente ensuite le nom, le code, les stops associés, les stops en dehors du périmètre et une carte OpenStreetMap.</small></div>
+        <div class="place-report-options">
+          <label><span>Langue du rapport</span><select id="place-report-language"><option value="fr">Français</option><option value="en">English</option></select></label>
+          <label><span>Disposition</span><select id="place-report-orientation"><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select></label>
+          <label><span>Cartes du rapport HTML</span><select id="place-report-html-map-mode"><option value="offline" selected>Fixes et disponibles hors ligne</option><option value="online">Interactives avec connexion Internet</option></select><small>Le mode hors ligne intègre un fond vectoriel OSM dans le fichier lors de sa génération.</small></label>
+          <label class="place-report-nearby"><input id="place-report-nearby" type="checkbox" checked><span>Inclure les stops proches hors périmètre</span></label>
+          <label><span>Marge hors rayon</span><select id="place-report-margin"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="500">500 m</option></select></label>
+          <label class="client-logo-picker"><span>Logo du client (facultatif)</span><input id="client-logo-file" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 3 Mo maximum. Il remplace l’identité trouvée dans agency.txt.</small></label>
+        </div>
+        <div class="place-report-actions"><div id="client-brand-status" class="client-brand-status"></div><button id="clear-client-logo" type="button" class="secondary hidden">Utiliser agency.txt</button><button id="download-place-html" type="button" class="secondary">Télécharger le rapport HTML</button><button id="print-place-report" type="button" class="primary">Ouvrir le rapport PDF</button></div>
+      </section>
       <div id="export-bar" class="export-bar">
         <div><strong id="export-title">Prêt à exporter</strong><small id="export-detail"></small></div>
-        <div class="export-actions"><button id="download-collisions" class="secondary hidden">Correspondance des ID</button><button id="download-report" class="secondary">Rapport CSV</button><button id="download-places" class="secondary">Places à créer</button><button id="download-times" class="primary">Télécharger stop_times_enrichi.txt</button><button id="download-gtfs" class="primary">Télécharger stops_enrichi.txt</button></div>
+        <div class="export-actions"><label class="report-type-label"><span>Contenu du rapport PDF</span><select id="report-type"><option value="all">Tous les stops</option><option value="assigned">Sans intervention</option><option value="review">À évaluer</option></select></label><button id="print-client-report" class="secondary">Ouvrir le rapport PDF</button><button id="print-reference-report" class="secondary hidden">Rapport PDF · références suspectes</button><button id="download-collisions" class="secondary hidden">Correspondance des ID</button><button id="download-report" class="secondary">Places par stop</button><button id="download-by-place" class="secondary">Stops par place</button><button id="download-grouping-candidates" class="secondary hidden">Regroupements suggérés</button><button id="download-reference-anomalies" class="secondary hidden">Références éloignées</button><button id="download-unused" class="secondary">Places sans timing point</button><button id="download-places" class="secondary">Places à créer</button><button id="download-times" class="primary">Télécharger stop_times_enrichi.txt</button><button id="download-gtfs" class="primary">Télécharger stops_enrichi.txt</button></div>
       </div>
     </section>
   </main>
   <footer>Prototype de préparation · aucune écriture directe dans HASTUS</footer>
-  <script src="app.js"></script>
+  <script src="report-editor.js?v=35"></script>
+  <script src="app.js?v=35"></script>
 </body>
 </html>

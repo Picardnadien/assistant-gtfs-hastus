@@ -70,11 +70,25 @@ navigateur reste utilisable.
 
 ## Fichiers attendus
 
+Pour le regroupement géographique, l'écran d'accueil propose maintenant deux
+parcours explicites :
+
+- **Utiliser un GTFS** : charger le ZIP ou le dossier GTFS habituel ;
+- **Versions de routes + liste de stops HASTUS** : charger uniquement les deux
+  exports Excel ou CSV HASTUS. Aucun `stops.txt` ni `stop_times.txt` n'est alors
+  requis; les coordonnées viennent de la liste de stops et les timing points de
+  la colonne `TP` des versions de routes.
+
 - `stops.txt` du GTFS ;
 - `stop_times.txt` du GTFS ;
-- pour un client existant, un export CSV HASTUS contenant au minimum
+- pour un client existant, un export CSV ou Excel `.xlsx` HASTUS contenant au minimum
   l'identifiant, la description, la latitude et la longitude du stop. Les
-  colonnes de place sont facultatives.
+  colonnes de place sont facultatives. Pour un classeur Excel, la première
+  feuille est lue automatiquement.
+- facultativement, un export CSV ou Excel des versions de routes HASTUS. Les
+  colonnes `Stop` et `TP` permettent alors de remplacer `stop_times.txt` comme
+  source des timing points; `Position`, la route, la variante et la direction
+  servent aussi à repérer les débuts et fins de voyages.
 
 Après chargement, l'écran permet d'associer les colonnes de l'export HASTUS aux
 champs attendus. Le séparateur CSV (virgule, point-virgule ou tabulation) est
@@ -86,7 +100,8 @@ La clé d'association utilisée par l'import HASTUS peut être réglée sur
 Dans le contexte de regroupement géographique, une option permet de remplacer
 uniquement les `stop_id` techniques au format UUID ou `remix_UUID` par une
 séquence numérique configurable, limitée à six chiffres. Les identifiants déjà
-lisibles sont conservés. Le remplacement est appliqué à `stops.txt`, à
+lisibles sont conservés. Cette option est désactivée par défaut afin de ne
+modifier aucun `stop_id`. Le remplacement est appliqué à `stops.txt`, à
 `stop_times.txt` et aux `parent_station`, puis ajouté au rapport de
 correspondance des identifiants.
 
@@ -118,25 +133,76 @@ général reste le plafond et les arrêts consécutifs d'un voyage ne sont pas
 fusionnés au-delà de 45 m. Les rayons calculés, leur moyenne et les données de
 trafic utilisées restent visibles et chaque rayon peut encore être ajusté.
 
+Lorsqu'un rayon individuel est réduit, un stop situé hors du nouveau périmètre
+est signalé comme orphelin si aucune autre place ne peut l'inclure avec son
+propre rayon. Un bouton permet alors de créer uniquement la place de ce stop,
+avec les mêmes règles de code et de description que le regroupement initial.
+La nouvelle fiche est insérée immédiatement sous la place source sans
+recalculer les autres regroupements.
+
 ### Client existant dans HASTUS
 
 - lorsque `timepoint` est présent, seuls les `stop_id` ayant au moins une ligne
   `timepoint=1` sont traités ;
 - lorsque `timepoint` est absent, les lignes dont `arrival_time` ou
   `departure_time` se termine par `:00` sont considérées comme points horaires ;
-- tous les identifiants de stops HASTUS sont comparés à la colonne `stop_id` du
-  GTFS, même lorsque la clé d'association choisie est `stop_code` ;
-- toute collision provoque la génération d'un nouveau `stop_id`, absent de
-  HASTUS et du GTFS ; le remplacement est appliqué dans `stops.txt`, dans les
-  `parent_station` concernés et dans toutes les lignes de `stop_times.txt` ;
+- les identifiants de stops HASTUS sont comparés à la clé d'association choisie
+  (`stop_id` ou `stop_code`) ; le préfixe technique `:` des identifiants HASTUS
+  est ignoré pendant la comparaison ;
+- un identifiant retrouvé dans HASTUS est considéré comme le même stop et reste
+  inchangé ; seule l'option explicite de renumérotation des UUID peut modifier
+  un `stop_id` ;
 - les correspondances entre anciens et nouveaux identifiants peuvent être
   téléchargées dans un rapport dédié ;
-- un stop HASTUS déjà rattaché conserve sa place ;
+- un stop HASTUS déjà rattaché conserve sa place par défaut ;
+- l'option `Réévaluer les places déjà affectées` conserve cette place comme
+  choix initial et propose les autres centres de places situés dans le rayon
+  choisi ; les propositions sont classées selon la similarité des descriptions,
+  puis selon la distance ; la sélection finale est tracée comme
+  `PLACE_REAFFECTEE` dans le rapport lorsqu'elle diffère de la place d'origine ;
+- chaque stop à réévaluer possède par défaut une carte OpenStreetMap montrant le
+  stop, le rayon de recherche, la place actuelle, les autres places candidates
+  et le choix sélectionné ; les cartes visibles sont chargées progressivement pour éviter
+  des centaines de requêtes de tuiles simultanées ;
+- l'export des versions de routes peut être choisi comme source des timing
+  points; l'outil signale alors les stops encore associés à une place mais qui
+  ne sont plus TP, en distinguant ceux absents des versions de routes;
+- la colonne de place de référence (`Refer.` ou équivalent) est conservée dans
+  les recommandations et les rapports;
+- les paires de places situées dans le rayon de recherche mais ne partageant
+  aucune référence sont proposées pour une référence commune; les stops sans
+  place dont une place voisine existe sont proposés pour rattachement;
+- les regroupements suggérés sont présentés sous forme de fiches cartographiques
+  OpenStreetMap : les stops et centres de places sont différenciés, la relation
+  proposée est tracée, et des filtres par type ou distance ainsi qu'une
+  pagination de 20 cas facilitent la validation; seules les cartes visibles
+  sont chargées afin de préserver les performances;
+- un seuil d'alerte distinct, réglable de 100 à 2 000 m, signale les places
+  partageant une référence mais trop éloignées, ainsi que les identifiants de
+  référence absents de la liste des places;
+- les deux diagnostics sont visibles avec un lien OpenStreetMap et peuvent être
+  exportés dans `regroupements_suggeres.csv` et `references_eloignees.csv`;
+- un rapport PDF graphique « Références suspectes » produit une page paysage
+  par anomalie avec les tuiles OpenStreetMap, les centres de places, tous les
+  stops associés, leurs coordonnées et une recommandation de correction;
+- dans les rapports PDF par stop, la recommandation indique explicitement si
+  la place sélectionnée est la place HASTUS actuelle conservée ou une nouvelle
+  affectation proposée;
 - un stop inconnu reçoit les places voisines triées par distance dans le rayon
   choisi (1 à 500 mètres) ;
-- une nouvelle place reçoit un code de six caractères, par exemple `SEPPLA` ;
+- une nouvelle place reçoit un code de un à six caractères, sans ajout de `X`
+  pour compléter les codes courts ;
+- un réglage initial applique soit les majuscules, soit les minuscules aux codes
+  proposés et aux modifications manuelles ;
+- une option facultative applique les abréviations officielles de types de rue
+  et de points cardinaux de Postes Canada avant de générer le code ;
 - les mots de liaison français et anglais (`de`, `du`, `la`, `the`, `of`,
-  `and`, etc.) sont ignorés : `Marché du Canal` produit `MARCAN` ;
+  `and`, `after`, `before`, etc.) ainsi que les abréviations routières `Ave`,
+  `Dr`, `Rd` et `St`
+  sont ignorés, y compris
+  dans la recherche d'une description commune à plusieurs stops : `Marché du
+  Canal` produit `MARCAN` et deux noms dont le seul mot commun est `Rd` ne
+  créent plus une place nommée `Rd` ;
 - en cas de doublon, le dernier caractère est remplacé par `A`, `B`, etc. ;
 - le `parent_station` exporté contient l'identifiant de la place, conformément
   à GTFS, et une ligne `location_type=1` est créée si nécessaire.
@@ -165,11 +231,11 @@ trafic utilisées restent visibles et chaque rayon peut encore être ajusté.
 - un bouton permet d'appliquer en une fois toutes les descriptions suggérées
   visibles dans le récapitulatif des erreurs ;
 - après l'application individuelle ou globale d'une nouvelle description, le
-  code HASTUS de six caractères est régénéré à partir de cette description en
-  garantissant son unicité ;
-- lorsqu'un code de place saisi contient moins de six caractères, plusieurs
-  codes alternatifs sont proposés à partir des mots significatifs de la place
-  et de ses stops ; un clic applique le code retenu ;
+  code HASTUS, limité à six caractères, est régénéré à partir de cette
+  description en garantissant son unicité ;
+- lorsqu'un code est invalide ou déjà utilisé, plusieurs codes alternatifs sont
+  proposés à partir des mots significatifs de la place et de ses stops ; un
+  clic applique le code retenu ;
 - chaque place proposée affiche une mini-carte OpenStreetMap avec ses stops,
   son centre calculé et le cercle correspondant au rayon de recherche ;
 - seuls les autres stops définis comme timing points et visibles à l'extérieur
@@ -297,8 +363,104 @@ dans les sauvegardes de travail.
 - `correspondance_stop_id_hastus_gtfs.csv` : traçabilité des identifiants
   régénérés ;
 - `rapport_affectations.csv` : décision et distance par point horaire ;
+- `rapport_stops_par_place.csv` : vue inverse regroupant tous les stops par
+  place, avec compte des timing points et place de référence ;
+- `stops_avec_place_sans_timing_point.csv` : stops toujours associés à une
+  place, mais non utilisés comme timing points ;
 - `places_a_creer.csv` : nouvelles places à créer dans HASTUS, avec les
   identifiants et les descriptions de tous les stops regroupés par place.
+
+Le bouton **Rapport client PDF** ouvre une version imprimable avec l'identité
+CSched et OC Transpo. Chaque stop commence sur une nouvelle page afin de
+faciliter la validation et l'annotation par le client. Chaque page comprend sa
+carte OpenStreetMap. Un sélecteur permet de produire séparément le rapport de
+tous les stops, celui des stops ne nécessitant aucune intervention ou celui des
+stops à évaluer.
+
+Dans le module de regroupement géographique, le bloc **Rapport de validation**
+produit également un document centré sur les places :
+
+- une place par page, en disposition portrait ou paysage ;
+- un sélecteur de langue permet de produire le même rapport complet en
+  français ou en anglais; le choix est conservé dans la sauvegarde de travail ;
+- le logo CSched et l'identité du client détectée dans `agency.txt` ;
+- la possibilité de remplacer cette identité par un logo local PNG, JPEG ou
+  WebP, sans envoyer l'image sur Internet ;
+- le code, le nom, le centre et le rayon de chaque place ;
+- une première page de synthèse qui affiche d'abord les places nécessitant une
+  décision, puis celles sans décision, avec le code et la description de la
+  place ainsi que le `stop_id` et la description complète de chaque stop
+  associé; les textes longs reviennent automatiquement à la ligne ;
+- le tableau des places sans décision reste sur la première page seulement si
+  les deux tableaux y tiennent; sinon il commence automatiquement sur la page
+  suivante, avec une typographie de synthèse agrandie ;
+- les fiches détaillées des places nécessitant une décision avant les autres,
+  avec un classement alphabétique par code à l'intérieur de chaque catégorie ;
+- tous les stops associés avec leur description, leur distance et leurs
+  coordonnées ;
+- les stops d'autres places situés dans le rayon et, facultativement, ceux qui
+  se trouvent jusqu'à 100, 150, 250 ou 500 mètres au-delà du rayon, avec le
+  code et le nom de leur place actuelle dans le tableau détaillé ;
+- une carte OpenStreetMap affichant directement les `stop_id`.
+
+Le rapport s'ouvre dans la fenêtre d'impression du navigateur. Choisissez
+**Enregistrer au format PDF** pour créer le fichier final. Le nom proposé pour
+la sauvegarde contient le nom du client lu dans `agency.txt`.
+
+Le même panneau permet aussi de télécharger un rapport HTML interactif en
+français ou en anglais. Ce fichier s'ouvre directement dans un navigateur sans
+relancer l'Assistant. Il contient une table des matières cliquable, une
+recherche par place, code ou stop, des filtres selon le besoin de décision et
+un lien de retour au sommaire sur chaque fiche. Les styles et le logo CSched
+sont intégrés au fichier. Par défaut, l'Assistant télécharge à la génération
+les seules données vectorielles OpenStreetMap nécessaires, dessine des cartes
+fixes avec les stops, les rayons et les détails, puis les intègre au fichier :
+le rapport peut ensuite être consulté sans connexion Internet. L'attribution
+OpenStreetMap et la licence ODbL restent visibles. Une option permet de conserver
+à la place les cartes interactives en ligne. Lancez l'outil avec
+`launch_windows.bat` : le serveur local relaie les requêtes de données OSM et
+essaie automatiquement un second fournisseur si le premier est indisponible.
+
+### Corrections du client dans le rapport HTML
+
+Régénérez le rapport après une mise à jour de l'Assistant : les anciens fichiers
+HTML ne changent pas automatiquement. Les filtres « Toutes », « Décision requise »
+et « Sans décision » agissent sur le sommaire, les liens et les fiches. Les
+catégories restent celles du diagnostic initial, et ne constituent pas une
+validation automatique après modification.
+
+Dans chaque fiche, le client peut modifier le code (1 à 6 lettres ou chiffres,
+casse conservée) et la description de la place. La liste « Place attribuée » de
+chaque stop permet de choisir une autre place du rapport. Les listes de stops,
+compteurs, distances et repères cartographiques sont actualisés, sans déplacer
+les coordonnées physiques des arrêts. Le fond de carte et son cadrage restent
+fixes : un message signale les arrêts réaffectés en dehors du cadrage.
+
+- **Enregistrer le rapport HTML corrigé** télécharge une copie autonome contenant
+  les choix du client. Utiliser ce bouton avant de fermer le rapport et transmettre
+  cette copie au chargé de projet. Il n'y a pas d'écrasement automatique du HTML
+  original, ni de dépendance à la sauvegarde locale du navigateur.
+- **Télécharger stops.txt** produit les places renommées et les nouvelles
+  associations `parent_station`. Les identifiants des stops physiques sont conservés.
+- **Télécharger stop_times.txt** conserve les horaires, séquences et colonnes du
+  GTFS enrichi à la génération du rapport. Une réaffectation de place ne remplace
+  pas les stops physiques des voyages par des places.
+
+Remplacer ces deux fichiers dans une **copie** de l'archive GTFS d'origine, en
+conservant tous les autres fichiers. Les exports portent les noms standard GTFS
+`stops.txt` et `stop_times.txt` (avec les « s » et le tiret bas). En cas de doublon,
+de code invalide, de collision ou de référence incohérente, les exports sont
+bloqués avec un message. Le renommage d'une place référencée par un autre fichier
+GTFS chargé (par exemple `transfers.txt` ou `pathways.txt`) est également bloqué :
+ces autres fichiers nécessiteraient une adaptation coordonnée. Un rapport issu
+uniquement des données HASTUS reste modifiable et sauvegardable, mais ne peut pas
+inventer les fichiers GTFS absents.
+
+Les fonctions de l'éditeur sont dans `report-editor.js` et sont intégrées au HTML
+exporté : aucun script externe n'est nécessaire chez le client. Tests :
+`node tests/report-editor.test.cjs`. Test optionnel sur Metrobus : ajouter le chemin
+de `googleFall2026November.zip` en argument (Python requis ; variable `PYTHON`
+possible pour indiquer son exécutable).
 
 Le prototype ne modifie jamais les fichiers sources.
 #   a s s i s t a n t - g t f s - h a s t u s - w i n d o w s  

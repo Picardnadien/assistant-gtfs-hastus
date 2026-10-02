@@ -11,3 +11,6 @@ Desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# Rapports synthétiques produits par les tests de l'éditeur client
+/tmp/report-editor-*.html
