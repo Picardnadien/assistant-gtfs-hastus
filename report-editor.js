@@ -1,13 +1,15 @@
 /* These functions are embedded verbatim in the standalone report: no external dependencies. */
-function reportEditorEngine(data, edits, serializeOutput = true) {
+function reportEditorEngine(data, edits, serializeOutput = true, withCompleteGtfs = false) {
   const places = data.places.map(original => ({...original, ...(edits.places || []).find(p => p.key === original.key)}));
   const assignments = {...data.assignments, ...edits.assignments};
   const errors = [], key = value => String(value ?? '').trim().toUpperCase();
   const codes = new Set(), sourceIds = new Set(), targets = new Map();
+  const maxLength = Number(data.placeCodeMaxLength) === 8 ? 8 : 6;
+  const codePattern = new RegExp(`^[A-Za-z0-9]{1,${maxLength}}$`);
   for (const place of places) {
     place.code = String(place.code ?? '').trim();
     place.description = String(place.description ?? '').trim();
-    if (!/^[A-Za-z0-9]{1,6}$/.test(place.code) || codes.has(key(place.code))) errors.push('invalidCode');
+    if (!codePattern.test(place.code) || codes.has(key(place.code))) errors.push('invalidCode');
     if (!place.description) errors.push('invalidDescription');
     codes.add(key(place.code));
     if (place.exportId) {
@@ -34,7 +36,8 @@ function reportEditorEngine(data, edits, serializeOutput = true) {
   if (errors.length) return {errors: [...new Set(errors)], places, assignments};
   // Rewrite from immutable source IDs, not successively: A -> B / B -> A is safe.
   const renames = new Map(places.filter(p => p.exportId).map(p => [p.exportId, targets.get(p.key)]));
-  if ((data.gtfs.externalStopReferences || []).some(id => renames.has(id) && renames.get(id) !== id)) errors.push('externalReferences');
+  const externalFileChanges = (data.gtfs.externalStopReferences || []).some(id => renames.has(id) && renames.get(id) !== id);
+  if (externalFileChanges && !withCompleteGtfs) errors.push('externalReferences');
   const bySource = new Map(places.filter(p => p.exportId).map(p => [p.exportId, p]));
   const stops = rows.map(row => {
     const next = {...row}, place = bySource.get(row.stop_id);
@@ -58,23 +61,54 @@ function reportEditorEngine(data, edits, serializeOutput = true) {
   }
   const outputIds = new Set(stops.map(row => row.stop_id));
   if (outputIds.size !== stops.length || stops.some(row => row.parent_station && !outputIds.has(row.parent_station)) || data.gtfs.times.rows.some(row => !outputIds.has(renames.get(row.stop_id) ?? row.stop_id))) errors.push('brokenReferences');
-  if (!serializeOutput) return {errors: [...new Set(errors)], places, assignments};
+  if (!serializeOutput) return {errors: [...new Set(errors)], places, assignments, externalFileChanges};
   const times = data.gtfs.times.rows.map(row => ({...row, stop_id: renames.get(row.stop_id) ?? row.stop_id}));
   const csv = value => {const text = String(value ?? ''); return /[",\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;};
   const serialize = (columns, values) => [columns.map(csv).join(','), ...values.map(row => columns.map(column => csv(row[column])).join(','))].join('\r\n') + '\r\n';
-  return {errors: [...new Set(errors)], places, assignments, stops: serialize(headers, stops), times: serialize(data.gtfs.times.headers, times)};
+  return {errors: [...new Set(errors)], places, assignments, externalFileChanges, stops: serialize(headers, stops), times: serialize(data.gtfs.times.headers, times)};
+}
+
+function reportEditorControls(data, edits, history = []) {
+  const distance = (a, b) => {
+    if (![a?.lat,a?.lon,b?.lat,b?.lon].every(v=>v!==null&&v!==''&&Number.isFinite(Number(v)))) return Infinity;
+    const rad=Math.PI/180, h=Math.sin((b.lat-a.lat)*rad/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin((b.lon-a.lon)*rad/2)**2;
+    return 6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(Math.max(0,1-h)));
+  };
+  const read = action => action.field==='assignment' ? edits.assignments[action.id]??data.assignments[action.id] : edits.places.find(p=>p.key===action.id)?.[action.field];
+  const write = (action,value) => {if(action.field==='assignment')edits.assignments[action.id]=value;else edits.places.find(p=>p.key===action.id)[action.field]=value;};
+  const same = (a,b) => a.id===b.id&&a.field===b.field;
+  const latest = owner => history.findLastIndex(action=>action.owner===owner);
+  const canUndo = owner => {const i=latest(owner);return i>=0&&!history.slice(i+1).some(action=>same(action,history[i]))&&read(history[i])===history[i].after;};
+  return {history,distance,
+    options(point){return data.places.map(place=>({...place,...edits.places.find(p=>p.key===place.key),distance:distance(point,place)})).sort((a,b)=>a.distance-b.distance||a.code.localeCompare(b.code,data.language,{numeric:true}));},
+    set(owner,id,field,after,merge=false){
+      const action={owner,id,field,after},before=read(action);if(before===after)return;
+      const last=history[history.length-1];
+      if(merge&&last&&last.owner===owner&&same(last,action)&&last.after===before){last.after=after;if(last.before===after)history.pop();}
+      else history.push({...action,before});
+      write(action,after);
+    },canUndo,
+    undo(owner){if(!canUndo(owner))return false;const [action]=history.splice(latest(owner),1);write(action,action.before);return true;}
+  };
 }
 
 function placeReportEditorRuntime() {
   'use strict';
   const dataNode = document.getElementById('report-data'), data = JSON.parse(dataNode.textContent);
   const en = data.language === 'en', t = data.editor;
+  const maxLength = Number(data.placeCodeMaxLength) === 8 ? 8 : 6;
+  const codePattern = new RegExp(`^[A-Za-z0-9]{1,${maxLength}}$`);
   const message = (fr, english) => en ? english : fr;
+  const packageTools = reportPackageTools(), packageAvailability = packageTools.availability(data);
   Object.assign(t, {
     ambiguousPlace: message('Correspondance de place ambiguë : export bloqué.', 'Ambiguous place mapping: export blocked.'),
     invalidAssignment: message('Affectation impossible : stop absent ou type incompatible.', 'Invalid assignment: missing stop or incompatible type.'),
     brokenReferences: message('Références GTFS incohérentes : export bloqué.', 'Inconsistent GTFS references: export blocked.'),
-    externalReferences: message('Cette place est référencée dans un autre fichier GTFS (transfers, pathways…). Son code doit être conservé, ou ces autres fichiers doivent aussi être adaptés hors de ce rapport.', 'This place is referenced in another GTFS file (transfers, pathways…). Keep its code, or update those other files outside this report as well.')
+    externalReferences: message('Cette place est référencée dans un autre fichier GTFS. Utilisez le paquet ZIP complet pour adapter aussi ces références.', 'This place is referenced in another GTFS file. Use the complete ZIP package to update those references as well.'),
+    incompleteGtfs: message('GTFS complet indisponible : rechargez le GTFS complet dans l’Assistant puis régénérez le rapport.', 'Complete GTFS unavailable: load the complete GTFS in the Assistant and regenerate the report.'),
+    duplicateFiles: message('Noms de fichiers en double ou invalides : archive non créée.', 'Duplicate or invalid filenames: archive not created.'),
+    brokenFeedReferences: message('Références incohérentes entre les fichiers du GTFS : archive non créée.', 'Inconsistent references between GTFS files: archive not created.'),
+    zipTooLarge: message('Archive trop volumineuse pour ce format ZIP (4 Go maximum).', 'Archive too large for this ZIP format (4 GB maximum).')
   });
   const edits = data.edits || {places: data.places.map(({key, code, description}) => ({key, code, description})), assignments: {...data.assignments}};
   const placeByKey = new Map(data.places.map(p => [p.key, p]));
@@ -86,6 +120,7 @@ function placeReportEditorRuntime() {
   const currentPlace = key => ({...placeByKey.get(key), ...edits.places.find(p => p.key === key)});
   const assigned = id => edits.assignments[id] ?? data.assignments[id];
   const points = data.points || [];
+  const controls = reportEditorControls(data,edits,data.undoHistory||[]);
   // Report labels may be HASTUS stop codes; export IDs must remain exact GTFS IDs.
   for (const row of document.querySelectorAll('[data-stop-row]')) {
     const point = points.find(p => p.label === row.dataset.stopId || p.id === row.dataset.stopId);
@@ -104,11 +139,23 @@ function placeReportEditorRuntime() {
     const point = points.find(p => p.label === row.dataset.candidateStop || p.id === row.dataset.candidateStop);
     if (point) {row.dataset.candidateStop = point.id; row.querySelector('[data-candidate-place]').dataset.candidatePlace = point.id;}
   }
-  const distance = (a, b) => {
-    const rad = Math.PI / 180, dlat = (b.lat - a.lat) * rad, dlon = (b.lon - a.lon) * rad;
-    const h = Math.sin(dlat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dlon / 2) ** 2;
-    return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(Math.max(0, 1 - h)));
-  };
+  const distance = controls.distance;
+  function fillAssignment(select,id) {
+    const point=points.find(p=>p.id===id);if(!point)return;
+    select.dataset.assignmentId=id;
+    select.replaceChildren();
+    if(data.assignments[id]==='__keep__'){
+      const option=document.createElement('option');option.value='__keep__';
+      option.textContent=message('Conserver : ','Keep: ')+(point.parent||message('sans place','no place'));select.append(option);
+    }
+    for(const place of controls.options(point)){
+      const option=document.createElement('option');option.value=place.key;
+      option.textContent=place.code+' · '+place.description+' — '+(Number.isFinite(place.distance)?Math.round(place.distance).toLocaleString(en?'en-CA':'fr-CA')+' m':message('distance inconnue','unknown distance'));
+      select.append(option);
+    }
+    select.value=assigned(id)||'__keep__';select.disabled=!point.editable;
+    select.title=point.editable?message('Distance à vol d’oiseau du stop au centre de la place.','Straight-line distance from the stop to the place centre.'):message('Stop absent du GTFS ou type incompatible.','Stop missing from GTFS or incompatible type.');
+  }
   function applyFilter() {
     let shown = 0;
     for (const [key, card] of cardByKey) {
@@ -123,20 +170,36 @@ function placeReportEditorRuntime() {
     document.getElementById('empty-results').classList.toggle('visible', shown === 0);
   }
   function validate() {
-    corrected = reportEditorEngine(data, edits, false);
+    corrected = reportEditorEngine(data, edits, false, packageAvailability.ready);
     status.textContent = corrected.errors.length ? corrected.errors.map(error => t[error] || error).join(' ') : (data.gtfs ? t.ready : t.unavailable) + (dirty ? message(' · Enregistrez le rapport pour conserver vos choix.', ' · Save the report to keep your changes.') : '');
     status.setAttribute('role', corrected.errors.length ? 'alert' : 'status');
     for (const id of ['download-client-stops', 'download-client-times']) {
       const button = document.getElementById(id);
-      if (button) button.disabled = corrected.errors.length > 0 || !data.gtfs;
+      if (button) {button.disabled = corrected.errors.length > 0 || !data.gtfs || corrected.externalFileChanges;button.title=corrected.externalFileChanges?t.externalReferences:'';}
     }
+    const zipButton = document.getElementById('download-client-package');
+    if (zipButton) zipButton.disabled = corrected.errors.length > 0 || !packageAvailability.ready;
+    const packageStatus = document.getElementById('client-package-status');
+    if (packageStatus) packageStatus.textContent = packageAvailability.ready ? message('Le ZIP contient le rapport corrigé, son compte rendu et le GTFS complet.', 'The ZIP includes the edited report, change summary and complete GTFS.') : t.incompleteGtfs + ' ' + packageAvailability.missing.join(', ');
     for (const [key, card] of cardByKey) {
       const place = currentPlace(key), input = card.querySelector('[data-place-code]');
-      const invalid = !/^[A-Za-z0-9]{1,6}$/.test(place.code) || edits.places.some(p => p.key !== key && norm(p.code) === norm(place.code));
+      const invalid = !codePattern.test(place.code) || edits.places.some(p => p.key !== key && norm(p.code) === norm(place.code));
       input.classList.toggle('invalid', invalid);
       input.setAttribute('aria-invalid', String(invalid));
       card.querySelector('[data-place-description]').setAttribute('aria-invalid', String(!place.description.trim()));
+      const undo=card.querySelector('[data-place-undo]');
+      if(undo){undo.disabled=!controls.canUndo(key);undo.title=message('Annuler la dernière modification faite depuis cette fiche. Si ce stop a été modifié ensuite ailleurs, annuler d’abord cette modification.','Undo the last edit made from this card. If this stop was edited elsewhere afterwards, undo that edit first.');}
     }
+    refreshReview();
+  }
+  function refreshReview(force=false, savedAt=data.savedAt) {
+    const changes=packageTools.changes(data,edits),show=force||Boolean(data.edits)||dirty||changes.places.length>0||changes.stops.length>0;
+    let section=document.getElementById('client-change-summary');
+    if(!show&&!section)return;
+    if(!section){section=document.createElement('section');section.id='client-change-summary';section.className='overview change-summary';document.querySelector('main').prepend(section);}
+    const brand=document.querySelector('#report-top header')?.outerHTML||'';
+    section.innerHTML=brand+packageTools.reviewHtml(data,edits,savedAt);
+    const link=document.getElementById('client-review-link');if(link)link.hidden=false;
   }
   function download(name, text, type) {
     const url = URL.createObjectURL(new Blob([text], {type})), link = document.createElement('a');
@@ -150,9 +213,7 @@ function placeReportEditorRuntime() {
       node.querySelectorAll('[data-place-description-display]').forEach(el => el.textContent = place.description);
       node.querySelector('.place-map svg')?.setAttribute('aria-label', message('Carte OpenStreetMap de la place ', 'OpenStreetMap map of place ') + place.description);
     }
-    for (const select of document.querySelectorAll('[data-stop-assignment]')) for (const option of select.options) {
-      if (placeByKey.has(option.value)) {const p = currentPlace(option.value); option.textContent = p.code + ' · ' + p.description;}
-    }
+    for (const select of document.querySelectorAll('[data-stop-assignment]')) fillAssignment(select,select.dataset.assignmentId||select.closest('[data-stop-row]')?.dataset.stopId);
     for (const node of document.querySelectorAll('[data-candidate-place]')) {
       const target = assigned(node.dataset.candidatePlace);
       if (placeByKey.has(target)) {const p = currentPlace(target); node.textContent = p.code + ' · ' + p.description;}
@@ -192,15 +253,26 @@ function placeReportEditorRuntime() {
     }
   }
   function refreshAssignments() {
+    // Candidates not shown in an associated table yet need their own movable row.
+    const existing=new Set([...document.querySelectorAll('[data-stop-row]')].map(row=>row.dataset.stopId));
+    for(const point of points){
+      const card=cardByKey.get(assigned(point.id));if(!card||existing.has(point.id))continue;
+      const row=document.createElement('tr');row.dataset.stopRow='';row.dataset.stopId=point.id;row.dataset.originalPlace=point.originalPlace||'';
+      for(const value of ['',point.label||point.id,point.description,'',Number(point.lat).toFixed(6)+', '+Number(point.lon).toFixed(6)]){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}
+      const cell=document.createElement('td'),select=document.createElement('select'),note=document.createElement('small');
+      select.className='assignment-select';select.dataset.stopAssignment='';select.setAttribute('aria-label',t.assignment+' '+(point.label||point.id));
+      note.className='assignment-change';note.textContent=t.changed;cell.append(select,note);row.append(cell);card.querySelector('[data-associated-body]').append(row);
+    }
     for (const row of [...document.querySelectorAll('[data-stop-row]')]) {
       const id = row.dataset.stopId, target = assigned(id), place = placeByKey.get(target), select = row.querySelector('[data-stop-assignment]');
       select.value = target || '__keep__';
       const card = cardByKey.get(target) || cardByKey.get(row.dataset.originalPlace);
+      if(!card){row.remove();continue;}
       if (card) card.querySelector('[data-associated-body]').append(row);
       const changed = target !== data.assignments[id];
       row.querySelector('.assignment-change').hidden = !changed;
       const point = points.find(p => p.id === id);
-      if (place && point) row.cells[3].textContent = Math.round(distance(place, point)) + ' m';
+      if (point) row.cells[3].textContent = Math.round(distance(place||placeByKey.get(row.dataset.originalPlace), point)) + ' m';
     }
     for (const [key, card] of cardByKey) {
       const rows = [...card.querySelectorAll('[data-stop-row]')];
@@ -220,9 +292,12 @@ function placeReportEditorRuntime() {
         const owner = assigned(point.id), label = placeByKey.has(owner) ? currentPlace(owner).code + ' · ' + currentPlace(owner).description : point.parent || message('Sans place', 'No place');
         const values = [String.fromCharCode(65+index%26)+(index>=26?Math.floor(index/26):''), point.label||point.id, point.description, label, Math.round(point.distance)+' m', point.distance <= place.radius ? message('Dans le rayon — rattachement à évaluer', 'Within radius — review assignment') : message('Hors rayon de ', 'Outside radius by ')+Math.round(point.distance-place.radius)+' m'];
         values.forEach((value, i) => {const cell=document.createElement('td'); cell.textContent=value; if(i===3)cell.dataset.candidatePlace=point.id; row.append(cell);});
+        const cell=document.createElement('td'),select=document.createElement('select');
+        select.className='assignment-select';select.dataset.stopAssignment='';select.dataset.assignmentId=point.id;
+        select.setAttribute('aria-label',t.assignment+' '+(point.label||point.id));cell.append(select);row.append(cell);
         body.append(row);
       });
-      if (!nearby.length) {const row=document.createElement('tr'), cell=document.createElement('td'); cell.colSpan=6; cell.textContent=message('Aucun stop à considérer dans cette zone.', 'No other stops to consider in this area.'); row.append(cell); body.append(row);}
+      if (!nearby.length) {const row=document.createElement('tr'), cell=document.createElement('td'); cell.colSpan=7; cell.textContent=message('Aucun stop à considérer dans cette zone.', 'No other stops to consider in this area.'); row.append(cell); body.append(row);}
       details.querySelector('summary b').textContent=nearby.length;
       card.querySelectorAll('.facts b')[1].textContent=nearby.length;
     }
@@ -235,31 +310,73 @@ function placeReportEditorRuntime() {
     document.getElementById('report-top').scrollIntoView({block: 'start'});
   }));
   search.addEventListener('input', applyFilter);
+  let activeInput=null;
+  document.addEventListener('focusout',()=>{activeInput=null;});
   document.addEventListener('input', event => {
     if (!event.target.matches('[data-place-code],[data-place-description]')) return;
-    const key = event.target.closest('[data-report-place]').dataset.placeKey, edit = edits.places.find(p => p.key === key);
-    edit[event.target.matches('[data-place-code]') ? 'code' : 'description'] = event.target.value;
+    const key = event.target.closest('[data-report-place]').dataset.placeKey;
+    controls.set(key,key,event.target.matches('[data-place-code]')?'code':'description',event.target.value,activeInput===event.target);
+    activeInput=event.target;
     dirty = true; refreshNames(); applyFilter(); validate();
   });
   document.addEventListener('change', event => {
     if (!event.target.matches('[data-stop-assignment]')) return;
-    edits.assignments[event.target.closest('[data-stop-row]').dataset.stopId] = event.target.value;
+    const owner=event.target.closest('[data-report-place]').dataset.placeKey;
+    controls.set(owner,event.target.dataset.assignmentId,'assignment',event.target.value);
     dirty = true; refreshAssignments();
   });
   for (const [key, card] of cardByKey) {
+    let undo=card.querySelector('[data-place-undo]');
+    if(!undo){undo=document.createElement('button');undo.type='button';undo.dataset.placeUndo='';undo.className='place-undo';card.querySelector('[data-place-editor]').append(undo);}
+    undo.textContent=message('Annuler la dernière modification','Undo');
+    undo.addEventListener('click',()=>{
+      if(!controls.undo(key))return;
+      for(const [id,node] of cardByKey){node.querySelector('[data-place-code]').value=currentPlace(id).code;node.querySelector('[data-place-description]').value=currentPlace(id).description;}
+      dirty=true;activeInput=null;refreshAssignments();
+    });
+    const head=card.querySelectorAll('details')[1].querySelector('thead tr');
+    if(head.cells.length===6){const cell=document.createElement('th');cell.textContent=t.assignment;head.append(cell);}
     const p = currentPlace(key);
     card.querySelector('[data-place-code]').value = p.code;
     card.querySelector('[data-place-description]').value = p.description;
   }
   document.getElementById('download-client-stops')?.addEventListener('click', () => {validate(); if (!corrected.errors.length) download('stops.txt', reportEditorEngine(data, edits).stops, 'text/csv;charset=utf-8');});
   document.getElementById('download-client-times')?.addEventListener('click', () => {validate(); if (!corrected.errors.length) download('stop_times.txt', reportEditorEngine(data, edits).times, 'text/csv;charset=utf-8');});
-  document.getElementById('save-client-report').addEventListener('click', () => {
+  function editedHtml(savedAt) {
     // Persist in the downloaded document, not file:// localStorage (browser-dependent).
-    const snapshot = {...data, edits};
+    refreshReview(true,savedAt);
+    const snapshot = {...data, edits, undoHistory:controls.history, savedAt};
     const clone = document.documentElement.cloneNode(true);
+    const packageButton=clone.querySelector('#download-client-package');
+    if(packageButton){packageButton.textContent=message('Télécharger le ZIP de retour client','Download client-return ZIP');packageButton.disabled=corrected.errors.length>0||!packageAvailability.ready;}
     clone.querySelector('#report-data').textContent = JSON.stringify(snapshot).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
-    download(data.filename + (en ? '_edited.html' : '_corrige.html'), '<!doctype html>\n' + clone.outerHTML, 'text/html;charset=utf-8');
-    dirty = false; validate();
+    clone.querySelectorAll('[data-report-place],[data-report-filter-item],.nav-group').forEach(node=>node.hidden=false);
+    return '<!doctype html>\n' + clone.outerHTML;
+  }
+  document.getElementById('save-client-report').addEventListener('click', () => {
+    const savedAt=new Date().toISOString();
+    download(data.filename + (en ? '_edited.html' : '_corrige.html'), editedHtml(savedAt), 'text/html;charset=utf-8');
+    data.savedAt=savedAt; dirty = false; validate();
+  });
+  document.getElementById('download-client-package')?.addEventListener('click', async () => {
+    validate();if(corrected.errors.length||!packageAvailability.ready)return;
+    const button=document.getElementById('download-client-package'),label=button.textContent;
+    button.disabled=true;button.textContent=message('Préparation du ZIP…','Preparing ZIP…');
+    try {
+      await new Promise(resolve=>setTimeout(resolve,30));
+      const savedAt=new Date().toISOString(),result=reportEditorEngine(data,edits,true,true);
+      const feed=packageTools.files(data,result),gtfsZip=packageTools.zip(feed);
+      const summary=packageTools.changes(data,edits);
+      const bundle=packageTools.zip([
+        {name:data.filename+(en?'_edited.html':'_corrige.html'),text:editedHtml(savedAt)},
+        {name:'GTFS_finalise.zip',bytes:gtfsZip},
+        {name:en?'changes.json':'modifications.json',text:JSON.stringify({savedAt,...summary},null,2)},
+        {name:en?'READ_ME.txt':'LIRE_MOI.txt',text:message('Retour client : ouvrir le rapport HTML pour consulter le compte rendu avant/après en première page. Après revue, utiliser GTFS_finalise.zip pour votre procédure d’import HASTUS. Les horaires et les coordonnées des stops ne sont pas modifiés. Conserver le GTFS d’origine.','Client return: open the HTML report to review the before/after summary on the first page. After review, use GTFS_finalise.zip for your HASTUS import workflow. Schedules and stop coordinates are unchanged. Keep the original GTFS.')}
+      ]);
+      download(data.filename+(en?'_client_return.zip':'_retour_client.zip'),bundle,'application/zip');
+      data.savedAt=savedAt;dirty=false;validate();
+    }catch(error){status.textContent=t[error.message]||message('Impossible de créer le ZIP : ','Could not create ZIP: ')+error.message;status.setAttribute('role','alert');}
+    finally{button.textContent=label;button.disabled=corrected.errors.length>0||!packageAvailability.ready;}
   });
   window.addEventListener('beforeunload', event => {if (dirty) {event.preventDefault(); event.returnValue = '';}});
   // Ensure a saved filtered document always opens with its complete contents.

@@ -190,15 +190,21 @@ recalculer les autres regroupements.
   affectation proposée;
 - un stop inconnu reçoit les places voisines triées par distance dans le rayon
   choisi (1 à 500 mètres) ;
-- une nouvelle place reçoit un code de un à six caractères, sans ajout de `X`
-  pour compléter les codes courts ;
+- une nouvelle place reçoit un code de exactement 6 ou 8 caractères selon le
+  réglage « Longueur des codes générés » (6 par défaut). La génération commence
+  par trois ou quatre lettres de chacun des deux premiers mots significatifs,
+  puis utilise leurs lettres restantes et les mots suivants si nécessaire.
+  Si le nom reste trop court, des zéros complètent le code, jamais des `X` :
+  `Bay Harbour` produit `BAYHAR` ou `BAYHARBO`, `Main Rd` produit `MAIN00` ou
+  `MAIN0000`. Les codes déjà saisis ne changent pas automatiquement et les
+  modifications manuelles peuvent rester plus courtes ;
 - un réglage initial applique soit les majuscules, soit les minuscules aux codes
   proposés et aux modifications manuelles ;
 - une option facultative applique les abréviations officielles de types de rue
   et de points cardinaux de Postes Canada avant de générer le code ;
 - les mots de liaison français et anglais (`de`, `du`, `la`, `the`, `of`,
   `and`, `after`, `before`, etc.) ainsi que les abréviations routières `Ave`,
-  `Dr`, `Rd` et `St`
+  `Dr`, `Rd`, `St` et `Ad`
   sont ignorés, y compris
   dans la recherche d'une description commune à plusieurs stops : `Marché du
   Canal` produit `MARCAN` et deux noms dont le seul mot commun est `Rd` ne
@@ -231,7 +237,7 @@ recalculer les autres regroupements.
 - un bouton permet d'appliquer en une fois toutes les descriptions suggérées
   visibles dans le récapitulatif des erreurs ;
 - après l'application individuelle ou globale d'une nouvelle description, le
-  code HASTUS, limité à six caractères, est régénéré à partir de cette
+  code HASTUS, limité à 6 ou 8 caractères selon le réglage, est régénéré à partir de cette
   description en garantissant son unicité ;
 - lorsqu'un code est invalide ou déjà utilisé, plusieurs codes alternatifs sont
   proposés à partir des mots significatifs de la place et de ses stops ; un
@@ -290,7 +296,7 @@ recalculer les autres regroupements.
   jour, une section propose des pamphlets horaires par route, direction et
   `service_id` ;
 - ces horaires affichent uniquement les heures de passage aux timing points,
-  avec les codes place à six caractères, un schéma monochrome sommaire, un
+  avec les codes place (6 ou 8 caractères maximum), un schéma monochrome sommaire, un
   filtre par route et une mise en page imprimable.
 
 ### Cartes des points horaires par route
@@ -417,7 +423,10 @@ les seules données vectorielles OpenStreetMap nécessaires, dessine des cartes
 fixes avec les stops, les rayons et les détails, puis les intègre au fichier :
 le rapport peut ensuite être consulté sans connexion Internet. L'attribution
 OpenStreetMap et la licence ODbL restent visibles. Une option permet de conserver
-à la place les cartes interactives en ligne. Lancez l'outil avec
+à la place les cartes chargées en ligne, avec un cadrage fixe : le zoom et le
+déplacement sont désactivés à la souris, au toucher et au clavier pour conserver
+l'alignement du fond OSM avec les stops et les rayons. La navigation du rapport
+et les corrections de places restent disponibles. Lancez l'outil avec
 `launch_windows.bat` : le serveur local relaie les requêtes de données OSM et
 essaie automatiquement un second fournisseur si le premier est indisponible.
 
@@ -429,13 +438,39 @@ et « Sans décision » agissent sur le sommaire, les liens et les fiches. Les
 catégories restent celles du diagnostic initial, et ne constituent pas une
 validation automatique après modification.
 
-Dans chaque fiche, le client peut modifier le code (1 à 6 lettres ou chiffres,
-casse conservée) et la description de la place. La liste « Place attribuée » de
+La longueur maximale choisie est conservée dans la sauvegarde de travail et dans
+le rapport HTML exporté. Les sauvegardes anciennes utilisent 6 caractères par
+défaut. Changer ce réglage ne renomme ni ne tronque les places existantes : après
+un retour de 8 à 6, les codes trop longs sont signalés et doivent être corrigés
+avant l'export. Le réglage de casse reste indépendant.
+
+Dans chaque fiche, le client peut modifier le code (1 à 6 ou 1 à 8 lettres ou
+chiffres selon le choix initial, casse conservée) et la description de la place. La liste « Place attribuée » de
 chaque stop permet de choisir une autre place du rapport. Les listes de stops,
 compteurs, distances et repères cartographiques sont actualisés, sans déplacer
 les coordonnées physiques des arrêts. Le fond de carte et son cadrage restent
 fixes : un message signale les arrêts réaffectés en dehors du cadrage.
 
+Les menus « Place attribuée / Assigned place » proposent les places par distance
+croissante, avec la distance à vol d'oiseau du stop au centre de la place en mètres.
+Ces menus sont aussi disponibles dans le tableau des stops hors périmètre.
+Le bouton « Annuler la dernière modification / Undo » de chaque fiche annule une
+modification à la fois (code, description ou affectation effectuée depuis cette
+fiche), sans réinitialiser les autres places. Une saisie continue dans un champ
+compte comme une modification. Si le même stop a ensuite été modifié ailleurs,
+il faut annuler cette dernière affectation d'abord. L'historique d'annulation est
+conservé dans le HTML corrigé, y compris celui contenu dans le ZIP de retour.
+
+Dans les options de génération, **Simplifier le retour client** est coché par
+défaut : les téléchargements séparés de `stops.txt` et `stop_times.txt` sont
+masqués. Décocher cette option pour les rendre disponibles. Ce choix est conservé
+dans la sauvegarde de travail et le rapport exporté.
+
+- **Télécharger le ZIP de retour client** regroupe le rapport HTML corrigé,
+  `GTFS_finalise.zip` (le GTFS complet mis à jour), un journal des modifications
+  JSON et un fichier d'instructions. Le client transmet cette archive au chargé
+  de projet, qui révise les changements avant d'utiliser le GTFS dans sa procédure
+  d'import HASTUS. Aucun fichier source n'est écrasé.
 - **Enregistrer le rapport HTML corrigé** télécharge une copie autonome contenant
   les choix du client. Utiliser ce bouton avant de fermer le rapport et transmettre
   cette copie au chargé de projet. Il n'y a pas d'écrasement automatique du HTML
@@ -446,19 +481,35 @@ fixes : un message signale les arrêts réaffectés en dehors du cadrage.
   GTFS enrichi à la génération du rapport. Une réaffectation de place ne remplace
   pas les stops physiques des voyages par des places.
 
-Remplacer ces deux fichiers dans une **copie** de l'archive GTFS d'origine, en
-conservant tous les autres fichiers. Les exports portent les noms standard GTFS
-`stops.txt` et `stop_times.txt` (avec les « s » et le tiret bas). En cas de doublon,
-de code invalide, de collision ou de référence incohérente, les exports sont
-bloqués avec un message. Le renommage d'une place référencée par un autre fichier
-GTFS chargé (par exemple `transfers.txt` ou `pathways.txt`) est également bloqué :
-ces autres fichiers nécessiteraient une adaptation coordonnée. Un rapport issu
-uniquement des données HASTUS reste modifiable et sauvegardable, mais ne peut pas
-inventer les fichiers GTFS absents.
+Le rapport corrigé commence par un compte rendu avant/après : codes et
+descriptions des places modifiés, puis stops réaffectés avec leur ancienne et
+leur nouvelle place. La comparaison reste basée sur le rapport initial après
+plusieurs sauvegardes. Les modifications annulées ne sont pas comptées et un
+renommage seul n'est pas présenté comme une réaffectation des stops.
 
-Les fonctions de l'éditeur sont dans `report-editor.js` et sont intégrées au HTML
-exporté : aucun script externe n'est nécessaire chez le client. Tests :
-`node tests/report-editor.test.cjs`. Test optionnel sur Metrobus : ajouter le chemin
+Le ZIP nécessite le GTFS complet chargé à la génération (ZIP ou dossier),
+notamment `agency.txt`, `routes.txt`, `trips.txt`, `stops.txt`, `stop_times.txt`
+et `calendar.txt` ou `calendar_dates.txt`. Les fichiers GTFS TXT et GeoJSON sont
+embarqués dans le rapport et conservés dans le GTFS finalisé. Les références aux
+identifiants de stops/places sont adaptées dans les tables annexes concernées,
+par exemple `transfers.txt`, `pathways.txt` et `translations.txt`. Les fichiers
+non concernés sont recopiés sans modification. Le rapport peut donc être plus
+volumineux. La préparation du ZIP ne nécessite ni Internet ni bibliothèque externe.
+
+En cas de doublon, de code invalide, de collision ou de référence incohérente,
+l'export est bloqué avec un message. Les exports séparés restent bloqués si un
+renommage nécessite aussi de modifier une table annexe : utiliser alors le ZIP.
+Pour les exports séparés, remplacer les deux fichiers dans une **copie** du GTFS
+d'origine. Un rapport sans GTFS complet reste modifiable et sauvegardable en
+HTML, mais l'export ZIP est indisponible. Ces contrôles ne remplacent pas une
+validation GTFS complète ni la revue du format d'import HASTUS du client.
+
+Les fonctions de l'éditeur et de préparation de l'archive sont dans
+`report-editor.js` et `report-package.js`, intégrées au HTML exporté : aucun
+script externe n'est nécessaire chez le client. Tests :
+`node tests/report-editor.test.cjs`, `node tests/report-package.test.cjs`, puis
+`python tests/verify-report-package.py` (vérification indépendante des ZIP).
+Test optionnel sur Metrobus : ajouter le chemin
 de `googleFall2026November.zip` en argument (Python requis ; variable `PYTHON`
 possible pour indiquer son exécutable).
 

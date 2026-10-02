@@ -14,3 +14,4 @@ Desktop.ini
 
 # Rapports synthétiques produits par les tests de l'éditeur client
 /tmp/report-editor-*.html
+/tmp/report-editor-*.zip
