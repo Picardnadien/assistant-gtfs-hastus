@@ -1,0 +1,94 @@
+/* Standalone, browser-side timetable exports. No server or external scripts. */
+function reportTimetableExportTools(){
+  const network=reportNetworkTools(),esc=network.esc;
+  function build(data,edits,view){
+    view={direction:'both',timing:true,compact:true,...view};
+    const net=network.create(data),en=data.language==='en',t=(fr,enText)=>en?enText:fr;
+    if(!net.hasCalendar||!network.date(view.date))throw Error(t('Choisissez une date de service valide.','Choose a valid service date.'));
+    const schedule=net.schedules(view.date,view.route,view.direction==='both'?'':view.direction,view.timing),routes=net.routeModels();
+    const label=id=>{const stop=net.stops.get(id)||{},key=edits.assignments?.[id]??data.assignments?.[id],original=(data.places||[]).find(p=>p.key===key)||(data.places||[]).find(p=>p.exportId===stop.parent_station),place=original?{...original,...(edits.places||[]).find(p=>p.key===original.key)}:null;return id+' · '+(stop.stop_name||'')+(place?'\n'+place.code+' · '+place.description:stop.parent_station?'\n'+stop.parent_station:'');};
+    const blocks=[];
+    for(const route of routes.filter(r=>!view.route||view.route===r.routeId)){
+      const patterns=schedule.patterns.filter(p=>p.routeId===route.routeId).sort((a,b)=>a.direction.localeCompare(b.direction));
+      patterns.forEach((pattern,index)=>blocks.push({routeId:route.routeId,route:route.label+' · '+route.name,direction:pattern.direction,pattern:index+1,stops:pattern.stops.map(label),rows:network.timetableRows(pattern).map(({trip,headway})=>({id:trip.id,headsign:trip.headsign,headway,times:trip.times}))}));
+    }
+    const frequencies=schedule.frequencies.map(f=>({route:routes.find(r=>r.routeId===f.trip.route_id)?.label||f.trip.route_id,direction:f.trip.direction_id||'?',trip:f.trip.trip_id,start:f.window.start_time,end:f.window.end_time,headway:Number(f.window.headway_secs),invalid:!!f.invalid}));
+    return {language:data.language,client:data.clientName||'',date:view.date,direction:view.direction,timing:!!view.timing,compact:view.compact!==false,fallbackTiming:net.fallbackTiming,blocks,frequencies};
+  }
+  function note(model){const en=model.language==='en';return (en?'GTFS service date: ':'Date de service GTFS : ')+model.date+' · '+(model.direction==='both'?(en?'Both directions':'Les deux directions'):model.direction===''?(en?'All directions':'Toutes les directions'):(en?'Direction ':'Direction ')+model.direction)+' · '+(model.timing?(en?'Timing points only':'Points horaires seulement'):(en?'All stops':'Tous les stops'))+(model.fallbackTiming&&model.timing?(en?' (inferred from :00 seconds)':' (estimés par les secondes :00)'):'');}
+  function compactPages(model){
+    const en=model.language==='en',t=(fr,v)=>en?v:fr,routes=new Map();
+    for(const block of model.blocks){const key=block.routeId??block.route;if(!routes.has(key))routes.set(key,[]);routes.get(key).push(block);}
+    return [...routes.values()].map(blocks=>{
+      let tables='';
+      for(const block of [...blocks].sort((a,b)=>a.direction.localeCompare(b.direction)))for(let start=0;start<block.stops.length;start+=12){
+        const stops=block.stops.slice(start,start+12);
+        // A bounded width keeps every column printable. Continuations retain original headways.
+        tables+='<div class="compact-pattern"'+(stops.length<=5&&block.rows.length<=10?' style="display:inline-block;vertical-align:top;width:49%;padding-right:14px;'+(block.rightOnly?'margin-left:50%;':'')+'"':'')+'><h2>Direction '+esc(block.direction)+' · '+t('Parcours','Pattern')+' '+block.pattern+' · '+t('Points','Points')+' '+(start+1+(block.pointOffset||0))+'–'+(start+stops.length+(block.pointOffset||0))+' / '+(block.totalStops||block.stops.length)+(block.rowLabel?' · '+esc(block.rowLabel):'')+'</h2><table class="compact-timetable" style="width:'+(stops.length<=5&&block.rows.length<=10?100:Math.min(100,18+stops.length*6.83))+'%"><colgroup><col style="width:56px"><col style="width:100px">'+stops.map(()=>'<col>').join('')+'</colgroup><thead><tr><th scope="col">Headway</th><th scope="col">'+t('Voyage','Trip')+'</th>'+stops.map(label=>'<th scope="col"><div class="vertical-stop" style="height:'+(model.pairedLabelHeight||network.verticalLabelHeight(label))+'px">'+esc(label).replaceAll('\n','<br>')+'</div></th>').join('')+'</tr></thead><tbody>'+block.rows.map(row=>'<tr><td>'+network.headwayLabel(row.headway)+'</td><th scope="row">'+esc(row.id)+'</th>'+stops.map((_,i)=>'<td>'+network.clock(row.times[start+i]??null)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+      }
+      return '<section class="print-page condensed-route"><header><strong>CSched</strong><span>'+esc(model.client)+'</span></header><h1>'+esc(blocks[0].route)+'</h1><p>'+esc(note(model))+'</p><p class="note">'+t('Tous les parcours du jour sélectionné. Headway au premier point de chaque parcours ; — = premier voyage ou heure manquante. Les heures après 24:00 restent dans ce jour de service.','All patterns for the selected service day. Headway at the first point of each pattern; — = first trip or missing time. Times after 24:00 remain in this service day.')+'</p>'+tables+'</section>';
+    }).join('');
+  }
+  function pairedPages(model){
+    const routes=new Map(),en=model.language==='en';
+    for(const block of model.blocks){const key=block.routeId??block.route;if(!routes.has(key))routes.set(key,[]);routes.get(key).push(block);}
+    let html='';
+    for(const blocks of routes.values()){
+      const parts=direction=>blocks.filter(b=>b.direction===direction).flatMap(block=>{
+        const result=[];
+        for(let col=0;col<block.stops.length;col+=5)for(let row=0;row<block.rows.length;row+=8)result.push({...block,stops:block.stops.slice(col,col+5),rows:block.rows.slice(row,row+8).map(trip=>({...trip,times:trip.times.slice(col,col+5)})),pointOffset:col,totalStops:block.stops.length,rowLabel:(en?'Trips ':'Voyages ')+(row+1)+'–'+Math.min(row+8,block.rows.length)+' / '+block.rows.length});
+        return result;
+      });
+      const left=parts('0'),right=parts('1');
+      for(let page=0;page<Math.max(left.length,right.length);page++){
+        const pair=[left[page],right[page]&&{...right[page],rightOnly:!left[page]}].filter(Boolean);
+        html+=compactPages({...model,blocks:pair,pairedLabelHeight:Math.max(96,...pair.flatMap(block=>block.stops.map(network.verticalLabelHeight)))});
+      }
+      // Unspecified directions remain visible, never mixed into direction 0 or 1.
+      const other=blocks.filter(b=>!['0','1'].includes(b.direction));
+      if(other.length)html+=compactPages({...model,blocks:other});
+    }
+    return html;
+  }
+  function compactPrintStyles(){return '.compact-pattern{margin:0 0 14px}.compact-pattern h2{margin:10px 0 5px;break-after:avoid}.compact-timetable{font-size:10px}.compact-timetable th,.compact-timetable td{padding:3px 4px}.compact-timetable td{white-space:nowrap;font-variant-numeric:tabular-nums}.compact-timetable td:first-child{white-space:normal}.vertical-stop{writing-mode:vertical-rl;transform:rotate(180deg);height:180px;width:100%;text-align:left;font-size:10px;line-height:1.35;overflow-wrap:anywhere}.compact-timetable thead th{vertical-align:bottom}.condensed-route{padding:20px}.condensed-route h1{font-size:20px;margin:10px 0 4px}.condensed-route header{padding-bottom:7px}.condensed-route p{margin:5px 0}';}
+  function printHtml(model){
+    const en=model.language==='en',t=(fr,v)=>en?v:fr;
+    let pages=model.compact!==false?(model.direction==='both'?pairedPages(model):compactPages(model)):'';
+    if(model.compact===false)for(const block of model.blocks)for(let start=0;start<block.stops.length;start+=6){
+      const stops=block.stops.slice(start,start+6);
+      pages+='<section class="print-page"><header><strong>CSched</strong><span>'+esc(model.client)+'</span></header><h1>'+esc(block.route)+'</h1><p>'+esc(note(model))+'</p><h2>Direction '+esc(block.direction)+' · '+t('Parcours','Pattern')+' '+block.pattern+' · '+t('Points','Points')+' '+(start+1)+'–'+(start+stops.length)+' / '+block.stops.length+'</h2><table><colgroup><col style="width:8%"><col style="width:16%">'+stops.map(()=>'<col>').join('')+'</colgroup><thead><tr><th>Headway</th><th>'+t('Voyage','Trip')+'</th>'+stops.map(label=>'<th>'+esc(label).replaceAll('\n','<br>')+'</th>').join('')+'</tr></thead><tbody>'+block.rows.map(row=>'<tr><td>'+network.headwayLabel(row.headway)+'</td><th scope="row">'+esc(row.id)+'</th>'+stops.map((_,i)=>'<td>'+network.clock(row.times[start+i]??null)+'</td>').join('')+'</tr>').join('')+'</tbody></table><p class="note">'+t('Headway calculé au premier point du parcours : ','Headway calculated at the first point of the pattern: ')+esc(block.stops[0])+'. '+t('Les heures après 24:00 restent rattachées à ce jour de service.','Times after 24:00 remain in this service day.')+'</p></section>';
+    }
+    if(model.frequencies.length)pages+='<section class="print-page"><header><strong>CSched</strong><span>'+esc(model.client)+'</span></header><h1>'+t('Services à fréquence','Frequency-based service')+'</h1><p>'+esc(note(model))+'</p><p>'+t('Plages de service, sans départs fixes.','Service windows, not fixed departures.')+'</p><table><thead><tr>'+['Route','Direction',t('Voyage','Trip'),t('Début','Start'),t('Fin','End'),'Headway',t('État','Status')].map(v=>'<th>'+v+'</th>').join('')+'</tr></thead><tbody>'+model.frequencies.map(f=>'<tr>'+[f.route,f.direction,f.trip,f.start,f.end,f.invalid?'—':network.headwayLabel(f.headway),f.invalid?t('Données invalides','Invalid data'):t('Fréquence','Frequency')].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table></section>';
+    if(!pages)pages='<p>'+t('Aucun horaire pour ces filtres.','No timetables for these filters.')+'</p>';
+    return '<!doctype html><html lang="'+(en?'en':'fr')+'"><head><meta charset="utf-8"><title>'+esc((model.client||'CSched')+'_Timetables_'+model.date)+'</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{margin:24px;background:#f5f6f3;color:#303b35;font:12px/1.45 Arial,sans-serif}.print-page{max-width:1120px;margin:0 auto 24px;padding:28px;background:#fff;break-after:page}.print-page:last-child{break-after:auto}header{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #a3cc43;padding-bottom:12px}header strong{font-size:21px;color:#557630}h1{font-size:23px;font-weight:500;margin:16px 0 6px}h2{font-size:14px;font-weight:500}p{color:#637167}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}th,td{padding:7px;border-bottom:1px solid #dce3d7;overflow-wrap:anywhere;vertical-align:top}thead th{background:#557630;color:#fff;text-align:left}tbody th{text-align:left;font-weight:400}td{text-align:center}tr:nth-child(even){background:#f4f7ef}thead{display:table-header-group}tr{break-inside:avoid}.note{font-size:10px;white-space:pre-line}.print-controls{max-width:1120px;margin:0 auto 20px}button{padding:12px 22px;border:0;border-radius:18px 0;background:#557630;color:#fff;cursor:pointer}'+compactPrintStyles()+'@media print{body{margin:0;background:white}.print-controls{display:none}.print-page{padding:0;margin:0;max-width:none}h1,h2{break-after:avoid}}</style></head><body><div class="print-controls"><button onclick="window.print()">'+t('Imprimer / Enregistrer en PDF','Print / Save as PDF')+'</button><p>'+t('Choisissez « Enregistrer au format PDF » dans la fenêtre d’impression.','Choose “Save as PDF” in the print dialog.')+'</p></div>'+pages+'</body></html>';
+  }
+  function xlsx(model){
+    // OOXML cells are explicitly typed; client text cannot become an Excel formula.
+    const xml=value=>esc(String(value??'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'')),en=model.language==='en',t=(fr,v)=>en?v:fr;
+    const ns='http://schemas.openxmlformats.org/spreadsheetml/2006/main',rel='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const column=n=>{let s='';for(n++;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;};
+    const cell=(value,row,col,style=0)=>value===null||value===undefined?'<c r="'+column(col)+row+'" s="'+style+'"/>':typeof value==='number'?'<c r="'+column(col)+row+'" s="'+style+'"><v>'+value+'</v></c>':'<c r="'+column(col)+row+'" s="'+style+'" t="inlineStr"><is><t xml:space="preserve">'+xml(value)+'</t></is></c>';
+    const sheets=[],used=new Set();
+    function addSheet(label,headers,rows,styles){
+      if(headers.length>16384||rows.length+5>1048576)throw Error(t('Limite Excel dépassée. Réduisez les filtres.','Excel limit exceeded. Narrow the filters.'));
+      let name=label.replace(/[\\/*?:\[\]\x00-\x1f]/g,' ').replace(/^'+|'+$/g,'').trim().slice(0,31)||'Timetable',base=name,i=1;while(used.has(name.toLowerCase())){const suffix=' '+(++i);name=base.slice(0,31-suffix.length)+suffix;}used.add(name.toLowerCase());
+      const colEnd=column(headers.length-1),metadata=[(model.client?model.client+' · ':'')+label,note(model),t('Source : GTFS embarqué. Headway au premier point du parcours.','Source: embedded GTFS. Headway at the first point of the pattern.')];
+      const meta=metadata.map((value,i)=>'<row r="'+(i+1)+'" ht="'+(i===0?28:32)+'" customHeight="1">'+cell(value,i+1,0,i===0?1:0)+'</row>').join('');
+      const headerHeight=Math.min(409,Math.max(60,...headers.map(value=>String(value).split('\n').reduce((lines,line)=>lines+Math.max(1,Math.ceil(line.length/22)),0)*15+12)));
+      const head='<row r="5" ht="'+headerHeight+'" customHeight="1">'+headers.map((v,c)=>cell(v,5,c,2)).join('')+'</row>';
+      const body=rows.map((values,i)=>'<row r="'+(i+6)+'" ht="30" customHeight="1">'+values.map((v,c)=>cell(v,i+6,c,styles[c]||0)).join('')+'</row>').join('');
+      const columns=headers.map((_,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+(i===0?16:i===1?28:25)+'" customWidth="1"/>').join('');
+      sheets.push({name,text:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="'+ns+'"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:'+colEnd+(rows.length+5)+'"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane xSplit="2" ySplit="5" topLeftCell="C6" activePane="bottomRight" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="22"/><cols>'+columns+'</cols><sheetData>'+meta+head+body+'</sheetData><mergeCells count="3">'+[1,2,3].map(r=>'<mergeCell ref="A'+r+':'+colEnd+r+'"/>').join('')+'</mergeCells><pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>'});
+    }
+    for(const b of model.blocks)addSheet(b.route+' D'+b.direction+' P'+b.pattern,['Headway (min)',t('Voyage','Trip'),...b.stops],b.rows.map(r=>[r.headway===null?null:r.headway/60,r.id,...r.times.map(s=>s===null?null:s/86400)]),[4,0,...b.stops.map(()=>3)]);
+    if(model.frequencies.length)addSheet(t('Fréquences','Frequencies'),['Route','Direction',t('Voyage','Trip'),t('Début','Start'),t('Fin','End'),'Headway (min)',t('État','Status')],model.frequencies.map(f=>[f.route,f.direction,f.trip,f.start,f.end,f.invalid?null:f.headway/60,f.invalid?t('Données invalides','Invalid data'):t('Sans départs fixes','No fixed departures')]),[0,0,0,0,0,4,0]);
+    if(!sheets.length)addSheet(t('Horaires','Timetables'),[t('Résultat','Result'),t('Détail','Detail')],[[t('Aucun horaire','No timetables'),note(model)]],[0,0]);
+    const entries=[{name:'[Content_Types].xml',text:'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((_,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+'</Types>'},
+      {name:'_rels/.rels',text:'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="'+rel+'/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+      {name:'xl/workbook.xml',text:'<workbook xmlns="'+ns+'" xmlns:r="'+rel+'"><bookViews><workbookView/></bookViews><sheets>'+sheets.map((s,i)=>'<sheet name="'+xml(s.name)+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('')+'</sheets><definedNames>'+sheets.map((s,i)=>'<definedName name="_xlnm.Print_Titles" localSheetId="'+i+'">'+xml("'"+s.name.replaceAll("'","''")+"'!$1:$5")+'</definedName>').join('')+'</definedNames></workbook>'},
+      {name:'xl/_rels/workbook.xml.rels',text:'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="'+rel+'/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+'<Relationship Id="styles" Type="'+rel+'/styles" Target="styles.xml"/></Relationships>'},
+      {name:'xl/styles.xml',text:'<styleSheet xmlns="'+ns+'"><numFmts count="2"><numFmt numFmtId="164" formatCode="[h]:mm:ss"/><numFmt numFmtId="165" formatCode="0.##"/></numFmts><fonts count="3"><font><sz val="11"/><name val="Calibri"/><color rgb="FF303B35"/></font><font><sz val="16"/><name val="Calibri"/><b/><color rgb="FF557630"/></font><font><sz val="11"/><name val="Calibri"/><b/><color rgb="FFFFFFFF"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF557630"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'},...sheets.map((s,i)=>({name:'xl/worksheets/sheet'+(i+1)+'.xml',text:s.text}))];
+    return reportPackageTools().zip(entries,{allowPaths:true});
+  }
+  return {build,printHtml,xlsx};
+}

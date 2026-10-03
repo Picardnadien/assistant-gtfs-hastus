@@ -10,6 +10,10 @@ const fields = {
 };
 const context = vm.createContext({window:{}, document:{getElementById:id=>fields[id]||{value:''}}, console, URL});
 vm.runInContext(fs.readFileSync(path.join(root, 'report-package.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(root, 'report-network.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(root, 'report-payload.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(root, 'report-network-document.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(root, 'report-timetable-export.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'report-editor.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'app.js'), 'utf8').split('const decisionList=')[0], context);
 const engine = context.reportEditorEngine, parse = context.parseCSV;
@@ -70,6 +74,10 @@ settingsContext.restoreWorkspaceSnapshot(savedWorkspace);
 assert.equal(settingsContext.placeCodeMaxLength(),8);
 assert.equal(settingsContext.workspaceSnapshot().settings.placeCodeMaxLength,8);
 assert.equal(settingsContext.workspaceSnapshot().settings.placeCodeCase,'lower');
+settingsFields['place-report-html-theme'].value='classic';
+assert.equal(settingsContext.workspaceSnapshot().settings.placeReportHtmlTheme,'classic');
+settingsContext.restoreWorkspaceSnapshot({...savedWorkspace,settings:{...savedWorkspace.settings,placeReportHtmlTheme:'clean'}});
+assert.equal(settingsFields['place-report-html-theme'].value,'clean');
 assert.equal(settingsContext.groupValidationIssues().length,0);
 assert.doesNotThrow(()=>settingsContext.buildExports());
 settingsContext.restoreWorkspaceSnapshot({...savedWorkspace,settings:{placeCodeCase:'lower'}});
@@ -187,14 +195,28 @@ vm.runInContext(`
 `, context);
 const out=path.join(root,'tmp'); fs.mkdirSync(out,{recursive:true});
 for(const limit of [6,8])for(const lang of ['fr','en']){
+  fields['place-report-html-theme']={value:lang==='fr'?'classic':'clean'};
   fields['place-report-hide-file-exports']={checked:lang==='fr'};
   fields['place-code-max-length'].value=String(limit);
   fields['place-report-language'].value=lang;
   const html=context.placeBrowserReportHtmlWithMaps('',[]);
+  assert.ok(html.includes('id="place-code-layout"'));
+  assert.ok(html.includes('.place-code{min-width:190px;flex-shrink:0}'));
   const payload=JSON.parse(html.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
   assert.equal(payload.language,lang); assert.equal(payload.places.length,3);
   assert.equal(payload.placeCodeMaxLength,limit);
   assert.equal(payload.hideFileExports,lang==='fr');
+  assert.equal(payload.reportTheme,lang==='fr'?'classic':'clean');
+  assert.ok(html.includes('<body class="'+payload.reportTheme+'-report">'));
+  assert.ok(html.includes('function reportTimetableExportTools'));
+  assert.equal(payload.networkMaps,undefined);
+  assert.ok(!html.includes('href="#network-report"'));
+  const withRoad=context.reportRouteMapPayload(payload,[{tags:{highway:'residential',name:'Test & Road'},geometry:[{lat:47.564,lon:-52.715},{lat:47.565,lon:-52.7145}]}],lang);
+  assert.match(withRoad[0].html,/class="osm-road minor"/);
+  assert.match(withRoad[0].html,/Test &amp; Road/);
+  assert.ok(html.includes('function mountReportNetwork'));
+  assert.ok(html.includes('data-report-module="network"'));
+  assert.ok(html.includes('data-report-module="places"'));
   assert.equal(html.includes('id="download-client-stops"'),lang!=='fr');
   assert.equal(html.includes('id="download-client-times"'),lang!=='fr');
   assert.ok(html.includes('id="download-client-package"'));
@@ -204,7 +226,7 @@ for(const limit of [6,8])for(const lang of ['fr','en']){
   assert.ok(html.includes(`data-place-code maxlength="${limit}"`));
   assert.equal(engine(payload,{}).errors.length,0);
   assert.ok(html.includes('id="save-client-report"'));
-  assert.ok(!html.includes('<iframe')); assert.ok(!html.includes('tile.openstreetmap.org/'));
+  assert.ok(!html.replace(/<script\b[\s\S]*?<\/script>/g,'').includes('<iframe')); assert.ok(!html.includes('tile.openstreetmap.org/'));
   const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
   assert.equal(scripts.length,1); new vm.Script(scripts[0][1]);
   fs.writeFileSync(path.join(out,`report-editor-${limit}-${lang}.html`),html);
@@ -216,7 +238,12 @@ for(const limit of [6,8])for(const lang of ['fr','en']){
     fs.writeFileSync(path.join(out,'report-editor-candidate-only.html'),html.replace(/(<script id="report-data" type="application\/json">)[\s\S]*?(<\/script>)/,(_,start,end)=>start+context.inlineJson(extended)+end));
   }
   const online=context.placeBrowserReportHtmlWithMaps('');
-  const frames=[...online.matchAll(/<iframe\b[^>]*>/g)].map(match=>match[0]);
+  const onlinePayload=JSON.parse(online.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(onlinePayload.networkMaps,undefined);
+  const routeMaps=context.reportRouteMapPayload(onlinePayload,null,lang);
+  assert.match(routeMaps[0].html,/<iframe[^>]*\binert\b/);
+  assert.match(routeMaps[0].html,/network-map-canvas/);
+  const frames=[...online.replace(/<script\b[\s\S]*?<\/script>/g,'').matchAll(/<iframe\b[^>]*>/g)].map(match=>match[0]);
   assert.equal(frames.length,3);
   for(const frame of frames){
     assert.match(frame,/\binert\b/);
@@ -255,6 +282,11 @@ if (process.argv[2]) {
   `,context);
   const html=context.placeBrowserReportHtmlWithMaps('',[]);
   const payload=JSON.parse(html.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  const network=context.reportNetworkTools().create(payload),routeMaps=network.routeModels();
+  assert.ok(network.hasCalendar);assert.ok(network.schedules(network.start,'','',false).tripCount>0);
+  assert.equal(payload.networkMaps,undefined);
+  assert.ok(routeMaps.some(route=>route.lines.length>0));
+  console.log('PASS Metrobus network: '+routeMaps.length+' route maps; calendar '+network.start+' to '+network.end);
   const a=payload.places.find(p=>p.code==='FREPAR'), b=payload.places.find(p=>p.code==='MILITA');
   const corrected=engine(payload,{places:[{key:a.key,code:'Parade',description:'Parade / Harvey'}],assignments:{1850:b.key}});
   assert.equal(corrected.errors.length,0);

@@ -53,6 +53,18 @@ l'état nécessaire à la reprise. Après une affectation ou un renommage,
 dès que les données sont valides. Les espaces récemment ouverts apparaissent
 dans la liste de reprise.
 
+Les nouvelles sauvegardes locales écrivent et relisent l’état par blocs pour
+éviter la limite « Invalid string length » sur les gros GTFS. Le fichier
+`.hastus-workspace.json` reste dans le même dossier ; les anciennes sauvegardes
+sont toujours lisibles. Utiliser cette version de l’Assistant (ou une version
+ultérieure) pour rouvrir le nouveau format. Une écriture interrompue avant sa
+validation conserve le précédent fichier d’état. Les fichiers `original/`
+ne sont pas modifiés par cette évolution.
+
+Tests de sauvegarde : `node tests/workspace-storage.test.cjs` et
+`node tests/workspace-save.test.cjs`. Pour vérifier un GTFS extrait sans modifier
+ses fichiers : `node --expose-gc tests/workspace-real-gtfs.test.cjs "CHEMIN_DU_GTFS"`.
+
 L'accès direct au dossier repose sur le sélecteur sécurisé du navigateur : le
 navigateur demande toujours à l'utilisateur de choisir ou d'autoriser le
 dossier. Si cette fonction n'est pas disponible, la sauvegarde dans le
@@ -355,12 +367,18 @@ et n'affiche que les heures de passage aux timing points. `routes.txt`,
 `trips.txt` et `stop_times.txt` doivent être présents dans le GTFS chargé pour
 produire les grilles par route.
 
-### Thème simplifié Gen Z
+### Apparence et langue de l'accueil
 
-Un interrupteur permanent dans l'en-tête active une interface plus visuelle,
-avec des commandes plus grandes, des cartes arrondies et une hiérarchie plus
-directe, sans supprimer aucune fonction. Le choix est conservé localement et
-dans les sauvegardes de travail.
+Le menu permanent **Apparence** propose trois styles : **Classique**, **Gen Z**
+et **Épuré compact**. Ce dernier réduit l'en-tête, utilise une palette olive/lime
+et des boutons à coins arrondis en diagonale, avec les sources et l'espace de
+travail côte à côte lorsque la largeur le permet. Les fonctions sont conservées.
+
+Le sélecteur **Langue de l'accueil** traduit l'en-tête, la navigation, les choix
+de sources et de contexte en français ou en anglais. Les écrans d'analyse
+existants ne sont pas entièrement traduits. La langue des rapports demeure un
+réglage indépendant. L'apparence et la langue sont conservées localement et
+dans les sauvegardes de travail ; les anciennes sauvegardes restent compatibles.
 
 ## Résultats
 
@@ -430,6 +448,128 @@ et les corrections de places restent disponibles. Lancez l'outil avec
 `launch_windows.bat` : le serveur local relaie les requêtes de données OSM et
 essaie automatiquement un second fournisseur si le premier est indisponible.
 
+### Rapport HTML — diagnostic des clients existants
+
+Après l’analyse d’un client existant (GTFS + export HASTUS, ou versions de routes
++ liste de stops HASTUS), le panneau **Rapport de validation** propose aussi
+**Rapport HTML · Diagnostic HASTUS**. Ce rapport autonome en consultation seule
+reprend les options FR/EN, de thème et de cartes fixes en ligne ou hors ligne.
+Il ne remplace pas le rapport modifiable de validation des places.
+
+Les références trop éloignées ou introuvables apparaissent en premier, avec
+les places concernées, les stops physiques, la distance, le seuil et une
+recommandation. Toutes les places sont ensuite classées par priorité : références
+suspectes, données incomplètes, regroupements, affectations, créations, stops non TP
+à vérifier et absence d’intervention détectée. Une place n’est comptée qu’une
+fois, mais conserve tous ses types d’alerte et apparaît dans chaque filtre pertinent.
+Les codes sont triés dans chaque catégorie. Les places sans coordonnées sont
+conservées avec un avertissement plutôt qu’exclues du rapport.
+
+Les affectations HASTUS actuelles et les propositions de l’Assistant sont
+présentées séparément : aucune modification n’est appliquée par ce diagnostic.
+Le sommaire cliquable, la recherche et les filtres facilitent la revue ; les
+fiches sont paginées par 12 et les cartes chargées à l’ouverture des fiches.
+Les horaires GTFS ne sont pas dupliqués dans ce rapport. Les cas sans alerte ne
+constituent pas une validation automatique des choix opérationnels du client.
+
+Test : `node tests/report-existing.test.cjs`.
+
+### Module indépendant : cartes des routes et timetables
+
+Le panneau **Cartes des routes et timetables**, sous le choix du contexte,
+ouvre un module autonome en pleine largeur ou télécharge son propre rapport HTML.
+Il utilise le GTFS chargé, sans nécessiter d’analyse géographique ni de génération
+de places. Ses options de langue (FR/EN), thème et cartes sont indépendantes.
+Le rapport HTML client propose également deux sections via des boutons en haut :
+**Places à valider** et **Routes et timetables**. Les listes, compteurs et filtres
+de validation concernent uniquement les places. Le réseau est chargé seulement
+à l’ouverture de sa section ; la première route est sélectionnée pour éviter
+d’afficher d’un coup tous les horaires d’un grand réseau. Le filtre permet ensuite
+de choisir une autre route ou toutes les routes.
+Les rapports HTML déjà téléchargés doivent être régénérés pour cette séparation.
+
+Pour les gros GTFS, les horaires et fichiers annexes sont intégrés en CSV gzip,
+sans perte, au lieu de millions d’objets JSON. Ils sont décompressés seulement
+pour consulter le réseau ou exporter. Les exports GTFS sont préparés dans un
+worker, hors du traitement de l’interface ; aucune connexion n’est nécessaire.
+Les menus d’affectation chargent leurs alternatives triées par distance à leur
+ouverture, et les fiches hors écran ne sont pas peintes immédiatement.
+Utiliser une version récente de Chrome ou Edge permettant les flux gzip et les
+workers locaux. La génération des fonds OSM nécessite toujours Internet.
+
+Le module réseau comprend :
+
+- filtre par **date de service**, route et direction, boutons veille/lendemain ;
+- mode par défaut **Vue condensée · tous les parcours / Condensed view · all patterns**,
+  avec **Les deux directions / Both directions** : directions 0 et 1 côte à
+  côte sur une même ligne, avec défilement horizontal sur écran étroit et des headways indépendants.
+  Une direction non renseignée reste signalée séparément. Les parcours du jour
+  sélectionné sont tous affichés, avec des colonnes étroites et des libellés de
+  timing points verticaux. Décocher la vue condensée rétablit les grandes grilles ;
+- prise en compte de `calendar.txt` et des ajouts/suppressions de
+  `calendar_dates.txt`, y compris un GTFS avec uniquement ce dernier fichier ;
+- grilles par parcours (séquence de stops) avec un voyage par ligne et un
+  timing point par colonne, les
+  noms complets et les codes/descriptions des places présentes dans le GTFS ;
+- colonne **Headway** à gauche : intervalle avec le voyage précédent au premier
+  stop affiché du même parcours, en minutes et secondes si nécessaire. Le
+  premier voyage ou une heure manquante affiche `—`. Le calcul respecte les
+  filtres et les heures GTFS au-delà de 24 h ;
+- affichage des seuls timing points par défaut, avec une case pour afficher
+  tous les stops. Les TP viennent de la source choisie dans l'Assistant ;
+  sans indicateur `timepoint`, l'estimation par secondes `:00` est signalée ;
+- conservation des heures après minuit, par exemple `25:02:00`, dans leur jour
+  de service GTFS, sans les déplacer au lendemain ;
+- départs fixes de `frequencies.txt` développés lorsque `exact_times=1` ; sinon
+  affichage des plages et intervalles sans inventer des départs à heure fixe ;
+- une carte fixe par route avec tous ses shapes et les coordonnées physiques
+  de ses stops. Cette carte représente toute la route et ne change pas avec la
+  date. Sans `shapes.txt`, seuls les stops sont affichés.
+
+En mode hors ligne, les fonds OSM des routes sont préparés à la génération,
+comme ceux des places. La génération nécessite Internet et peut prendre plus
+de temps pour un grand réseau. Les cartes SVG et les données horaires sont
+ensuite intégrées au HTML sans scripts externes ; les filtres fonctionnent
+hors ligne. En mode connecté, les fonds OSM restent fixes et non manipulables.
+
+Les noms et associations proviennent du GTFS chargé, y compris les places déjà
+présentes dans ce fichier. Pour consulter des corrections retournées par le client,
+chargez son GTFS finalisé dans l’Assistant. Le module est en consultation seule :
+il ne modifie ni les places ni le GTFS. **Enregistrer le rapport HTML** conserve
+la date et les filtres sélectionnés dans une nouvelle copie du rapport réseau.
+Sans calendrier exploitable, les horaires par date sont indisponibles et un
+message l'indique ; les cartes restent accessibles. Les seuls exports de
+versions de routes HASTUS ne fournissent pas les horaires datés d'un GTFS.
+
+Les boutons **Exporter Excel** et **Exporter PDF** utilisent la date, la route,
+la direction et le choix « points horaires seulement » du rapport. Ils reprennent
+les noms de places et affectations du GTFS chargé, sans changer les heures.
+
+- **Excel** télécharge un vrai fichier `.xlsx`, utilisable hors ligne, avec une
+  feuille par parcours/direction et une feuille pour les plages de fréquence.
+  Les identifiants restent du texte, les heures des valeurs Excel au format
+  `[h]:mm:ss` (donc sans retour à zéro après 24 h), les headways des minutes
+  numériques. Les en-têtes et deux premières colonnes sont figés.
+- **PDF** ouvre un aperçu épuré dans le rapport. Cliquer sur
+  **Imprimer / Enregistrer en PDF**, puis choisir **Enregistrer au format PDF**
+  dans le navigateur. Les pages sont en A4 paysage. En vue condensée (par défaut),
+  les directions 0 et 1 sont présentées sur la même ligne, avec les noms complets
+  des timing points verticaux. Pour rester lisibles, les grilles sont réparties
+  en blocs de cinq points et huit voyages par direction ; les plages de points
+  et voyages sont indiquées. Tous les blocs sont conservés, même si une direction
+  en compte davantage que l’autre. Les directions non renseignées restent séparées.
+  Un filtre sur une seule direction utilise jusqu’à douze points par bloc
+  (six en vue détaillée), avec Voyage et Headway répétés. Le headway
+  reste calculé au premier point du parcours complet, pas au début de chaque bloc.
+- Les services à fréquence sans départs fixes restent une liste de plages et
+  d'intervalles dans les exports, sans inventer d'horaires précis.
+
+Dans les options de génération, **Thème du rapport HTML** propose **Épuré compact**
+(blanc, olive et lime, boutons à coins diagonaux) ou **Classique**. Ce choix est
+indépendant du thème de l'application et de la langue. Il est conservé dans la
+sauvegarde de travail, le HTML corrigé et le ZIP de retour. Les exports de timetables
+utilisent toujours le style épuré. Les anciens rapports doivent être régénérés.
+
 ### Corrections du client dans le rapport HTML
 
 Régénérez le rapport après une mise à jour de l'Assistant : les anciens fichiers
@@ -443,6 +583,12 @@ le rapport HTML exporté. Les sauvegardes anciennes utilisent 6 caractères par
 défaut. Changer ce réglage ne renomme ni ne tronque les places existantes : après
 un retour de 8 à 6, les codes trop longs sont signalés et doivent être corrigés
 avant l'export. Le réglage de casse reste indépendant.
+
+Les champs de code et la vue de regroupement sont élargis pour afficher huit
+caractères sans les couper, dans les trois thèmes. Les cartouches et la navigation
+des nouveaux rapports HTML disposent également de plus de largeur. Les codes
+et leur casse ne sont pas modifiés ; régénérer les anciens rapports pour profiter
+de cette présentation.
 
 Dans chaque fiche, le client peut modifier le code (1 à 6 ou 1 à 8 lettres ou
 chiffres selon le choix initial, casse conservée) et la description de la place. La liste « Place attribuée » de
@@ -507,11 +653,17 @@ validation GTFS complète ni la revue du format d'import HASTUS du client.
 Les fonctions de l'éditeur et de préparation de l'archive sont dans
 `report-editor.js` et `report-package.js`, intégrées au HTML exporté : aucun
 script externe n'est nécessaire chez le client. Tests :
-`node tests/report-editor.test.cjs`, `node tests/report-package.test.cjs`, puis
+`node tests/report-editor.test.cjs`, `node tests/report-network.test.cjs`,
+`node tests/report-timetable-export.test.cjs`,
+`node tests/report-package.test.cjs`, puis
 `python tests/verify-report-package.py` (vérification indépendante des ZIP).
 Test optionnel sur Metrobus : ajouter le chemin
 de `googleFall2026November.zip` en argument (Python requis ; variable `PYTHON`
 possible pour indiquer son exécutable).
+
+Les exports de timetables sont embarqués depuis `report-timetable-export.js`.
+`python tests/verify-timetable-xlsx.py` vérifie indépendamment les fichiers XLSX
+de test avec `openpyxl` (lecture seule), leurs valeurs, styles et relations XML.
 
 Le prototype ne modifie jamais les fichiers sources.
 #   a s s i s t a n t - g t f s - h a s t u s - w i n d o w s  

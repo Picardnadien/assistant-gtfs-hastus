@@ -1,0 +1,11 @@
+/* Leave room for eight-character codes without changing their case or value. */
+main{max-width:1420px}
+.group-fields{grid-template-columns:minmax(220px,1fr) 180px minmax(230px,.8fr)}
+.group-fields>label{min-width:0}
+.group-fields .code-input,.new-name input{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:16px;letter-spacing:.06em}
+.new-name{flex-wrap:wrap}
+.new-name input{width:164px;flex:0 0 164px;max-width:100%}
+#existing-report-note{grid-column:1/-1}
+.place-report-actions{flex-wrap:wrap}
+@media(max-width:1100px){.group-fields{grid-template-columns:minmax(0,1fr) 180px}.group-fields .proposal-list{grid-column:1/-1}}
+@media(max-width:700px){.group-fields{grid-template-columns:minmax(0,1fr)}.group-fields .code-input{max-width:220px}}

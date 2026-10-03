@@ -60,8 +60,10 @@ function reportEditorEngine(data, edits, serializeOutput = true, withCompleteGtf
     stops.push(row);
   }
   const outputIds = new Set(stops.map(row => row.stop_id));
-  if (outputIds.size !== stops.length || stops.some(row => row.parent_station && !outputIds.has(row.parent_station)) || data.gtfs.times.rows.some(row => !outputIds.has(renames.get(row.stop_id) ?? row.stop_id))) errors.push('brokenReferences');
+  const timeIds=data.gtfs.times.stopIds||new Set(data.gtfs.times.rows.map(row=>row.stop_id));
+  if (outputIds.size !== stops.length || stops.some(row => row.parent_station && !outputIds.has(row.parent_station)) || [...timeIds].some(id => !outputIds.has(renames.get(id) ?? id))) errors.push('brokenReferences');
   if (!serializeOutput) return {errors: [...new Set(errors)], places, assignments, externalFileChanges};
+  if(data.gtfs.times.packedCsv)throw Error('GTFS payload must be expanded before export.');
   const times = data.gtfs.times.rows.map(row => ({...row, stop_id: renames.get(row.stop_id) ?? row.stop_id}));
   const csv = value => {const text = String(value ?? ''); return /[",\r\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;};
   const serialize = (columns, values) => [columns.map(csv).join(','), ...values.map(row => columns.map(column => csv(row[column])).join(','))].join('\r\n') + '\r\n';
@@ -121,6 +123,21 @@ function placeReportEditorRuntime() {
   const assigned = id => edits.assignments[id] ?? data.assignments[id];
   const points = data.points || [];
   const controls = reportEditorControls(data,edits,data.undoHistory||[]);
+  // Place validation is intentionally independent of the routes/timetables module.
+  const network=null;
+  let networkFrame=null,networkRevision='';
+  document.querySelectorAll('[data-report-module]').forEach(button=>button.addEventListener('click',()=>{
+    const isNetwork=button.dataset.reportModule==='network';document.body.classList.toggle('show-network',isNetwork);
+    document.querySelectorAll('[data-report-module]').forEach(node=>node.setAttribute('aria-pressed',String(node===button)));
+    if(!isNetwork)return;
+    let section=document.getElementById('report-network-section');if(!section){section=document.createElement('section');section.id='report-network-section';document.querySelector('main').append(section);}
+    const revision=JSON.stringify(edits);
+    if(networkFrame&&revision===networkRevision)return;
+    networkRevision=revision;networkFrame=document.createElement('iframe');networkFrame.title=message('Routes et timetables','Routes and timetables');
+    networkFrame.srcdoc=reportNetworkDocumentHtml({...data,places:data.places.map(p=>currentPlace(p.key)),assignments:{...data.assignments,...edits.assignments},lazyNetwork:true});
+    section.replaceChildren(networkFrame);
+  }));
+  window.addEventListener('message',event=>{if(event.source===networkFrame?.contentWindow&&event.data?.type==='csched-network-view')data.networkView=event.data.view;});
   // Report labels may be HASTUS stop codes; export IDs must remain exact GTFS IDs.
   for (const row of document.querySelectorAll('[data-stop-row]')) {
     const point = points.find(p => p.label === row.dataset.stopId || p.id === row.dataset.stopId);
@@ -140,7 +157,7 @@ function placeReportEditorRuntime() {
     if (point) {row.dataset.candidateStop = point.id; row.querySelector('[data-candidate-place]').dataset.candidatePlace = point.id;}
   }
   const distance = controls.distance;
-  function fillAssignment(select,id) {
+  function fillAssignment(select,id,full=false) {
     const point=points.find(p=>p.id===id);if(!point)return;
     select.dataset.assignmentId=id;
     select.replaceChildren();
@@ -148,7 +165,9 @@ function placeReportEditorRuntime() {
       const option=document.createElement('option');option.value='__keep__';
       option.textContent=message('Conserver : ','Keep: ')+(point.parent||message('sans place','no place'));select.append(option);
     }
-    for(const place of controls.options(point)){
+    const selected=currentPlace(assigned(id));
+    const choices=full?controls.options(point):selected.key?[{...selected,distance:distance(point,selected)}]:[];
+    for(const place of choices){
       const option=document.createElement('option');option.value=place.key;
       option.textContent=place.code+' · '+place.description+' — '+(Number.isFinite(place.distance)?Math.round(place.distance).toLocaleString(en?'en-CA':'fr-CA')+' m':message('distance inconnue','unknown distance'));
       select.append(option);
@@ -191,6 +210,7 @@ function placeReportEditorRuntime() {
       if(undo){undo.disabled=!controls.canUndo(key);undo.title=message('Annuler la dernière modification faite depuis cette fiche. Si ce stop a été modifié ensuite ailleurs, annuler d’abord cette modification.','Undo the last edit made from this card. If this stop was edited elsewhere afterwards, undo that edit first.');}
     }
     refreshReview();
+    network?.refresh();
   }
   function refreshReview(force=false, savedAt=data.savedAt) {
     const changes=packageTools.changes(data,edits),show=force||Boolean(data.edits)||dirty||changes.places.length>0||changes.stops.length>0;
@@ -312,6 +332,8 @@ function placeReportEditorRuntime() {
   search.addEventListener('input', applyFilter);
   let activeInput=null;
   document.addEventListener('focusout',()=>{activeInput=null;});
+  document.addEventListener('focusin',event=>{if(event.target.matches('[data-stop-assignment]'))fillAssignment(event.target,event.target.dataset.assignmentId,true);});
+  document.addEventListener('focusout',event=>{if(event.target.matches('[data-stop-assignment]'))fillAssignment(event.target,event.target.dataset.assignmentId);});
   document.addEventListener('input', event => {
     if (!event.target.matches('[data-place-code],[data-place-description]')) return;
     const key = event.target.closest('[data-report-place]').dataset.placeKey;
@@ -340,13 +362,19 @@ function placeReportEditorRuntime() {
     card.querySelector('[data-place-code]').value = p.code;
     card.querySelector('[data-place-description]').value = p.description;
   }
-  document.getElementById('download-client-stops')?.addEventListener('click', () => {validate(); if (!corrected.errors.length) download('stops.txt', reportEditorEngine(data, edits).stops, 'text/csv;charset=utf-8');});
-  document.getElementById('download-client-times')?.addEventListener('click', () => {validate(); if (!corrected.errors.length) download('stop_times.txt', reportEditorEngine(data, edits).times, 'text/csv;charset=utf-8');});
+  for(const [id,kind,name] of [['download-client-stops','stops','stops.txt'],['download-client-times','times','stop_times.txt']])document.getElementById(id)?.addEventListener('click',async()=>{
+    validate();if(corrected.errors.length)return;const button=document.getElementById(id);button.disabled=true;
+    try{download(name,await reportPayloadWorker(data,edits,kind),'text/csv;charset=utf-8');}catch(error){status.textContent=error.message;}finally{validate();}
+  });
   function editedHtml(savedAt) {
     // Persist in the downloaded document, not file:// localStorage (browser-dependent).
     refreshReview(true,savedAt);
     const snapshot = {...data, edits, undoHistory:controls.history, savedAt};
     const clone = document.documentElement.cloneNode(true);
+    clone.classList.remove('show-network');clone.querySelector('body').classList.remove('show-network');clone.querySelector('#report-network-section')?.remove();
+    clone.querySelectorAll('[data-report-module]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.reportModule==='places')));
+    // Persist only the selected option. Alternatives are populated when a menu is opened.
+    clone.querySelectorAll('[data-stop-assignment]').forEach(select=>{const id=select.dataset.assignmentId||select.closest('[data-stop-row]')?.dataset.stopId,target=assigned(id)||'__keep__';select.querySelectorAll('option').forEach(option=>{if(option.value!==target)option.remove();else option.setAttribute('selected','');});});
     const packageButton=clone.querySelector('#download-client-package');
     if(packageButton){packageButton.textContent=message('Télécharger le ZIP de retour client','Download client-return ZIP');packageButton.disabled=corrected.errors.length>0||!packageAvailability.ready;}
     clone.querySelector('#report-data').textContent = JSON.stringify(snapshot).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
@@ -364,8 +392,7 @@ function placeReportEditorRuntime() {
     button.disabled=true;button.textContent=message('Préparation du ZIP…','Preparing ZIP…');
     try {
       await new Promise(resolve=>setTimeout(resolve,30));
-      const savedAt=new Date().toISOString(),result=reportEditorEngine(data,edits,true,true);
-      const feed=packageTools.files(data,result),gtfsZip=packageTools.zip(feed);
+      const savedAt=new Date().toISOString(),gtfsZip=await reportPayloadWorker(data,edits,'zip');
       const summary=packageTools.changes(data,edits);
       const bundle=packageTools.zip([
         {name:data.filename+(en?'_edited.html':'_corrige.html'),text:editedHtml(savedAt)},

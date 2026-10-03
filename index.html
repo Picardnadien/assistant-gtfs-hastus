@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Passerelle GTFS · HASTUS</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="clean-theme.css?v=42">
+  <link rel="stylesheet" href="place-code-layout.css?v=50">
 </head>
 <body>
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
@@ -12,7 +14,8 @@
     <span>Sous Windows, fermez cette page puis lancez <code>launch_windows.bat</code>. L’application doit s’ouvrir sur une adresse commençant par <code>http://127.0.0.1:</code>, et non par <code>file:///</code>.</span>
   </aside>
   <header class="hero">
-    <div class="hero-top"><div class="brand"><span class="brand-mark">H</span><span>HASTUS · OUTILS</span></div><label class="theme-switch"><input id="genz-theme" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><b>Mode Gen Z</b><small>Simple + visuel</small></span></label></div>
+    <div class="hero-top"><div class="brand"><span class="brand-mark">CSched</span><span>Assistant GTFS → HASTUS</span></div><div class="app-preferences"><label>Langue de l’accueil<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="classic">Classique</option><option value="genz">Gen Z</option><option value="clean">Épuré compact</option></select></label></div><label class="legacy-theme-toggle" hidden><input id="genz-theme" type="checkbox">Gen Z</label></div>
+    <div class="clean-copy"><h1>Votre réseau, plus simplement.</h1><p>Rassemblez vos données. Préparez la suite dans HASTUS.</p></div>
     <div class="hero-copy">
       <p class="eyebrow">PASSERELLE DE DONNÉES</p>
       <h1>Rattacher les points horaires<br>sans multiplier les places.</h1>
@@ -91,6 +94,17 @@
       </div>
     </section>
 
+    <section id="network-module" class="panel" aria-labelledby="network-module-title">
+      <div class="section-heading"><div><p class="eyebrow">MODULE INDÉPENDANT</p><h2 id="network-module-title">Cartes des routes et timetables</h2></div><p>Consultation du GTFS chargé, séparée de la validation des places. Deux directions côte à côte, filtres calendrier et exports Excel / PDF.</p></div>
+      <div class="place-report-options">
+        <label><span>Langue / Language</span><select id="network-language"><option value="fr">Français</option><option value="en">English</option></select></label>
+        <label><span>Thème / Theme</span><select id="network-theme"><option value="clean">Épuré compact / Clean</option><option value="classic">Classique / Classic</option></select></label>
+        <label><span>Cartes / Maps</span><select id="network-map-mode"><option value="offline">Fixes, hors ligne / Fixed, offline</option><option value="online">Connexion Internet / Online</option></select></label>
+      </div>
+      <p>Requis : stops.txt, stop_times.txt, routes.txt et trips.txt. Un calendrier est nécessaire pour les horaires ; shapes.txt est facultatif pour les cartes. Aucune génération de places n’est requise.</p>
+      <div class="place-report-actions"><button id="open-network-module" type="button" class="primary">Ouvrir le module / Open module</button><button id="download-network-report" type="button" class="secondary">Télécharger le HTML / Download HTML</button><span id="network-module-status" role="status"></span></div>
+    </section>
+
     <section id="source-section" class="panel hidden">
       <div class="section-heading">
         <div><p class="eyebrow">DONNÉES HASTUS</p><h2 id="hastus-source-title">Liste de stops et places</h2></div>
@@ -153,6 +167,7 @@
         <div class="place-report-copy"><p class="eyebrow">RAPPORT DE VALIDATION</p><h3 id="place-report-title">Une place par page, prête à valider avec le client</h3><small>Une synthèse classe d’abord les places par besoin de décision. Chaque fiche présente ensuite le nom, le code, les stops associés, les stops en dehors du périmètre et une carte OpenStreetMap.</small></div>
         <div class="place-report-options">
           <label><span>Langue du rapport</span><select id="place-report-language"><option value="fr">Français</option><option value="en">English</option></select></label>
+          <label><span>Thème du rapport HTML</span><select id="place-report-html-theme"><option value="clean" selected>Épuré compact</option><option value="classic">Classique</option></select><small>Le thème choisi est intégré au fichier HTML et conservé dans le rapport corrigé.</small></label>
           <label><span>Disposition</span><select id="place-report-orientation"><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select></label>
           <label><span>Cartes du rapport HTML</span><select id="place-report-html-map-mode"><option value="offline" selected>Fixes et disponibles hors ligne</option><option value="online">Cadrage fixe avec connexion Internet</option></select><small>Zoom et déplacement désactivés dans les deux modes. Le mode hors ligne intègre un fond vectoriel OSM dans le fichier lors de sa génération.</small></label>
           <label class="place-report-nearby"><input id="place-report-nearby" type="checkbox" checked><span>Inclure les stops proches hors périmètre</span></label>
@@ -160,7 +175,8 @@
           <label><span>Marge hors rayon</span><select id="place-report-margin"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="500">500 m</option></select></label>
           <label class="client-logo-picker"><span>Logo du client (facultatif)</span><input id="client-logo-file" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 3 Mo maximum. Il remplace l’identité trouvée dans agency.txt.</small></label>
         </div>
-        <div class="place-report-actions"><div id="client-brand-status" class="client-brand-status"></div><button id="clear-client-logo" type="button" class="secondary hidden">Utiliser agency.txt</button><button id="download-place-html" type="button" class="secondary">Télécharger le rapport HTML</button><button id="print-place-report" type="button" class="primary">Ouvrir le rapport PDF</button></div>
+        <p id="existing-report-note" class="hidden">Client existant : le diagnostic HTML présente les références suspectes et toutes les places classées par type de validation, avec recherche et cartes. Il est en consultation seule ; le rapport HTML de validation des places reste disponible séparément. Les options de langue, de thème et de cartes ci-dessus s’appliquent aux deux rapports.</p>
+        <div class="place-report-actions"><div id="client-brand-status" class="client-brand-status"></div><button id="clear-client-logo" type="button" class="secondary hidden">Utiliser agency.txt</button><button id="download-existing-html" type="button" class="primary hidden">Rapport HTML · Diagnostic HASTUS</button><button id="download-place-html" type="button" class="secondary">Télécharger le rapport HTML</button><button id="print-place-report" type="button" class="primary">Ouvrir le rapport PDF</button></div>
       </section>
       <div id="export-bar" class="export-bar">
         <div><strong id="export-title">Prêt à exporter</strong><small id="export-detail"></small></div>
@@ -169,8 +185,16 @@
     </section>
   </main>
   <footer>Prototype de préparation · aucune écriture directe dans HASTUS</footer>
-  <script src="report-package.js?v=39"></script>
-  <script src="report-editor.js?v=40"></script>
-  <script src="app.js?v=41"></script>
+  <script src="report-package.js?v=44"></script>
+  <script src="report-payload.js?v=47"></script>
+  <script src="report-network.js?v=47"></script>
+  <script src="report-timetable-export.js?v=46"></script>
+  <script src="report-network-document.js?v=47"></script>
+  <script src="report-editor.js?v=47"></script>
+  <script src="app-shell.js?v=42"></script>
+  <script src="workspace-storage.js?v=48"></script>
+  <script src="report-existing.js?v=49"></script>
+  <script src="app.js?v=50"></script>
+  <script>initAppShell();</script>
 </body>
 </html>

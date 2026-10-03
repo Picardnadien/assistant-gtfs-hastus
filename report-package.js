@@ -103,7 +103,7 @@ function reportPackageTools() {
     const table=(heading,rows)=>`<h3>${heading}</h3>${rows?`<div class="table-scroll"><table><thead><tr><th>${t('Élément','Item')}</th><th>${t('Avant — rapport initial','Before — initial report')}</th><th>${t('Après — choix du client','After — client choices')}</th></tr></thead><tbody>${rows}</tbody></table></div>`:`<p>${t('Aucun changement.','No changes.')}</p>`}`;
     return `<h2>${t('Compte rendu des modifications du client','Client change summary')}</h2><p>${t('Comparaison avec le rapport initial envoyé au client. Les modifications annulées ne sont pas comptées.','Compared with the original report sent to the client. Reverted edits are not counted.')}</p>${savedAt?`<p>${t('Rapport enregistré le','Report saved on')} ${escape(new Date(savedAt).toLocaleString(en?'en-CA':'fr-CA'))}</p>`:''}<div class="overview-facts"><div><small>${t('Places renommées ou décrites différemment','Places with code or description changes')}</small><b>${review.places.length}</b></div><div><small>${t('Stops réaffectés','Reassigned stops')}</small><b>${review.stops.length}</b></div></div>${table(t('Codes et descriptions des places','Place codes and descriptions'),placeRows)}${table(t('Affectations des stops','Stop assignments'),stopRows)}<p>${t('Le renommage d’une place n’est pas compté comme une réaffectation de ses stops. Les horaires et les coordonnées physiques restent inchangés.','Renaming a place does not count as reassigning its stops. Schedules and physical coordinates are unchanged.')}</p><a class="back-link" href="#report-top">${t('Consulter le sommaire des places','Open place contents')} →</a>`;
   }
-  function zip(entries){
+  function zip(entries,{allowPaths=false}={}){
     // ZIP STORE: interoperable with Windows Explorer, no runtime dependency.
     const encoder=new TextEncoder(),chunks=[],central=[],seen=new Set();let offset=0;
     if(entries.length>65535)throw new Error('zipTooLarge');
@@ -111,7 +111,8 @@ function reportPackageTools() {
     for(let i=0;i<256;i++){let n=i;for(let bit=0;bit<8;bit++)n=n&1?0xedb88320^(n>>>1):n>>>1;crcTable[i]=n>>>0;}
     const crc=bytes=>{let n=0xffffffff;for(const byte of bytes)n=crcTable[(n^byte)&255]^(n>>>8);return (n^0xffffffff)>>>0;};
     for(const entry of entries){
-      if(!entry.name||/[\\/]/.test(entry.name)||entry.name==='.'||entry.name==='..'||seen.has(entry.name.toLowerCase()))throw new Error('duplicateFiles');
+      const invalidPath=allowPaths?/[\\:\x00-\x1f]/.test(entry.name)||entry.name.split('/').some(part=>!part||part==='.'||part==='..'):/[\\/]/.test(entry.name)||entry.name==='.'||entry.name==='..';
+      if(!entry.name||invalidPath||seen.has(entry.name.toLowerCase()))throw new Error('duplicateFiles');
       seen.add(entry.name.toLowerCase());const name=encoder.encode(entry.name),bytes=entry.bytes||encoder.encode(entry.text),checksum=crc(bytes);
       if(name.length>65535||bytes.length>=0xffffffff||offset+bytes.length+name.length+30>=0xffffffff)throw new Error('zipTooLarge');
       const header=new Uint8Array(30+name.length),view=new DataView(header.buffer);
