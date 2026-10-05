@@ -2,11 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
+  <meta name="application-version" content="10.0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Passerelle GTFS · HASTUS</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="clean-theme.css?v=42">
-  <link rel="stylesheet" href="place-code-layout.css?v=50">
+  <link rel="stylesheet" href="clean-theme.css?v=10.0">
+  <link rel="stylesheet" href="place-code-layout.css?v=10.0">
 </head>
 <body>
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
@@ -14,15 +15,12 @@
     <span>Sous Windows, fermez cette page puis lancez <code>launch_windows.bat</code>. L’application doit s’ouvrir sur une adresse commençant par <code>http://127.0.0.1:</code>, et non par <code>file:///</code>.</span>
   </aside>
   <header class="hero">
-    <div class="hero-top"><div class="brand"><span class="brand-mark">CSched</span><span>Assistant GTFS → HASTUS</span></div><div class="app-preferences"><label>Langue de l’accueil<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="classic">Classique</option><option value="genz">Gen Z</option><option value="clean">Épuré compact</option></select></label></div><label class="legacy-theme-toggle" hidden><input id="genz-theme" type="checkbox">Gen Z</label></div>
+    <div class="hero-top"><div class="brand"><img class="brand-logo" src="assets/csched-logo.svg" alt="CSched"><span>Assistant GTFS → HASTUS</span></div><div class="app-preferences"><label>Langue de l’interface<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="classic">Classique</option><option value="genz">Gen Z</option><option value="clean">Épuré compact</option><option value="clean-dark">Épuré sombre</option></select></label></div><label class="legacy-theme-toggle" hidden><input id="genz-theme" type="checkbox">Gen Z</label></div>
     <div class="clean-copy"><h1>Votre réseau, plus simplement.</h1><p>Rassemblez vos données. Préparez la suite dans HASTUS.</p></div>
     <div class="hero-copy">
       <p class="eyebrow">PASSERELLE DE DONNÉES</p>
       <h1>Rattacher les points horaires<br>sans multiplier les places.</h1>
       <p class="lede">Analyse locale d'un flux GTFS, rapprochement géographique et export contrôlé.</p>
-    </div>
-    <div class="steps" aria-label="Étapes">
-      <span class="active">01 · Sources</span><span>02 · Analyse</span><span>03 · Décisions</span><span>04 · Export</span>
     </div>
   </header>
 
@@ -97,13 +95,14 @@
     <section id="network-module" class="panel" aria-labelledby="network-module-title">
       <div class="section-heading"><div><p class="eyebrow">MODULE INDÉPENDANT</p><h2 id="network-module-title">Cartes des routes et timetables</h2></div><p>Consultation du GTFS chargé, séparée de la validation des places. Deux directions côte à côte, filtres calendrier et exports Excel / PDF.</p></div>
       <div class="place-report-options">
-        <label><span>Langue / Language</span><select id="network-language"><option value="fr">Français</option><option value="en">English</option></select></label>
-        <label><span>Thème / Theme</span><select id="network-theme"><option value="clean">Épuré compact / Clean</option><option value="classic">Classique / Classic</option></select></label>
-        <label><span>Cartes / Maps</span><select id="network-map-mode"><option value="offline">Fixes, hors ligne / Fixed, offline</option><option value="online">Connexion Internet / Online</option></select></label>
+        <label><span>Langue du rapport</span><select id="network-language"><option value="auto" selected>Langue de l’interface</option><option value="fr">Français</option><option value="en">English</option></select></label>
+        <label><span>Thème</span><select id="network-theme"><option value="clean">Épuré compact</option><option value="classic">Classique</option></select></label>
+        <label><span>Cartes</span><select id="network-map-mode"><option value="offline">Fixes et disponibles hors ligne</option><option value="online" selected>Connexion Internet</option></select></label>
       </div>
       <p>Requis : stops.txt, stop_times.txt, routes.txt et trips.txt. Un calendrier est nécessaire pour les horaires ; shapes.txt est facultatif pour les cartes. Aucune génération de places n’est requise.</p>
-      <div class="place-report-actions"><button id="open-network-module" type="button" class="primary">Ouvrir le module / Open module</button><button id="download-network-report" type="button" class="secondary">Télécharger le HTML / Download HTML</button><span id="network-module-status" role="status"></span></div>
+      <div class="place-report-actions"><button id="open-network-module" type="button" class="primary">Ouvrir le module</button><button id="download-network-report" type="button" class="secondary">Télécharger le HTML</button><span id="network-module-status" role="status"></span></div>
     </section>
+
 
     <section id="source-section" class="panel hidden">
       <div class="section-heading">
@@ -137,15 +136,16 @@
       <label id="review-existing-setting" class="smart-toggle hidden"><input id="review-existing-places" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Réévaluer les places déjà affectées</strong><small>Conserve la place HASTUS actuelle par défaut, mais propose les autres places dont le centre se trouve dans le rayon choisi.</small></span></label>
       <section id="place-naming-setting" class="place-naming-setting" aria-labelledby="place-naming-title">
         <div><strong id="place-naming-title">Création des codes de place</strong><small>Les codes générés contiennent exactement 6 ou 8 caractères : lettres significatives du nom, puis zéros si le nom est trop court, sans ajout de X. Les codes existants ne sont pas modifiés et la saisie manuelle peut rester plus courte. Les codes dépassant la longueur choisie doivent être corrigés avant l’export.</small></div>
-        <label><span>Longueur des codes générés</span><select id="place-code-max-length"><option value="6" selected>6 caractères</option><option value="8">8 caractères</option></select></label>
+        <div><small>« St » en début de nom est conservé pour Saint. Les lieux reconnus gardent leur type dans la description et un suffixe dans le code : station/gare STN, terminal/terminus TER, hub/pôle HUB, échangeur ECH, centre de transit CTR. Ces règles s’appliquent aux nouvelles propositions, sans renommer les places existantes.</small></div>
+        <label><span>Longueur des codes générés</span><select id="place-code-max-length"><option value="6">6 caractères</option><option value="8" selected>8 caractères</option></select></label>
         <label><span>Casse des codes proposés</span><select id="place-code-case"><option value="upper" selected>Tout en majuscules</option><option value="lower">Tout en minuscules</option></select></label>
         <label class="place-catalog-toggle"><input id="use-canada-post-abbreviations" type="checkbox"><span><strong>Utiliser les abréviations de Postes Canada</strong><small>Applique les abréviations officielles de types de rue et de points cardinaux avant de proposer un code. <a href="https://www.canadapost-postescanada.ca/scp/fr/soutien/sujet/directives-adressage/symboles-et-abreviations.page" target="_blank" rel="noopener">Consulter le catalogue</a></small></span></label>
       </section>
       <div class="settings-row">
         <label id="geographic-client-setting" class="select-label hidden"><span>Type de regroupement</span><select id="geographic-client-type"><option value="new">Nouveau client · partir de zéro</option><option value="existing">Client existant dans HASTUS</option></select></label>
         <label id="timing-source-setting" class="select-label hidden"><span>Source des timing points</span><select id="timing-point-source"><option value="gtfs">GTFS · stop_times.txt</option><option value="variants">HASTUS · versions de routes</option></select><small id="timing-source-detail">Chargez l’export de versions pour activer cette source.</small></label>
-        <label id="radius-setting" class="range-label"><span>Rayon de recherche</span><output id="radius-output">300 m</output><input id="radius" type="range" min="1" max="500" step="1" value="300"></label>
-        <label id="reference-distance-setting" class="range-label hidden"><span>Seuil d’alerte des références</span><output id="reference-distance-output">500 m</output><input id="reference-distance" type="range" min="100" max="2000" step="25" value="500"></label>
+        <div id="radius-setting" class="range-label"><label for="radius">Rayon de recherche</label><output id="radius-output">200 m</output><input id="radius" type="range" min="0" max="1000" step="1" value="200"><label for="radius-number">Saisie en mètres (0–1000)</label><input id="radius-number" type="number" min="0" max="1000" step="1" value="200" inputmode="numeric"></div>
+        <div id="reference-distance-setting" class="range-label hidden"><label for="reference-distance">Seuil d’alerte des références</label><output id="reference-distance-output">500 m</output><input id="reference-distance" type="range" min="0" max="1000" step="1" value="500"><label for="reference-distance-number">Saisie en mètres (0–1000)</label><input id="reference-distance-number" type="number" min="0" max="1000" step="1" value="500" inputmode="numeric"></div>
         <label id="association-setting" class="select-label"><span>Clé d'association GTFS → HASTUS</span><select id="association-key"><option value="stop_id">stop_id</option><option value="stop_code">stop_code</option></select></label>
         <label id="map-display-setting" class="select-label hidden"><span>Affichage des routes</span><select id="map-display"><option value="individual">Une carte par route</option><option value="combined" selected>Toutes les routes sur une carte</option><option value="both">Carte réseau et cartes séparées</option></select></label>
         <label id="map-labels-setting" class="select-label hidden"><span>Libellé général des points horaires</span><select id="map-label-mode"><option value="description">Description du stop</option><option value="stop_code" selected>stop_code</option><option value="stop_id">stop_id</option><option value="none">Aucun libellé</option></select></label>
@@ -166,10 +166,10 @@
       <section id="place-report-panel" class="place-report-panel hidden" aria-labelledby="place-report-title">
         <div class="place-report-copy"><p class="eyebrow">RAPPORT DE VALIDATION</p><h3 id="place-report-title">Une place par page, prête à valider avec le client</h3><small>Une synthèse classe d’abord les places par besoin de décision. Chaque fiche présente ensuite le nom, le code, les stops associés, les stops en dehors du périmètre et une carte OpenStreetMap.</small></div>
         <div class="place-report-options">
-          <label><span>Langue du rapport</span><select id="place-report-language"><option value="fr">Français</option><option value="en">English</option></select></label>
+          <label><span>Langue du rapport</span><select id="place-report-language"><option value="auto" selected>Langue de l’interface</option><option value="fr">Français</option><option value="en">English</option></select></label>
           <label><span>Thème du rapport HTML</span><select id="place-report-html-theme"><option value="clean" selected>Épuré compact</option><option value="classic">Classique</option></select><small>Le thème choisi est intégré au fichier HTML et conservé dans le rapport corrigé.</small></label>
-          <label><span>Disposition</span><select id="place-report-orientation"><option value="portrait">Portrait</option><option value="landscape">Paysage</option></select></label>
-          <label><span>Cartes du rapport HTML</span><select id="place-report-html-map-mode"><option value="offline" selected>Fixes et disponibles hors ligne</option><option value="online">Cadrage fixe avec connexion Internet</option></select><small>Zoom et déplacement désactivés dans les deux modes. Le mode hors ligne intègre un fond vectoriel OSM dans le fichier lors de sa génération.</small></label>
+          <label><span>Disposition</span><select id="place-report-orientation"><option value="portrait">Portrait</option><option value="landscape" selected>Paysage</option></select></label>
+          <label><span>Cartes du rapport HTML</span><select id="place-report-html-map-mode"><option value="offline">Fixes et disponibles hors ligne</option><option value="online" selected>Cadrage fixe avec connexion Internet</option></select><small>Zoom et déplacement désactivés dans les deux modes. Le mode hors ligne intègre un fond vectoriel OSM dans le fichier lors de sa génération.</small></label>
           <label class="place-report-nearby"><input id="place-report-nearby" type="checkbox" checked><span>Inclure les stops proches hors périmètre</span></label>
           <label class="client-logo-picker"><span><input id="place-report-hide-file-exports" type="checkbox" checked> Simplifier le retour client : masquer stops.txt et stop_times.txt séparés</span><small>Le client conserve la sauvegarde HTML et peut télécharger un paquet ZIP contenant le rapport corrigé, le compte rendu avant/après et le GTFS complet. Le GTFS complet doit avoir été chargé dans l’Assistant.</small></label>
           <label><span>Marge hors rayon</span><select id="place-report-margin"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="500">500 m</option></select></label>
@@ -183,18 +183,32 @@
         <div class="export-actions"><label class="report-type-label"><span>Contenu du rapport PDF</span><select id="report-type"><option value="all">Tous les stops</option><option value="assigned">Sans intervention</option><option value="review">À évaluer</option></select></label><button id="print-client-report" class="secondary">Ouvrir le rapport PDF</button><button id="print-reference-report" class="secondary hidden">Rapport PDF · références suspectes</button><button id="download-collisions" class="secondary hidden">Correspondance des ID</button><button id="download-report" class="secondary">Places par stop</button><button id="download-by-place" class="secondary">Stops par place</button><button id="download-grouping-candidates" class="secondary hidden">Regroupements suggérés</button><button id="download-reference-anomalies" class="secondary hidden">Références éloignées</button><button id="download-unused" class="secondary">Places sans timing point</button><button id="download-places" class="secondary">Places à créer</button><button id="download-times" class="primary">Télécharger stop_times_enrichi.txt</button><button id="download-gtfs" class="primary">Télécharger stops_enrichi.txt</button></div>
       </div>
     </section>
+    <section id="scheduling-unit-module" class="panel" aria-labelledby="scu-title">
+      <div class="section-heading"><div><p class="eyebrow">IMPORT HASTUS</p><h2 id="scu-title">Scheduling units</h2></div><p>Une unité par route, type timetable 1100, avec le script d’import CSched.</p></div>
+      <div class="place-report-options">
+        <label><span>Source des routes</span><select id="scu-source"><option value="gtfs">GTFS chargé</option><option value="file">routes.txt séparé</option></select></label>
+        <label><span>Charger uniquement routes.txt</span><input id="scu-routes-file" type="file" accept=".txt"></label>
+        <label><span>Identifiant de route dans HASTUS</span><select id="scu-route-key"><option value="route_id">route_id</option><option value="route_short_name">route_short_name</option></select></label>
+        <label><span>Description de l’unité</span><select id="scu-description"><option value="route">Route + identifiant</option><option value="long">route_long_name (sinon Route + identifiant)</option></select></label>
+      </div>
+      <p>La clé choisie alimente scu_identifier et scu_route_ids. Les doublons ou identifiants vides bloquent l’export. Le ZIP conserve les fichiers GTFS sources sans appliquer les corrections de places ; avec un routes.txt séparé, il ne contient que routes.txt et les fichiers d’import.</p>
+      <pre id="scu-preview" data-no-translate></pre><p id="scu-status" role="status"></p>
+      <div class="place-report-actions"><button id="scu-save" type="button" class="secondary" disabled>Enregistrer dans un dossier GTFS…</button><button id="scu-download" type="button" class="primary" disabled>Télécharger le ZIP avec les imports</button></div>
+    </section>
   </main>
-  <footer>Prototype de préparation · aucune écriture directe dans HASTUS</footer>
-  <script src="report-package.js?v=44"></script>
-  <script src="report-payload.js?v=47"></script>
-  <script src="report-network.js?v=47"></script>
-  <script src="report-timetable-export.js?v=46"></script>
-  <script src="report-network-document.js?v=47"></script>
-  <script src="report-editor.js?v=47"></script>
-  <script src="app-shell.js?v=42"></script>
-  <script src="workspace-storage.js?v=48"></script>
-  <script src="report-existing.js?v=49"></script>
-  <script src="app.js?v=50"></script>
-  <script>initAppShell();</script>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v10.0</span></footer>
+  <script src="report-package.js?v=10.0"></script>
+  <script src="report-payload.js?v=10.0"></script>
+  <script src="report-network.js?v=10.0"></script>
+  <script src="report-timetable-export.js?v=10.0"></script>
+  <script src="report-network-document.js?v=10.0"></script>
+  <script src="report-editor.js?v=10.0"></script>
+  <script src="app-translations.js?v=10.0"></script>
+  <script src="app-shell.js?v=10.0"></script>
+  <script src="workspace-storage.js?v=10.0"></script>
+  <script src="report-existing.js?v=10.0"></script>
+  <script src="scheduling-units.js?v=10.0"></script>
+  <script src="app.js?v=10.0"></script>
+  <script>initAppShell();initSchedulingUnits();</script>
 </body>
 </html>

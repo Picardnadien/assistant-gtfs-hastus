@@ -79,6 +79,7 @@ assert.equal(elements.get('download-existing-html').classList.hidden,true);
   ctx.cschedLogoDataUrl=async()=>'';ctx.fetchOfflineOsmFeatures=async()=>features;
   let downloaded;ctx.download=(name,html,type)=>downloaded={name,html,type};
   const button=ctx.document.getElementById('download-existing-html');button.textContent='Diagnostic HASTUS';
+  ctx.document.getElementById('place-report-html-map-mode').value='offline';
   await ctx.downloadExistingClientReport();
   assert.equal(downloaded.type,'text/html');assert.ok(downloaded.name.includes('diagnostic_HASTUS'));
   assert.ok(downloaded.html.includes('assessment-data'));assert.equal(button.disabled,false);assert.equal(button.textContent,'Diagnostic HASTUS');

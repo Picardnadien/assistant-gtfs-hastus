@@ -1,0 +1,18 @@
+#----------------------------------------------------------+
+# Createur : CSched                                        |
+# Description : GTFS scheduling unit creator               |
+# Date creation : 2020-04-02                               |
+# Date modification : 2020-04-02                           |
+#----------------------------------------------------------+
+
+separator ","
+
+line scheduling_unit
+   {
+   keyword scheduling_unit
+   object scheduling_unit
+   item scu_identifier
+   item scu_description
+   item scu_type #timetable = 1100
+   item scu_route_ids
+   }

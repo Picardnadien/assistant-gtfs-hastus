@@ -1,5 +1,7 @@
 # Assistant d'import GTFS vers HASTUS
 
+**Version 10.0** — voir les [notes de version](CHANGELOG.md).
+
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
 sans données préalables, soit un client existant avec un export HASTUS.
@@ -71,6 +73,55 @@ dossier. Si cette fonction n'est pas disponible, la sauvegarde dans le
 navigateur reste utilisable.
 
 ## Navigation et recherche
+
+L’en-tête utilise le logo CSched des rapports et ne contient plus la barre
+numérotée « Sources / Analyse / Décisions / Export ». Le choix français/anglais
+s’applique aux commandes d’accueil, aux options d’analyse, d’import et de
+rapport. Les libellés des données client ne sont pas traduits et la langue
+des rapports suit par défaut celle de l’interface. L’option « Langue de
+l’interface » reste automatique ; sélectionner Français ou English dans les
+options d’un rapport permet de forcer une langue différente.
+
+Les nouveaux projets démarrent avec un rayon de recherche de **200 m**, des
+codes de place de **8 caractères**, une disposition de rapport **paysage** et
+des cartes HTML **en ligne**. Les réglages explicites des espaces sauvegardés
+restent prioritaires. Les anciennes sauvegardes sans réglage de longueur de
+code conservent leur ancienne limite de 6 caractères.
+
+Dans « Apparence », **Épuré sombre** conserve l’organisation du thème compact
+avec une palette foncée. Le choix est mémorisé dans le navigateur et dans
+l’espace de travail. Il ne modifie pas le thème des rapports exportés ni les
+couleurs des fonds cartographiques OSM.
+
+## Import des scheduling units
+
+Le panneau **Scheduling units**, situé en bas de page après les résultats et
+leurs exports, utilise le GTFS chargé ou un `routes.txt`
+séparé. Choisir la clé HASTUS : `route_id` (par défaut) ou `route_short_name`.
+Cette clé alimente à la fois `scu_identifier` et `scu_route_ids`, sans supprimer
+les zéros initiaux. Une unité de type timetable `1100` est créée par route.
+La description est `Route <identifiant>`, ou `route_long_name` si cette option
+est choisie (avec repli sur `Route <identifiant>` si le nom est vide).
+
+- **Enregistrer dans un dossier GTFS…** : choisir le dossier contenant le
+  `routes.txt` correspondant. Les deux fichiers sont écrits dans `hastus_import/`.
+  Une confirmation est demandée si ces fichiers existent déjà.
+- **Télécharger le ZIP avec les imports** : copie les fichiers GTFS sources et
+  ajoute `hastus_import/sched_unit_to_import.txt` et
+  `hastus_import/scheduling units.oir`. Cette copie ne reprend pas les corrections
+  de places. Avec un `routes.txt` séparé, l’archive contient seulement ce tableau
+  et les imports ; ce n’est pas un GTFS complet.
+
+Le script fourni est conservé dans `assets/scheduling units.oir`. L’en-tête du
+fichier généré comprend les cinq colonnes attendues, dont `scu_route_ids`, absente
+de l’en-tête de l’exemple fourni. Les identifiants vides ou dupliqués bloquent
+l’export. Les virgules, guillemets et sauts de ligne dans les champs exportés
+sont refusés, car le script ne définit pas de convention d’échappement.
+Le format est testé localement ; l’exécution dans HASTUS reste à valider.
+
+Tests : `node tests/scheduling-units.test.cjs` et `node tests/radius-controls.test.cjs`.
+
+## Accès rapide
 
 - une barre fixe permet d'accéder directement au haut et au bas de la page,
   aux sources, aux contextes, à l'analyse, aux conflits, aux places/stops et à
@@ -189,7 +240,7 @@ recalculer les autres regroupements.
   proposée est tracée, et des filtres par type ou distance ainsi qu'une
   pagination de 20 cas facilitent la validation; seules les cartes visibles
   sont chargées afin de préserver les performances;
-- un seuil d'alerte distinct, réglable de 100 à 2 000 m, signale les places
+- un seuil d'alerte distinct, réglable de 0 à 1 000 m, signale les places
   partageant une référence mais trop éloignées, ainsi que les identifiants de
   référence absents de la liste des places;
 - les deux diagnostics sont visibles avec un lien OpenStreetMap et peuvent être
@@ -201,9 +252,9 @@ recalculer les autres regroupements.
   la place sélectionnée est la place HASTUS actuelle conservée ou une nouvelle
   affectation proposée;
 - un stop inconnu reçoit les places voisines triées par distance dans le rayon
-  choisi (1 à 500 mètres) ;
+  choisi (0 à 1 000 mètres) ;
 - une nouvelle place reçoit un code de exactement 6 ou 8 caractères selon le
-  réglage « Longueur des codes générés » (6 par défaut). La génération commence
+  réglage « Longueur des codes générés » (8 par défaut). La génération commence
   par trois ou quatre lettres de chacun des deux premiers mots significatifs,
   puis utilise leurs lettres restantes et les mots suivants si nécessaire.
   Si le nom reste trop court, des zéros complètent le code, jamais des `X` :
@@ -217,19 +268,55 @@ recalculer les autres regroupements.
 - les mots de liaison français et anglais (`de`, `du`, `la`, `the`, `of`,
   `and`, `after`, `before`, etc.) ainsi que les abréviations routières `Ave`,
   `Dr`, `Rd`, `St` et `Ad`
-  sont ignorés, y compris
+  sont ignorés (sauf `St` en préfixe de nom, pour Saint), y compris
   dans la recherche d'une description commune à plusieurs stops : `Marché du
   Canal` produit `MARCAN` et deux noms dont le seul mot commun est `Rd` ne
   créent plus une place nommée `Rd` ;
-- en cas de doublon, le dernier caractère est remplacé par `A`, `B`, etc. ;
+- en cas de doublon, le dernier caractère est remplacé par `A`, `B`, etc.
+  Pour un lieu reconnu ci-dessous, la distinction est insérée avant le suffixe ;
 - le `parent_station` exporté contient l'identifiant de la place, conformément
   à GTFS, et une ligne `location_type=1` est créée si nécessaire.
+
+#### Saint et types de lieux
+
+`St`, `St.` et `St-` sont conservés comme Saint au début d’un nom, après un
+séparateur d’intersection (`/`, `&`, `@`) ou après un repère tel que `at`,
+`before` ou `after`. Un `St` final continue à être ignoré comme Street.
+Le préfixe Saint reste attaché au mot suivant pour construire le code.
+Exemple : `St Clair Station` reste `St Clair Station` et produit `STCSTN`
+en six caractères, `STCLASTN` en huit caractères, ou leurs minuscules.
+
+Les mots de type de lieu sont reconnus avant l’application éventuelle du
+catalogue Postes Canada. Conventions des **nouveaux codes générés** :
+
+| Libellés reconnus (français et anglais) | Suffixe |
+| --- | --- |
+| Station, Stn, gare, gare routière, train/bus/railway/metro station | STN |
+| Terminal, terminus, bus terminal | TER |
+| Hub, pôle, pôle d’échanges ou de correspondance | HUB |
+| Exchange, interchange, échange, échangeur | ECH |
+| Transit centre/center, centre de transit ou de correspondance | CTR |
+
+Le type reste dans la description même si un seul stop du groupe le mentionne.
+Si plusieurs types sont détectés, la description les conserve et le suffixe
+suit l’ordre de priorité du tableau. Les trois caractères du suffixe sont
+réservés dans la limite de 6/8 caractères, y compris pour les variantes de code
+et les doublons (lettre ou numéro avant le suffixe). La même règle s’applique
+à une nouvelle place créée pour un stop orphelin.
+
+Cette reconnaissance est une heuristique textuelle, pas une classification
+géographique : `Station Road`, `Terminal Avenue`, `rue de la Gare` et les
+stations de police, de pompiers ou de service ne déclenchent pas ces suffixes.
+Les cas ambigus restent à valider. Aucun code existant ou nom modifié à la main
+n’est recalculé automatiquement ; la saisie manuelle reste libre.
+
+Tests : `node tests/place-naming.test.cjs`.
 
 ### Nouveau client — partir de zéro
 
 - aucun fichier HASTUS n'est demandé ;
 - tous les stops utilisés comme points horaires sont regroupés selon le rayon
-  choisi, entre 1 et 500 mètres ;
+  choisi, entre 0 et 1 000 mètres ;
 - tous les stops d'un groupe doivent être situés dans le rayon de chacun des
   autres stops du groupe, ce qui évite les regroupements en chaîne trop larges ;
 - une seule place est créée par groupe, notamment pour réunir le stop d'arrivée
@@ -259,7 +346,7 @@ recalculer les autres regroupements.
 - seuls les autres stops définis comme timing points et visibles à l'extérieur
   du rayon sont affichés en bleu afin de repérer les points proches oubliés ;
   leur description est inscrite directement sur la carte ;
-- un curseur propre à chaque place permet d'ajuster ce rayon entre 1 et 500 m
+- un curseur et un champ numérique propres à chaque place permettent d'ajuster ce rayon entre 0 et 1 000 m
   sans modifier celui des autres places ; le rayon général reste utilisé pour
   le regroupement initial ;
 - après un premier regroupement, toute modification du rayon général fait
@@ -369,15 +456,15 @@ produire les grilles par route.
 
 ### Apparence et langue de l'accueil
 
-Le menu permanent **Apparence** propose trois styles : **Classique**, **Gen Z**
-et **Épuré compact**. Ce dernier réduit l'en-tête, utilise une palette olive/lime
+Le menu permanent **Apparence** propose quatre styles : **Classique**, **Gen Z**,
+**Épuré compact** et **Épuré sombre**. Le style épuré réduit l'en-tête, utilise une palette olive/lime
 et des boutons à coins arrondis en diagonale, avec les sources et l'espace de
 travail côte à côte lorsque la largeur le permet. Les fonctions sont conservées.
 
 Le sélecteur **Langue de l'accueil** traduit l'en-tête, la navigation, les choix
 de sources et de contexte en français ou en anglais. Les écrans d'analyse
-existants ne sont pas entièrement traduits. La langue des rapports demeure un
-réglage indépendant. L'apparence et la langue sont conservées localement et
+existants ne sont pas entièrement traduits. La langue des rapports suit celle de
+l’interface par défaut, avec un choix explicite FR/EN possible. L'apparence et la langue sont conservées localement et
 dans les sauvegardes de travail ; les anciennes sauvegardes restent compatibles.
 
 ## Résultats
@@ -436,12 +523,12 @@ français ou en anglais. Ce fichier s'ouvre directement dans un navigateur sans
 relancer l'Assistant. Il contient une table des matières cliquable, une
 recherche par place, code ou stop, des filtres selon le besoin de décision et
 un lien de retour au sommaire sur chaque fiche. Les styles et le logo CSched
-sont intégrés au fichier. Par défaut, l'Assistant télécharge à la génération
+sont intégrés au fichier. En mode hors ligne, l'Assistant télécharge à la génération
 les seules données vectorielles OpenStreetMap nécessaires, dessine des cartes
 fixes avec les stops, les rayons et les détails, puis les intègre au fichier :
 le rapport peut ensuite être consulté sans connexion Internet. L'attribution
-OpenStreetMap et la licence ODbL restent visibles. Une option permet de conserver
-à la place les cartes chargées en ligne, avec un cadrage fixe : le zoom et le
+OpenStreetMap et la licence ODbL restent visibles. Par défaut, les cartes sont
+chargées en ligne, avec un cadrage fixe : le zoom et le
 déplacement sont désactivés à la souris, au toucher et au clavier pour conserver
 l'alignement du fond OSM avec les stops et les rayons. La navigation du rapport
 et les corrections de places restent disponibles. Lancez l'outil avec

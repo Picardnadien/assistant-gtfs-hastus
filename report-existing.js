@@ -65,7 +65,7 @@ function existingClientReportModel(source){
   }
   places.sort((a,b)=>priority.indexOf(a.primary)-priority.indexOf(b.primary)||a.code.localeCompare(b.code,"fr",{numeric:true,sensitivity:"base"}));
   places.forEach((p,i)=>p.anchor=`place-${i}`);
-  return {places,anomalies,unresolved,priority,byId,radius:source.radius||300,threshold:source.threshold||500};
+  return {places,anomalies,unresolved,priority,byId,radius:source.radius??300,threshold:source.threshold??500};
 }
 
 const EXISTING_REPORT_TEXT={

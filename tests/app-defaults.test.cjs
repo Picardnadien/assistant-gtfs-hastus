@@ -1,0 +1,29 @@
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8'),fields={};
+const field=id=>fields[id]??={id,value:'',addEventListener(){},setAttribute(){},querySelectorAll(){return [];},closest(){return null;}};
+const classes=new Set(),document={getElementById:field,querySelector:()=>null,querySelectorAll:()=>[],createTreeWalker:()=>({nextNode:()=>false}),documentElement:{lang:'fr'},body:{classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}}}};
+const preferences=new Map([['hastus-ui-theme','clean-dark'],['hastus-ui-language','en']]);
+const context=vm.createContext({console,document,localStorage:{getItem:key=>preferences.get(key),setItem:(key,value)=>preferences.set(key,value)},MutationObserver:class{observe(){}disconnect(){}},NodeFilter:{SHOW_TEXT:4}});
+vm.runInContext('window=this;',context);
+vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8').split('const decisionList=')[0],context);
+vm.runInContext(fs.readFileSync(path.join(root,'app-translations.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(root,'app-shell.js'),'utf8'),context);
+const select=(id)=>html.match(new RegExp(`<select id="${id}"[^>]*>([\\s\\S]*?)</select>`))[1];
+for(const [id,value] of [['place-code-max-length','8'],['place-report-orientation','landscape'],['place-report-html-map-mode','online'],['network-map-mode','online'],['place-report-language','auto'],['network-language','auto']]){
+  assert.match(select(id),new RegExp(`value="${value}" selected`));field(id).value=value;
+}
+assert.match(html,/id="radius"[^>]*value="200"/);assert.match(html,/id="radius-number"[^>]*value="200"/);
+assert.equal((html.match(/id="scheduling-unit-module"/g)||[]).length,1);
+assert.ok(html.indexOf('id="scheduling-unit-module"')>html.indexOf('id="export-bar"'));
+context.initAppShell();assert.ok(classes.has('clean-theme'));assert.ok(classes.has('clean-dark-theme'));assert.equal(field('app-theme').value,'clean-dark');assert.equal(document.documentElement.lang,'en');
+assert.equal(context.placeReportLanguage(),'en');assert.equal(context.reportLanguage('network-language'),'en');
+context.applyAppPreferences('clean','fr');assert.ok(!classes.has('clean-dark-theme'));assert.equal(context.placeReportLanguage(),'fr');
+field('place-report-language').value='en';context.applyAppPreferences('clean-dark','fr');assert.equal(context.placeReportLanguage(),'en');
+context.applyAppPreferences('genz','en');assert.ok(!classes.has('clean-theme'));assert.ok(!classes.has('clean-dark-theme'));assert.ok(classes.has('genz-theme'));
+assert.equal(context.placeCodeMaxLength(),8);assert.equal(context.distanceValue(null),200);assert.equal(context.placeReportHtmlMapMode(),'online');
+vm.runInContext('updateLoadedGtfsUi=()=>{};refreshWorkingTimetableAccess=()=>{};setMode=()=>{};',context);
+const saved={parsed:{stops:{headers:[],rows:[]},times:{headers:[],rows:[]}},settings:{radius:0,placeCodeMaxLength:6,placeReportOrientation:'portrait',placeReportHtmlMapMode:'offline',placeReportLanguage:'fr',networkLanguage:'en',networkMapMode:'offline',uiTheme:'clean-dark',uiLanguage:'en'}};
+context.restoreWorkspaceSnapshot(saved);assert.equal(Number(field('radius').value),0);assert.equal(context.placeCodeMaxLength(),6);assert.equal(context.placeReportLanguage(),'fr');assert.equal(context.placeReportHtmlMapMode(),'offline');assert.ok(classes.has('clean-dark-theme'));
+let snap=context.workspaceSnapshot();assert.equal(snap.settings.placeReportOrientation,'portrait');assert.equal(snap.settings.networkMapMode,'offline');assert.equal(snap.settings.uiTheme,'clean-dark');
+field('place-report-language').value='auto';field('network-language').value='auto';snap=context.workspaceSnapshot();assert.equal(snap.settings.placeReportLanguage,'auto');assert.equal(snap.settings.networkLanguage,'auto');context.restoreWorkspaceSnapshot(snap);assert.equal(context.placeReportLanguage(),'en');
+console.log('PASS: fresh project defaults, scheduling module order, automatic/explicit report languages, dark/light/Gen Z switching, saved preferences and legacy settings preserved.');

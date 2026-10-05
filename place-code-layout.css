@@ -1,5 +1,9 @@
 /* Leave room for eight-character codes without changing their case or value. */
 main{max-width:1420px}
+.brand-logo{width:118px;height:34px;object-fit:contain;background:white;border-radius:3px;padding:4px 8px}
+.range-label input[type=number],.group-radius input[type=number]{grid-column:2;width:112px;padding:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:text}
+.group-radius label{grid-column:1}
+#scu-preview{max-height:180px;overflow:auto;padding:12px;background:#f4f6f1;border:1px solid var(--line);font-size:12px}
 .group-fields{grid-template-columns:minmax(220px,1fr) 180px minmax(230px,.8fr)}
 .group-fields>label{min-width:0}
 .group-fields .code-input,.new-name input{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:16px;letter-spacing:.06em}
