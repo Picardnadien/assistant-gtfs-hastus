@@ -15,6 +15,21 @@ par le mécanisme de sauvegarde habituel.
 
 ## Démarrage
 
+### Version en ligne
+
+Ouvrir [The GTFS Missing Link](https://picardnadien.github.io/assistant-gtfs-hastus/).
+Le workflow **Deploy GitHub Pages** teste puis déploie automatiquement chaque
+publication sur `main`. Il peut aussi être relancé depuis l’onglet Actions.
+La source GitHub Pages doit être **GitHub Actions** dans Settings → Pages.
+Seuls les fichiers de l’application et ses ressources sont publiés : ni données
+client, ni tests, ni sorties locales. Le tag de version ne déclenche pas à lui
+seul un déploiement ; le site suit `main`.
+
+La version en ligne reste une application locale au navigateur. Les fonds OSM
+nécessitent Internet ; le relais cartographique de `serve.py` n’est disponible
+que via le lancement local. Les autorisations d’accès aux fichiers dépendent
+du navigateur. Sauvegarder le travail avant de recharger avec **Ctrl + F5**.
+
 ### macOS
 
 Double-cliquer sur `launch.command`. Si macOS bloque le premier lancement,
