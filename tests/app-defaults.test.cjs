@@ -1,5 +1,11 @@
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8'),fields={};
+assert.ok(html.includes('<title>The GTFS Missing Link</title>'));
+assert.ok(html.includes('<span data-no-translate>The GTFS Missing Link</span>'));
+const cleanStyles=fs.readFileSync(path.join(root,'clean-theme.css'),'utf8');
+assert.ok(cleanStyles.includes('--ui-font:Arial,Helvetica,sans-serif'));
+assert.ok(cleanStyles.includes('body.clean-theme button{border-radius:8px'));
+assert.ok(cleanStyles.includes('--surface:#1c2620'));
 const field=id=>fields[id]??={id,value:'',addEventListener(){},setAttribute(){},querySelectorAll(){return [];},closest(){return null;}};
 const classes=new Set(),document={getElementById:field,querySelector:()=>null,querySelectorAll:()=>[],createTreeWalker:()=>({nextNode:()=>false}),documentElement:{lang:'fr'},body:{classList:{toggle(name,on){if(on)classes.add(name);else classes.delete(name);}}}};
 const preferences=new Map([['hastus-ui-theme','clean-dark'],['hastus-ui-language','en']]);

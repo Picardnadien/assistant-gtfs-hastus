@@ -94,6 +94,47 @@ function reportEditorControls(data, edits, history = []) {
   };
 }
 
+// One writer at a time. Changes made during a write stay pending until a later write.
+// Handles are deliberately session-only: a reopened local report requires consent again.
+function reportFileSaver({snapshot,onState=()=>{},onSaved=()=>{},delay=1800,schedule=setTimeout,cancel=clearTimeout}) {
+  const state={handle:null,enabled:false,saving:false,revision:0,savedRevision:0,lastSaved:null,error:null};
+  let timer=null,flight=null,stamp=null;
+  const emit=()=>onState({...state,pending:state.revision!==state.savedRevision});
+  const stopTimer=()=>{if(timer!==null)cancel(timer);timer=null;};
+  const fingerprint=file=>`${file.lastModified}:${file.size}`;
+  const queue=()=>{stopTimer();if(state.enabled&&state.revision!==state.savedRevision)timer=schedule(()=>{timer=null;save();},delay);};
+  async function save(force=false){
+    stopTimer();if(!state.handle)return false;
+    if(flight){const ok=await flight;return ok&&(force||state.revision!==state.savedRevision)?save(force):ok;}
+    if(!force&&state.revision===state.savedRevision)return true;
+    const handle=state.handle,savedAt=new Date().toISOString();
+    state.saving=true;state.error=null;emit();
+    flight=(async()=>{let writable;
+      try{
+        const file=await handle.getFile();
+        if(stamp!==null&&fingerprint(file)!==stamp)throw Error('externalChange');
+        // Snapshot synchronously, immediately before starting the asynchronous write.
+        const content=snapshot(savedAt);
+        // Capture revisions after snapshot, so earlier async permission/file checks cannot lose edits.
+        const captured=state.revision;
+        writable=await handle.createWritable();await writable.write(content);await writable.close();writable=null;
+        stamp=fingerprint(await handle.getFile());state.savedRevision=captured;state.lastSaved=savedAt;
+        onSaved(savedAt,captured);return true;
+      }catch(error){if(writable)try{await writable.abort();}catch{}state.error=error;state.enabled=false;return false;}
+      finally{state.saving=false;emit();}
+    })();
+    const result=await flight;flight=null;if(result)queue();return result;
+  }
+  return {state,
+    changed(){state.revision++;emit();queue();},
+    async connect(handle){if(flight)await flight;stopTimer();const file=await handle.getFile();state.handle=handle;stamp=fingerprint(file);state.enabled=true;state.error=null;emit();return save(true);},
+    pause(){stopTimer();state.enabled=false;emit();},
+    resume(){state.enabled=true;state.error=null;emit();queue();},
+    save,
+    notify:emit
+  };
+}
+
 function placeReportEditorRuntime() {
   'use strict';
   const dataNode = document.getElementById('report-data'), data = JSON.parse(dataNode.textContent);
@@ -119,6 +160,8 @@ function placeReportEditorRuntime() {
   const status = document.getElementById('client-edit-status');
   const norm = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
   let filter = 'all', dirty = false, corrected;
+  let fileSaver;
+  const markChanged=()=>{dirty=true;fileSaver.changed();};
   const currentPlace = key => ({...placeByKey.get(key), ...edits.places.find(p => p.key === key)});
   const assigned = id => edits.assignments[id] ?? data.assignments[id];
   const points = data.points || [];
@@ -339,13 +382,13 @@ function placeReportEditorRuntime() {
     const key = event.target.closest('[data-report-place]').dataset.placeKey;
     controls.set(key,key,event.target.matches('[data-place-code]')?'code':'description',event.target.value,activeInput===event.target);
     activeInput=event.target;
-    dirty = true; refreshNames(); applyFilter(); validate();
+    markChanged(); refreshNames(); applyFilter(); validate();
   });
   document.addEventListener('change', event => {
     if (!event.target.matches('[data-stop-assignment]')) return;
     const owner=event.target.closest('[data-report-place]').dataset.placeKey;
     controls.set(owner,event.target.dataset.assignmentId,'assignment',event.target.value);
-    dirty = true; refreshAssignments();
+    markChanged(); refreshAssignments();
   });
   for (const [key, card] of cardByKey) {
     let undo=card.querySelector('[data-place-undo]');
@@ -354,7 +397,7 @@ function placeReportEditorRuntime() {
     undo.addEventListener('click',()=>{
       if(!controls.undo(key))return;
       for(const [id,node] of cardByKey){node.querySelector('[data-place-code]').value=currentPlace(id).code;node.querySelector('[data-place-description]').value=currentPlace(id).description;}
-      dirty=true;activeInput=null;refreshAssignments();
+      markChanged();activeInput=null;refreshAssignments();
     });
     const head=card.querySelectorAll('details')[1].querySelector('thead tr');
     if(head.cells.length===6){const cell=document.createElement('th');cell.textContent=t.assignment;head.append(cell);}
@@ -367,10 +410,15 @@ function placeReportEditorRuntime() {
     try{download(name,await reportPayloadWorker(data,edits,kind),'text/csv;charset=utf-8');}catch(error){status.textContent=error.message;}finally{validate();}
   });
   function editedHtml(savedAt) {
-    // Persist in the downloaded document, not file:// localStorage (browser-dependent).
-    refreshReview(true,savedAt);
+    // Persist in the HTML itself, not file:// localStorage (browser-dependent).
+    refreshReview(true);
     const snapshot = {...data, edits, undoHistory:controls.history, savedAt};
     const clone = document.documentElement.cloneNode(true);
+    clone.querySelector('#client-change-summary').innerHTML=(document.querySelector('#report-top header')?.outerHTML||'')+packageTools.reviewHtml(data,edits,savedAt);
+    // Never serialize an active permission or a misleading "saved" indicator.
+    clone.querySelector('#client-autosave-controls')?.remove();
+    const saveButton=clone.querySelector('#save-client-report');
+    saveButton.disabled=false;saveButton.textContent=message('Enregistrer le rapport HTML corrigé','Save edited HTML report');
     clone.classList.remove('show-network');clone.querySelector('body').classList.remove('show-network');clone.querySelector('#report-network-section')?.remove();
     clone.querySelectorAll('[data-report-module]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.reportModule==='places')));
     // Persist only the selected option. Alternatives are populated when a menu is opened.
@@ -381,27 +429,61 @@ function placeReportEditorRuntime() {
     clone.querySelectorAll('[data-report-place],[data-report-filter-item],.nav-group').forEach(node=>node.hidden=false);
     return '<!doctype html>\n' + clone.outerHTML;
   }
-  document.getElementById('save-client-report').addEventListener('click', () => {
+  const saveButton=document.getElementById('save-client-report');
+  document.getElementById('client-autosave-controls')?.remove();
+  const autoPanel=document.createElement('div');autoPanel.id='client-autosave-controls';
+  const autoButton=document.createElement('button'),copyButton=document.createElement('button'),saveStatus=document.createElement('p'),saveHelp=document.createElement('p');
+  autoButton.type=copyButton.type='button';autoButton.id='toggle-client-autosave';copyButton.id='download-client-report-copy';saveStatus.id='client-save-status';saveStatus.setAttribute('role','status');saveStatus.setAttribute('aria-live','polite');
+  copyButton.textContent=message('Télécharger une copie HTML','Download an HTML copy');
+  const supported=typeof window.showSaveFilePicker==='function'&&window.isSecureContext!==false;
+  saveHelp.textContent=supported?message('Choisissez une copie de travail HTML. Après activation, les modifications remplacent ce même fichier. À chaque réouverture, choisissez-le à nouveau pour autoriser l’écriture. Le ZIP final reste un export séparé.','Choose a working HTML copy. Once enabled, edits replace that same file. Each time you reopen it, select it again to authorize writing. The final ZIP is a separate export.'):message('Écriture directe indisponible ici. Ouvrez le rapport dans Chrome ou Edge si possible, ou téléchargez une copie pour conserver vos choix.','Direct file saving is unavailable here. Open the report in Chrome or Edge if possible, or download a copy to keep your changes.');
+  autoPanel.append(autoButton,copyButton,saveStatus,saveHelp);saveButton.before(autoPanel);
+  let choosing=false;
+  fileSaver=reportFileSaver({snapshot:editedHtml,onSaved(savedAt,revision){data.savedAt=savedAt;dirty=fileSaver.state.revision!==revision;validate();},onState(s){
+    autoButton.disabled=!supported||s.saving||choosing;saveButton.disabled=s.saving||choosing;
+    autoButton.textContent=s.enabled?message('Suspendre la sauvegarde automatique','Pause autosave'):s.handle&&!s.error?message('Reprendre la sauvegarde automatique','Resume autosave'):message('Activer la sauvegarde automatique…','Enable autosave…');
+    autoButton.setAttribute('aria-pressed',String(s.enabled));
+    saveButton.textContent=supported?message('Enregistrer maintenant','Save now'):message('Télécharger le rapport HTML corrigé','Download edited HTML report');
+    const target=s.handle?' · '+s.handle.name:'';
+    saveStatus.textContent=choosing?message('Choisissez votre fichier de travail…','Choose your working file…'):s.error?(s.error.message==='externalChange'?message('Fichier modifié ailleurs : sauvegarde suspendue pour ne pas écraser ces changements. Téléchargez une copie, puis comparez les versions.','File changed elsewhere: saving paused to avoid overwriting those changes. Download a copy, then compare versions.'):message('Échec de sauvegarde : ','Save failed: ')+s.error.message)+target:s.saving?message('Enregistrement…','Saving…')+target:s.pending?(s.enabled?message('Modifications en attente de sauvegarde…','Changes waiting to be saved…'):message('Modifications non enregistrées.','Unsaved changes.'))+target:s.lastSaved?message('Enregistré à ','Saved at ')+new Date(s.lastSaved).toLocaleTimeString(en?'en-CA':'fr-CA')+target+(s.enabled?'':message(' · automatique suspendu',' · autosave paused')):message('Sauvegarde automatique inactive.','Autosave is off.');
+  }});
+  async function chooseFile(){
+    if(choosing)return;choosing=true;fileSaver.notify();let failure='';
+    try{
+      // Open the picker immediately inside the user's click (required user activation).
+      const handle=await window.showSaveFilePicker({suggestedName:data.filename+(en?'_edited.html':'_corrige.html'),types:[{description:'HTML',accept:{'text/html':['.html']}}]});
+      await fileSaver.connect(handle);
+    }catch(error){failure=error.name==='AbortError'?message('Sélection annulée. Aucun fichier enregistré.','Selection cancelled. No file saved.'):message('Sauvegarde indisponible : ','Saving unavailable: ')+error.message;}
+    finally{choosing=false;fileSaver.notify();if(failure)saveStatus.textContent=failure;}
+  }
+  autoButton.addEventListener('click',()=>{if(fileSaver.state.enabled)fileSaver.pause();else if(fileSaver.state.handle&&!fileSaver.state.error)fileSaver.resume();else chooseFile();});
+  function downloadCopy(){
     const savedAt=new Date().toISOString();
     download(data.filename + (en ? '_edited.html' : '_corrige.html'), editedHtml(savedAt), 'text/html;charset=utf-8');
-    data.savedAt=savedAt; dirty = false; validate();
-  });
+    // A downloaded copy is not a successful write to the connected working file.
+    if(!fileSaver.state.handle){data.savedAt=savedAt;dirty=false;}validate();
+    saveStatus.textContent=message('Copie HTML téléchargée ; le fichier de travail n’a pas été remplacé.','HTML copy downloaded; the working file was not replaced.');
+  }
+  copyButton.addEventListener('click',downloadCopy);
+  saveButton.addEventListener('click',()=>{if(!supported)downloadCopy();else if(!fileSaver.state.handle)chooseFile();else fileSaver.save(true);});
+  fileSaver.notify();
   document.getElementById('download-client-package')?.addEventListener('click', async () => {
     validate();if(corrected.errors.length||!packageAvailability.ready)return;
     const button=document.getElementById('download-client-package'),label=button.textContent;
     button.disabled=true;button.textContent=message('Préparation du ZIP…','Preparing ZIP…');
     try {
+      const revision=fileSaver.state.revision,exportEdits=JSON.parse(JSON.stringify(edits)),savedAt=new Date().toISOString(),html=editedHtml(savedAt);
       await new Promise(resolve=>setTimeout(resolve,30));
-      const savedAt=new Date().toISOString(),gtfsZip=await reportPayloadWorker(data,edits,'zip');
-      const summary=packageTools.changes(data,edits);
+      const gtfsZip=await reportPayloadWorker(data,exportEdits,'zip');
+      const summary=packageTools.changes(data,exportEdits);
       const bundle=packageTools.zip([
-        {name:data.filename+(en?'_edited.html':'_corrige.html'),text:editedHtml(savedAt)},
+        {name:data.filename+(en?'_edited.html':'_corrige.html'),text:html},
         {name:'GTFS_finalise.zip',bytes:gtfsZip},
         {name:en?'changes.json':'modifications.json',text:JSON.stringify({savedAt,...summary},null,2)},
         {name:en?'READ_ME.txt':'LIRE_MOI.txt',text:message('Retour client : ouvrir le rapport HTML pour consulter le compte rendu avant/après en première page. Après revue, utiliser GTFS_finalise.zip pour votre procédure d’import HASTUS. Les horaires et les coordonnées des stops ne sont pas modifiés. Conserver le GTFS d’origine.','Client return: open the HTML report to review the before/after summary on the first page. After review, use GTFS_finalise.zip for your HASTUS import workflow. Schedules and stop coordinates are unchanged. Keep the original GTFS.')}
       ]);
       download(data.filename+(en?'_client_return.zip':'_retour_client.zip'),bundle,'application/zip');
-      data.savedAt=savedAt;dirty=false;validate();
+      if(!fileSaver.state.handle&&fileSaver.state.revision===revision){data.savedAt=savedAt;dirty=false;}validate();
     }catch(error){status.textContent=t[error.message]||message('Impossible de créer le ZIP : ','Could not create ZIP: ')+error.message;status.setAttribute('role','alert');}
     finally{button.textContent=label;button.disabled=corrected.errors.length>0||!packageAvailability.ready;}
   });

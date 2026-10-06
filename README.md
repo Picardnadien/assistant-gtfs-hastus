@@ -1,10 +1,17 @@
-# Assistant d'import GTFS vers HASTUS
+# The GTFS Missing Link
 
-**Version 11.0** — voir les [notes de version](CHANGELOG.md).
+**Version 12.0** — voir les [notes de version](CHANGELOG.md).
 
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
 sans données préalables, soit un client existant avec un export HASTUS.
+
+Les cartes de places proposées proposent **Annuler / Rétablir** (Undo / Redo)
+pour les modifications manuelles du code et de la description, à la place du
+menu des codes et descriptions suggérés. Chaque place dispose de son historique
+pendant la session (100 étapes maximum), sans modifier son rayon ni ses stops.
+L’historique n’est pas conservé après rechargement ; les noms restent sauvegardés
+par le mécanisme de sauvegarde habituel.
 
 ## Démarrage
 
@@ -74,6 +81,13 @@ navigateur reste utilisable.
 
 ## Navigation et recherche
 
+Le bouton **Tutoriel**, dans le bandeau supérieur, ouvre un guide local en sept
+étapes : sources et sauvegarde, regroupement, client existant, cartes et horaires,
+journées à importer, validation client et exports. Sa langue suit l’interface.
+Le sommaire et les boutons Précédent / Suivant permettent de naviguer ; Fermer
+ou la touche Échap ramènent au projet sans le modifier. Le guide ne nécessite
+ni GTFS chargé ni connexion Internet.
+
 L’en-tête utilise le logo CSched des rapports et ne contient plus la barre
 numérotée « Sources / Analyse / Décisions / Export ». Le choix français/anglais
 s’applique aux commandes d’accueil, aux options d’analyse, d’import et de
@@ -92,6 +106,11 @@ Dans « Apparence », **Épuré sombre** conserve l’organisation du thème com
 avec une palette foncée. Le choix est mémorisé dans le navigateur et dans
 l’espace de travail. Il ne modifie pas le thème des rapports exportés ni les
 couleurs des fonds cartographiques OSM.
+
+L’application s’appelle **The GTFS Missing Link** dans les deux langues. Les
+thèmes épuré clair et sombre partagent une typographie Arial/Helvetica sans
+empattement, une hiérarchie de titres et des boutons, champs et cartes aux
+mêmes arrondis. Les codes techniques gardent leur présentation dédiée.
 
 ## Import des scheduling units
 
@@ -657,17 +676,17 @@ workers locaux. La génération des fonds OSM nécessite toujours Internet.
 Le module réseau comprend :
 
 - filtre par **date de service**, route et direction, boutons veille/lendemain ;
-- mode par défaut **Vue condensée · tous les parcours / Condensed view · all patterns**,
-  avec **Les deux directions / Both directions** : directions 0 et 1 côte à
-  côte sur une même ligne, avec défilement horizontal sur écran étroit et des headways indépendants.
-  Une direction non renseignée reste signalée séparément. Les parcours du jour
-  sélectionné sont tous affichés, avec des colonnes étroites et des libellés de
-  timing points verticaux. Décocher la vue condensée rétablit les grandes grilles ;
+- timetables utilisant le **même moteur que le module 03**, à l’écran et dans
+  l’export PDF : grille condensée, deux directions côte à côte, codes de place
+  horizontaux, headways et sélecteur AM/PM / Military (24 h), sans colonne bloc.
+  Les variantes partagent la grille ordonnée ; une direction non renseignée
+  reste distincte. En vue toutes routes, ouvrir la section Timetable d’une
+  route pour la charger. Chaque route reste indépendante dans le PDF global ;
 - prise en compte de `calendar.txt` et des ajouts/suppressions de
   `calendar_dates.txt`, y compris un GTFS avec uniquement ce dernier fichier ;
-- grilles par parcours (séquence de stops) avec un voyage par ligne et un
-  timing point par colonne, les
-  noms complets et les codes/descriptions des places présentes dans le GTFS ;
+- grilles regroupant les variantes d’une direction, avec un voyage par ligne
+  et un timing point par colonne ; codes de place en en-tête et descriptions
+  complètes dans la légende ;
 - colonne **Headway** à gauche : intervalle avec le voyage précédent au premier
   stop affiché du même parcours, en minutes et secondes si nécessaire. Le
   premier voyage ou une heure manquante affiche `—`. Le calcul respecte les
@@ -709,15 +728,14 @@ les noms de places et affectations du GTFS chargé, sans changer les heures.
   numériques. Les en-têtes et deux premières colonnes sont figés.
 - **PDF** ouvre un aperçu épuré dans le rapport. Cliquer sur
   **Imprimer / Enregistrer en PDF**, puis choisir **Enregistrer au format PDF**
-  dans le navigateur. Les pages sont en A4 paysage. En vue condensée (par défaut),
-  les directions 0 et 1 sont présentées sur la même ligne, avec les noms complets
-  des timing points verticaux. Pour rester lisibles, les grilles sont réparties
-  en blocs de cinq points et huit voyages par direction ; les plages de points
-  et voyages sont indiquées. Tous les blocs sont conservés, même si une direction
-  en compte davantage que l’autre. Les directions non renseignées restent séparées.
-  Un filtre sur une seule direction utilise jusqu’à douze points par bloc
-  (six en vue détaillée), avec Voyage et Headway répétés. Le headway
-  reste calculé au premier point du parcours complet, pas au début de chaque bloc.
+  dans le navigateur. La mise en page Lettre reprend celle du module 03 :
+  deux directions côte à côte, codes de place horizontaux et grille compacte.
+  Le format portrait ou paysage s’adapte au nombre de points ; un export de
+  plusieurs routes utilise le paysage. Les voyages sont répartis sur autant de
+  pages que nécessaire, en conservant chaque route séparée. Les directions non
+  renseignées restent distinctes. Le sélecteur AM/PM / Military (24 h) règle les
+  heures dans l’aperçu et à l’impression ; le suffixe `+1` indique le lendemain.
+  Le headway reste calculé au premier point du parcours complet.
 - Les services à fréquence sans départs fixes restent une liste de plages et
   d'intervalles dans les exports, sans inventer d'horaires précis.
 
@@ -774,10 +792,32 @@ dans la sauvegarde de travail et le rapport exporté.
   JSON et un fichier d'instructions. Le client transmet cette archive au chargé
   de projet, qui révise les changements avant d'utiliser le GTFS dans sa procédure
   d'import HASTUS. Aucun fichier source n'est écrasé.
-- **Enregistrer le rapport HTML corrigé** télécharge une copie autonome contenant
-  les choix du client. Utiliser ce bouton avant de fermer le rapport et transmettre
-  cette copie au chargé de projet. Il n'y a pas d'écrasement automatique du HTML
-  original, ni de dépendance à la sauvegarde locale du navigateur.
+- **Activer la sauvegarde automatique** : dans un navigateur compatible (notamment
+  Chrome/Edge), choisir un fichier HTML de travail et autoriser son écriture.
+  Les modifications sont ensuite enregistrées dans ce même fichier après environ
+  deux secondes d’inactivité, sans téléchargement de copies successives. Garder
+  le rapport initial séparément. L’indicateur confirme l’écriture, signale les
+  changements en attente ou une erreur ; **Suspendre / Reprendre** contrôle l’autosave.
+- **Enregistrer maintenant** force l’écriture dans le fichier choisi. Sans fichier
+  connecté, ce bouton ouvre le sélecteur et active la sauvegarde. Après fermeture
+  ou rechargement, ouvrir la copie de travail puis la sélectionner à nouveau pour
+  réautoriser l’écriture : aucun accès au disque n’est activé silencieusement.
+- **Télécharger une copie HTML** reste disponible, y compris lorsque l’écriture
+  directe est indisponible. Il n’y a pas de dépendance au stockage du navigateur.
+  Un téléchargement n’actualise pas le fichier de travail connecté.
+
+Les écritures sont sérialisées ; les changements effectués pendant une sauvegarde
+restent en attente jusqu’à leur propre enregistrement. Une erreur suspend l’autosave
+et conserve l’alerte avant fermeture. Si le fichier a changé ailleurs, l’écriture
+est bloquée : télécharger une copie et comparer les versions avant de poursuivre.
+Ne pas travailler sur le même fichier depuis plusieurs onglets. Les brouillons
+HTML conservent aussi les saisies invalides pour éviter leur perte ; les contrôles
+de validité continuent à bloquer les exports GTFS, indépendamment de la sauvegarde.
+Le ZIP final reste une action explicite, non régénérée à chaque modification.
+Régénérer les anciens rapports pour bénéficier de cette fonctionnalité.
+
+Test : `node tests/report-autosave.test.cjs`.
+
 - **Télécharger stops.txt** produit les places renommées et les nouvelles
   associations `parent_station`. Les identifiants des stops physiques sont conservés.
 - **Télécharger stop_times.txt** conserve les horaires, séquences et colonnes du

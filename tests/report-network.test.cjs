@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const root=path.resolve(__dirname,'..'),context=vm.createContext({console});
-for(const file of ['report-package.js','report-payload.js','report-editor.js','report-network.js','report-timetable-export.js','report-network-document.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
+for(const file of ['report-package.js','report-payload.js','report-editor.js','report-network.js','report-timetable-export.js','working-timetable.js','report-network-document.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
 const tools=context.reportNetworkTools(),parse=context.reportPackageTools().parse;
 const data={places:[],assignments:{},gtfs:{
   stops:parse('stop_id,stop_name,stop_lat,stop_lon\n001,First,47.56,-52.71\n002,Second,47.57,-52.70\n003,Third,47.58,-52.72'),

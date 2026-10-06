@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const root=path.resolve(__dirname,'..');
 const fields={'network-language':{value:'fr'},'network-theme':{value:'clean'}};
 const ctx=vm.createContext({console,URL,TextEncoder,window:{},document:{getElementById:id=>fields[id]}});
-for(const name of ['report-package.js','report-payload.js','report-editor.js','report-network.js','report-timetable-export.js','report-network-document.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),ctx);
+for(const name of ['report-package.js','report-payload.js','report-editor.js','report-network.js','report-timetable-export.js','working-timetable.js','day-route-summary.js','report-network-document.js'])vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),ctx);
 vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8').split('const decisionList=')[0],ctx);
 const fixture=fs.readFileSync(path.join(root,'tmp/report-editor-both.html'),'utf8');
 ctx.fixture=JSON.parse(fixture.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);

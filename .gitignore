@@ -5,6 +5,9 @@ __pycache__/
 GTFS_HASTUS_*/
 .hastus-workspace.json
 
+# Documents et exports client conservés uniquement sur ce poste
+/output/
+
 # Fichiers usuels de Windows et des éditeurs
 Thumbs.db
 Desktop.ini

@@ -1,5 +1,5 @@
 /* Dense, monochrome working timetable inspired by the client's two-direction reference. */
-(function(root){
+function workingTimetableTools(){
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   // Shortest common supersequence preserves each pattern's order and repeated stops (loops).
@@ -34,7 +34,7 @@
     const otherDirections=[...new Set(model.blocks.map(b=>b.direction).filter(d=>!['0','1'].includes(d)))];
     const groups=[{left,right,label:t('Directions 0 / 1','Directions 0 / 1')},...otherDirections.map(d=>({left:direction(model.blocks.filter(b=>b.direction===d)),right:{stops:[],rows:[]},label:t('Direction non renseignée','Unspecified direction')+' ('+d+')'}))];
     const maxPoints=Math.max(0,...groups.flatMap(g=>[g.left.stops.length,g.right.stops.length]));
-    const landscape=maxPoints>4,columns=landscape?7:4;
+    const landscape=model.workingLandscape||maxPoints>4,columns=landscape?7:4;
     const metaLines=model.blocks.reduce((n,b)=>b.rows.reduce((m,r)=>Math.max(m,Math.ceil(String(r.tripNumber||r.id).length/8)),n),1);
     const pageRows=Math.max(1,Math.min(landscape?27:38,Math.floor((landscape?470:690)/(metaLines*11+4))));
     const pages=[],route=model.blocks[0]?.route||model.workingRoute||'',code=model.workingRouteCode||'';
@@ -77,6 +77,16 @@
       @media print{.print-controls,.time-choice{display:none}.working-page{box-shadow:none;color:#111}.working-grid th{color:#111}.working-grid th,.working-grid tbody tr:nth-child(even){print-color-adjust:exact}}
       </style></head><body><input class="time-choice" type="radio" name="time-format" id="time-ampm" aria-label="AM/PM" checked><input class="time-choice" type="radio" name="time-format" id="time-military" aria-label="Military (24 h)"><div class="print-controls"><button onclick="window.print()">${t('Imprimer / Enregistrer en PDF','Print / Save as PDF')}</button><div class="time-switch" role="group" aria-label="${t('Format des heures','Time format')}"><span>${t('Heures','Times')}</span><label for="time-ampm">AM/PM</label><label for="time-military">Military (24 h)</label></div><p>${t('Format de travail sobre. Désactivez les en-têtes et pieds de page du navigateur.','Clean working format. Turn off browser headers and footers.')}</p></div>${pages.map((page,index)=>`<section class="working-page"><header class="working-header"><span>${esc(model.client||'CSched')}</span><strong>${t('Horaire de travail - Deux directions','Working Timetable Report - Both Directions')}</strong><span>${t('Date de service','Service date')}: ${esc(model.date)}</span></header><p class="route-title"><strong>${esc(route)}</strong><br>${esc(page.label)}</p>${page.content}<p class="working-note">${t('Tri chronologique indépendant par direction ; une même ligne ne confirme pas un enchaînement. HW = minutes entre voyages du même parcours au premier timing point. Pointillés = point non desservi ou heure manquante. +1 = lendemain, toujours dans le même jour de service. Codes de place en en-tête ; — = aucune place affectée (voir la légende).','Each direction is sorted independently; a shared row does not imply a vehicle connection. HW = minutes between trips of the same pattern at its first timing point. Dots = unserved point or missing time. +1 = next day within the same service day. Headers show place codes; — = no assigned place (see key).')}${model.omitted?'<br>'+model.omitted+' '+t('voyage(s) sans timing point non affiché(s).','trip(s) without timing points not shown.'):''}${model.fallbackTiming?'<br>'+t('Timing points déduits des secondes :00.','Timing points inferred from :00 seconds.'):''}</p><footer class="working-footer"><span>CSched - ${t('Préparation GTFS / HASTUS','GTFS / HASTUS preparation')}</span><span>${index===pages.length-1?t('- FIN -','- END -'):''}</span><span>Page ${index+1} / ${pages.length}</span></footer></section>`).join('')}</body></html>`;
   }
-  root.WorkingTimetable={html,merge,direction,clock};
-  if(typeof module!=='undefined'&&module.exports)module.exports=root.WorkingTimetable;
-})(typeof globalThis!=='undefined'?globalThis:this);
+  // Each route keeps its own grids; never merge points or trips across routes.
+  function report(model){
+    const ids=[...new Set([...model.blocks.map(b=>b.routeId),...model.frequencies.map(f=>f.routeId)])].filter(id=>id!==undefined);
+    if(!ids.length)return html(model);
+    const docs=ids.map(id=>html({...model,workingLandscape:ids.length>1,workingRouteCode:model.routeCodes?.[id]||model.workingRouteCode||id,workingRoute:model.routeNames?.[id]||id,blocks:model.blocks.filter(b=>b.routeId===id),frequencies:model.frequencies.filter(f=>f.routeId===id)}));
+    if(docs.length===1)return docs[0];
+    const pages=docs.map(doc=>doc.slice(doc.indexOf('<section class="working-page">'),doc.lastIndexOf('</body>'))).join('');
+    return docs[0].slice(0,docs[0].indexOf('<section class="working-page">'))+pages+'</body></html>';
+  }
+  return {html,report,merge,direction,clock};
+}
+var WorkingTimetable=workingTimetableTools();
+if(typeof module!=='undefined'&&module.exports)module.exports=WorkingTimetable;

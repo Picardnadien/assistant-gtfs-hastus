@@ -14,6 +14,7 @@ vm.runInContext(fs.readFileSync(path.join(root, 'report-network.js'), 'utf8'), c
 vm.runInContext(fs.readFileSync(path.join(root, 'report-payload.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'report-network-document.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'report-timetable-export.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.join(root, 'working-timetable.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'report-editor.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'app.js'), 'utf8').split('const decisionList=')[0], context);
 const engine = context.reportEditorEngine, parse = context.parseCSV;
@@ -199,7 +200,10 @@ for(const limit of [6,8])for(const lang of ['fr','en']){
   fields['place-report-hide-file-exports']={checked:lang==='fr'};
   fields['place-code-max-length'].value=String(limit);
   fields['place-report-language'].value=lang;
-  const html=context.placeBrowserReportHtmlWithMaps('',[]);
+  const logoUrl='data:image/svg+xml;base64,'+fs.readFileSync(path.join(root,'assets/csched-logo.svg')).toString('base64');
+  const html=context.placeBrowserReportHtmlWithMaps(logoUrl,[]);
+  assert.ok(html.includes(`<div class="sidebar-brand"><img class="csched-logo" src="${logoUrl}" alt="CSched"></div>`));
+  assert.ok(!html.includes('<div class="search-box"><strong>CSched</strong>'));
   assert.ok(html.includes('id="place-code-layout"'));
   assert.ok(html.includes('.place-code{min-width:190px;flex-shrink:0}'));
   const payload=JSON.parse(html.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);

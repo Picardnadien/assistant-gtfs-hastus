@@ -2,13 +2,14 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="application-version" content="11.0">
+  <meta name="application-version" content="12.0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Passerelle GTFS · HASTUS</title>
+  <title>The GTFS Missing Link</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="clean-theme.css?v=11.0">
-  <link rel="stylesheet" href="place-code-layout.css?v=11.0">
-  <link rel="stylesheet" href="service-import-plan.css?v=11.0">
+  <link rel="stylesheet" href="clean-theme.css?v=12.0">
+  <link rel="stylesheet" href="place-code-layout.css?v=12.0">
+  <link rel="stylesheet" href="service-import-plan.css?v=12.0">
+  <link rel="stylesheet" href="tutorial.css?v=12.0">
 </head>
 <body>
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
@@ -16,7 +17,7 @@
     <span>Sous Windows, fermez cette page puis lancez <code>launch_windows.bat</code>. L’application doit s’ouvrir sur une adresse commençant par <code>http://127.0.0.1:</code>, et non par <code>file:///</code>.</span>
   </aside>
   <header class="hero">
-    <div class="hero-top"><div class="brand"><img class="brand-logo" src="assets/csched-logo.svg" alt="CSched"><span>Assistant GTFS → HASTUS</span></div><div class="app-preferences"><label>Langue de l’interface<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="classic">Classique</option><option value="genz">Gen Z</option><option value="clean">Épuré compact</option><option value="clean-dark">Épuré sombre</option></select></label></div><label class="legacy-theme-toggle" hidden><input id="genz-theme" type="checkbox">Gen Z</label></div>
+    <div class="hero-top"><div class="brand"><img class="brand-logo" src="assets/csched-logo.svg" alt="CSched"><span data-no-translate>The GTFS Missing Link</span></div><div class="app-preferences"><button id="open-tutorial" type="button" data-no-translate aria-haspopup="dialog" aria-controls="tutorial-dialog">Tutoriel</button><label>Langue de l’interface<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="classic">Classique</option><option value="genz">Gen Z</option><option value="clean">Épuré compact</option><option value="clean-dark">Épuré sombre</option></select></label></div><label class="legacy-theme-toggle" hidden><input id="genz-theme" type="checkbox">Gen Z</label></div>
     <div class="clean-copy"><h1>Votre réseau, plus simplement.</h1><p>Rassemblez vos données. Préparez la suite dans HASTUS.</p></div>
     <div class="hero-copy">
       <p class="eyebrow">PASSERELLE DE DONNÉES</p>
@@ -197,22 +198,24 @@
       <div class="place-report-actions"><button id="scu-save" type="button" class="secondary" disabled>Enregistrer dans un dossier GTFS…</button><button id="scu-download" type="button" class="primary" disabled>Télécharger le ZIP avec les imports</button></div>
     </section>
   </main>
-  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v11.0</span></footer>
-  <script src="report-package.js?v=11.0"></script>
-  <script src="report-payload.js?v=11.0"></script>
-  <script src="report-network.js?v=11.0"></script>
-  <script src="report-timetable-export.js?v=11.0"></script>
-  <script src="report-network-document.js?v=11.0"></script>
-  <script src="report-editor.js?v=11.0"></script>
-  <script src="app-translations.js?v=11.0"></script>
-  <script src="app-shell.js?v=11.0"></script>
-  <script src="workspace-storage.js?v=11.0"></script>
-  <script src="report-existing.js?v=11.0"></script>
-  <script src="scheduling-units.js?v=11.0"></script>
-  <script src="service-import-plan.js?v=11.0"></script>
-  <script src="working-timetable.js?v=11.0"></script>
-  <script src="day-route-summary.js?v=11.0"></script>
-  <script src="app.js?v=11.0"></script>
-  <script>initAppShell();initSchedulingUnits();</script>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v12.0</span></footer>
+  <script src="report-package.js?v=12.0"></script>
+  <script src="report-payload.js?v=12.0"></script>
+  <script src="report-network.js?v=12.0"></script>
+  <script src="report-timetable-export.js?v=12.0"></script>
+  <script src="report-network-document.js?v=12.0"></script>
+  <script src="report-editor.js?v=12.0"></script>
+  <script src="app-translations.js?v=12.0"></script>
+  <script src="app-shell.js?v=12.0"></script>
+  <script src="workspace-storage.js?v=12.0"></script>
+  <script src="report-existing.js?v=12.0"></script>
+  <script src="scheduling-units.js?v=12.0"></script>
+  <script src="service-import-plan.js?v=12.0"></script>
+  <script src="working-timetable.js?v=12.0"></script>
+  <script src="day-route-summary.js?v=12.0"></script>
+  <script src="app.js?v=12.0"></script>
+  <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
+  <script src="tutorial.js?v=12.0"></script>
+  <script>initAppShell();initSchedulingUnits();initTutorial();</script>
 </body>
 </html>

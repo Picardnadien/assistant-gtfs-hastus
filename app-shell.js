@@ -1,6 +1,7 @@
 /* Appearance and bilingual controls; source data is preserved and reports can override the interface language. */
 function initAppShell(){
   const english={
+    'Annuler':'Undo','Rétablir':'Redo','Code et description':'Code and description',
     'Apparence':'Appearance','Classique':'Classic','Épuré compact':'Clean compact','Épuré sombre':'Clean dark','Langue de l’accueil':'Home language',
     'Assistant GTFS → HASTUS':'GTFS → HASTUS Assistant','Votre réseau, plus simplement.':'Your network, simplified.',
     'Rassemblez vos données. Préparez la suite dans HASTUS.':'Bring your data together. Get ready for HASTUS.',

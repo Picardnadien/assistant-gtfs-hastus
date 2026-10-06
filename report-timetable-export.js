@@ -13,7 +13,15 @@ function reportTimetableExportTools(){
       patterns.forEach((pattern,index)=>blocks.push({routeId:route.routeId,route:route.label+' · '+route.name,direction:pattern.direction,pattern:index+1,stopIds:[...pattern.stops],stops:pattern.stops.map(label),rows:network.timetableRows(pattern).map(({trip,headway})=>({id:trip.id,sourceId:trip.sourceId||trip.id,headsign:trip.headsign,headway,times:trip.times}))}));
     }
     const frequencies=schedule.frequencies.map(f=>({route:routes.find(r=>r.routeId===f.trip.route_id)?.label||f.trip.route_id,direction:f.trip.direction_id||'?',trip:f.trip.trip_id,start:f.window.start_time,end:f.window.end_time,headway:Number(f.window.headway_secs),invalid:!!f.invalid}));
-    return {language:data.language,client:data.clientName||'',date:view.date,direction:view.direction,timing:!!view.timing,compact:view.compact!==false,fallbackTiming:net.fallbackTiming,blocks,frequencies};
+    const workingStops={},tripById=new Map(net.trips.map(t=>[t.trip_id,t]));
+    for(const [id,stop] of net.stops){
+      const key=edits.assignments?.[id]??data.assignments?.[id],original=(data.places||[]).find(p=>p.key===key)||(data.places||[]).find(p=>p.exportId===stop.parent_station),place=original?{...original,...(edits.places||[]).find(p=>p.key===original.key)}:null,parent=net.stops.get(stop.parent_station);
+      workingStops[id]=place?{code:place.code,name:place.description}:{code:parent?.stop_code||stop.parent_station||'',name:stop.stop_name||id};
+      if(data.workingStopLabels?.[id])workingStops[id]=data.workingStopLabels[id];
+    }
+    for(const b of blocks)for(const row of b.rows)row.tripNumber=tripById.get(row.sourceId)?.trip_short_name||row.id;
+    frequencies.forEach((f,i)=>f.routeId=schedule.frequencies[i].trip.route_id);
+    return {language:data.language,client:data.clientName||'',date:view.date,direction:view.direction,timing:!!view.timing,compact:view.compact!==false,fallbackTiming:net.fallbackTiming,blocks,frequencies,workingStops,routeCodes:Object.fromEntries(routes.map(r=>[r.routeId,r.label])),routeNames:Object.fromEntries(routes.map(r=>[r.routeId,r.label+' · '+r.name]))};
   }
   function note(model){const en=model.language==='en';return (en?'GTFS service date: ':'Date de service GTFS : ')+model.date+' · '+(model.direction==='both'?(en?'Both directions':'Les deux directions'):model.direction===''?(en?'All directions':'Toutes les directions'):(en?'Direction ':'Direction ')+model.direction)+' · '+(model.timing?(en?'Timing points only':'Points horaires seulement'):(en?'All stops':'Tous les stops'))+(model.fallbackTiming&&model.timing?(en?' (inferred from :00 seconds)':' (estimés par les secondes :00)'):'');}
   function compactPages(model){

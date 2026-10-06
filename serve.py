@@ -88,7 +88,7 @@ if __name__ == "__main__":
     if server is None:
         raise SystemExit(f"Aucun port disponible entre {PREFERRED_PORT} et {LAST_PORT}.")
     url = f"http://{HOST}:{server.server_port}/"
-    print(f"Assistant GTFS disponible sur {url}")
+    print(f"The GTFS Missing Link disponible sur {url}")
     if server.server_port != PREFERRED_PORT:
         print(f"Le port {PREFERRED_PORT} était déjà utilisé : ouverture sur le port {server.server_port}.")
     if os.environ.get("GTFS_NO_BROWSER") != "1":

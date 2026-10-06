@@ -1,5 +1,5 @@
 .app-preferences{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.app-preferences label{display:grid;gap:3px;font-size:11px;font-weight:500}.app-preferences select{margin:0;min-width:115px;padding:8px;color:#303b35;background:#fff;border:1px solid #b5c1ac;border-radius:5px}.clean-copy{display:none}.legacy-theme-toggle{display:none!important}.hero .brand-mark{width:auto;height:auto;padding:5px 9px;font-size:18px;border-radius:4px;flex-shrink:0}
-body.clean-theme{--ink:#303b35;--paper:#f5f6f3;--teal:#557630;--teal2:#557630;--lime:#a3cc43;--line:#dce3d7;--muted:#637167;--shadow:none;font-size:14px}
+body.clean-theme{--ink:#303b35;--paper:#f5f6f3;--teal:#557630;--teal2:#557630;--lime:#a3cc43;--line:#dce3d7;--muted:#637167;--shadow:none;--ui-font:Arial,Helvetica,sans-serif;--surface:#fff;--surface-soft:#eef3e7;--control-line:#bdcbb0;font:14px/1.5 var(--ui-font)}
 body.clean-theme .hero{background:#fff;color:var(--ink);padding:18px max(3vw,22px) 0;overflow:visible;border-bottom:1px solid var(--line)}
 body.clean-theme .brand{font-size:13px;letter-spacing:0;font-weight:500}.clean-theme .brand-mark{width:auto;height:auto;background:none;border-radius:0;color:var(--teal);font-size:22px;margin-right:5px}.clean-theme .hero-copy{display:none}.clean-theme .clean-copy{display:block;padding:22px 0}.clean-theme .clean-copy h1{font:500 26px/1.3 Arial,sans-serif;letter-spacing:-.6px}.clean-theme .clean-copy p{margin:7px 0 0;color:var(--muted);font-size:14px}
 .clean-theme .steps{gap:26px;flex-wrap:wrap;border-color:var(--line);color:var(--muted);text-transform:none;letter-spacing:0}.clean-theme .steps span{padding:12px 0}.clean-theme .steps .active{color:var(--teal)}
@@ -13,9 +13,23 @@ body.clean-theme .brand{font-size:13px;letter-spacing:0;font-weight:500}.clean-t
 /* Shared controls must remain readable in overlays and dense toolbars in Gen Z. */
 body.genz-theme button{white-space:normal;overflow-wrap:anywhere;line-height:1.35}body.genz-theme .export-actions,body.genz-theme .conflict-summary-actions,body.genz-theme .map-view-controls{flex-wrap:wrap;gap:8px}body.genz-theme .app-preferences select,body.genz-theme select,body.genz-theme option{color:#352744;background:#fff}body.genz-theme .radius-conflict-summary,body.genz-theme .conflict-resolution-toolbar{min-width:0}body.genz-theme .conflict-resolution-modal,body.genz-theme dialog{max-width:calc(100vw - 24px);max-height:90vh;overflow:auto;background:#fff;color:#352744}body.genz-theme .route-map-card.map-fullscreen,body.genz-theme.conflict-resolution-fullscreen #radius-conflict-summary{border-radius:0}
 button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #8bac53;outline-offset:2px}
+/* Typography and component geometry are shared by both clean themes. */
+body.clean-theme :is(h1,h2,h3,h4,h5,h6,button,input,select,textarea,summary,.file-no,.mode-number,.metric strong,.calendar-date,.group-radius output,.route-switch-panel-head strong,.pamphlet-route-number){font-family:var(--ui-font)}
+body.clean-theme :is(h1,h2,h3,h4,h5,h6){font-weight:600;line-height:1.3;letter-spacing:-.02em}
+body.clean-theme :is(h2,.section-heading h2){font-size:22px}
+body.clean-theme :is(h3,.pamphlet-offer-head h3){font-size:18px}
+body.clean-theme h4{font-size:16px}
+body.clean-theme :is(button,input,select,textarea){font-size:13px;line-height:1.4}
+body.clean-theme button{border-radius:8px;font-weight:600}
+body.clean-theme :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea){border-radius:6px;border:1px solid var(--control-line);background:var(--surface);color:var(--ink)}
+body.clean-theme :is(.panel,.workspace-setup,.group-card,.decision,.route-map-card,.timetable-card,.calendar-month,.mode-card,.data-source-card,dialog){border-radius:10px}
+body.clean-theme :is(.mode-card,.data-source-card){border-width:1px}
+body.clean-theme :is(.file-no,.mode-number,.metric strong,.calendar-date,.group-radius output){font-variant-numeric:tabular-nums;font-weight:600}
+body.clean-theme .brand{font-weight:600;font-size:15px;gap:12px;line-height:1.35}
+body.clean-theme :is(.eyebrow,label){font-weight:600}
 /* Dark is a variant of the compact theme, scoped to the application only.
    Exported reports keep their own theme and OSM tiles keep their original colours. */
-body.clean-theme.clean-dark-theme{color-scheme:dark;--ink:#e5ece6;--paper:#121915;--teal:#b3d985;--teal2:#c8e8a4;--lime:#b3d985;--line:#425247;--muted:#b5c3b8;--warn:#edbb73;background:var(--paper);color:var(--ink)}
+body.clean-theme.clean-dark-theme{color-scheme:dark;--ink:#e5ece6;--paper:#121915;--teal:#b3d985;--teal2:#c8e8a4;--lime:#b3d985;--line:#425247;--muted:#b5c3b8;--warn:#edbb73;--surface:#1c2620;--surface-soft:#253229;--control-line:#617464;background:var(--paper);color:var(--ink)}
 .clean-theme.clean-dark-theme :is(.hero,.navigation-dock,.panel,.workspace-setup,.mode-card,.data-source-card,.group-card,.decision,.metric,.route-map-card,.grouping-diagnostic-card,.relationship-diagnostics,dialog,.conflict-resolution-modal){background:#1c2620;color:var(--ink);border-color:var(--line);box-shadow:none}
 .clean-theme.clean-dark-theme :is(.dropzone,.group-stop,.place-choice,.smart-toggle,.place-naming-setting,.place-report-panel,.stop-id-renumber-setting,.group-fields,.group-radius,.radius-conflict-stop,.grouping-diagnostic-toolbar,.conflict-resolution-toolbar,.conflict-group-row,.filters){background:#253229;color:var(--ink);border-color:var(--line)}
 .clean-theme.clean-dark-theme :is(.data-source-card.active,.mode-card.active,.dropzone.loaded,.place-choice:has(input:checked),.filter.active){background:#34492d;color:#ecf5e6;border-color:#a4c97c}

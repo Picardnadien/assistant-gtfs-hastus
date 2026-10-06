@@ -1,5 +1,26 @@
 # Notes de version
 
+## 12.0 — 2026-10-06
+
+- Nouveau nom : **The GTFS Missing Link**, conservé en français et en anglais.
+- Harmonisation des typographies, boutons, champs et cartes des thèmes **Épuré compact** et **Épuré sombre**.
+- **Tutoriel bilingue** accessible depuis le bandeau supérieur : sept étapes, sommaire cliquable, navigation Précédent / Suivant et fermeture sans modifier le projet.
+- **Annuler / Rétablir par place** pour les changements de code et de description, en remplacement du menu des suggestions. Une saisie complète constitue une étape ; les rayons et affectations ne sont pas modifiés. Historique limité à la session.
+- **Cartes et timetables** : même présentation que le module 03, à l’écran et en PDF, avec deux directions côte à côte, variantes regroupées, codes de place, headways et choix AM/PM ou 24 h. Chargement des grilles à l’ouverture de chaque route et conservation des filtres et exports Excel.
+- **Rapport HTML client** : logo CSched dans le menu latéral et enregistrement direct dans un fichier choisi, avec sauvegarde automatique facultative, pause/reprise, suivi des changements et protection en cas de modification externe du fichier. Le téléchargement d’une copie reste disponible.
+- Tests supplémentaires pour l’historique des noms, le tutoriel bilingue, les timetables partagées et les scénarios d’enregistrement des rapports.
+
+### Mise à jour et validation
+
+Sauvegarder le travail avant la mise à jour, puis recharger avec **Ctrl + F5**.
+Régénérer les rapports HTML pour bénéficier des nouvelles fonctions ; les rapports
+déjà envoyés ne sont pas modifiés automatiquement. L’enregistrement direct exige
+un navigateur compatible et l’autorisation explicite d’écrire le fichier ; cette
+autorisation doit être redonnée après réouverture. Les écritures sont couvertes
+par des tests automatisés, mais restent à confirmer avec le sélecteur natif sur
+le poste client. Les données GTFS, rapports clients et sorties locales ne sont
+pas publiés dans cette version.
+
 ## 11.0 — 2026-10-06
 
 - **Comparaison des horaires** : identification des horaires distincts du réseau, détection des variations récurrentes ou ponctuelles et proposition de dates représentatives à importer dans HASTUS. Les exceptions de calendrier sont prises en compte ; un plan d’import CSV est disponible.
