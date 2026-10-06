@@ -10,7 +10,7 @@ function reportTimetableExportTools(){
     const blocks=[];
     for(const route of routes.filter(r=>!view.route||view.route===r.routeId)){
       const patterns=schedule.patterns.filter(p=>p.routeId===route.routeId).sort((a,b)=>a.direction.localeCompare(b.direction));
-      patterns.forEach((pattern,index)=>blocks.push({routeId:route.routeId,route:route.label+' · '+route.name,direction:pattern.direction,pattern:index+1,stops:pattern.stops.map(label),rows:network.timetableRows(pattern).map(({trip,headway})=>({id:trip.id,headsign:trip.headsign,headway,times:trip.times}))}));
+      patterns.forEach((pattern,index)=>blocks.push({routeId:route.routeId,route:route.label+' · '+route.name,direction:pattern.direction,pattern:index+1,stopIds:[...pattern.stops],stops:pattern.stops.map(label),rows:network.timetableRows(pattern).map(({trip,headway})=>({id:trip.id,sourceId:trip.sourceId||trip.id,headsign:trip.headsign,headway,times:trip.times}))}));
     }
     const frequencies=schedule.frequencies.map(f=>({route:routes.find(r=>r.routeId===f.trip.route_id)?.label||f.trip.route_id,direction:f.trip.direction_id||'?',trip:f.trip.trip_id,start:f.window.start_time,end:f.window.end_time,headway:Number(f.window.headway_secs),invalid:!!f.invalid}));
     return {language:data.language,client:data.clientName||'',date:view.date,direction:view.direction,timing:!!view.timing,compact:view.compact!==false,fallbackTiming:net.fallbackTiming,blocks,frequencies};

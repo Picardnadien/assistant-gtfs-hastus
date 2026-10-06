@@ -1,6 +1,6 @@
 # Assistant d'import GTFS vers HASTUS
 
-**Version 10.0** — voir les [notes de version](CHANGELOG.md).
+**Version 11.0** — voir les [notes de version](CHANGELOG.md).
 
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
@@ -429,6 +429,76 @@ Tests : `node tests/place-naming.test.cjs`.
   la touche Échap.
 
 ### Comparaison des horaires
+
+Le contexte 03 propose désormais un **plan de dates à importer dans HASTUS** :
+une date représentative par horaire distinct du réseau, avec les jours de la
+semaine concernés, toutes les dates de circulation et les services actifs à
+la date suggérée. Par exemple, si le mercredi comporte d’autres heures que
+le lundi/mardi/jeudi/vendredi, une date de mercredi est proposée en plus de
+la date du service courant, même si le nombre de voyages est identique.
+
+Les ajouts et suppressions de `calendar_dates.txt` sont appliqués avant la
+comparaison. Les services sans `calendar.txt` sont également pris en charge.
+Les jours sans voyage sont signalés mais ne proposent pas d’import.
+L’horaire le plus fréquent sert de référence ; les autres profils indiquent
+les routes différentes et les définitions de voyages ajoutées/retirées.
+Un voyage modifié compte comme une suppression et un ajout, pas comme un
+départ supplémentaire. Les variations ponctuelles et récurrentes sont séparées.
+
+La comparaison porte sur toutes les routes, tous les arrêts (pas seulement
+les TP), leurs heures, l’ordre de passage, les attributs des voyages et les
+plages de fréquence. Les identifiants de voyage/service seuls sont ignorés,
+mais les blocs et shapes distincts sont conservés par prudence. Les autres
+tables GTFS (transferts, tarifs, etc.) ne sont pas comparées. Les services par
+intervalle sans départs fixes et les heures manquantes demandent une revue.
+
+La date suggérée privilégie un jour sans exception explicite, puis le jour
+de semaine le plus fréquent du profil et sa première occurrence. Le bouton
+**Voir cette journée** ouvre son aperçu ; l’étoile du calendrier repère les
+dates proposées. Le **plan d’import CSV** conserve toutes les dates exactes :
+la première et la dernière date ne constituent pas une période continue de
+circulation. La section et le CSV suivent la langue de l’interface.
+
+Il s’agit d’une aide à la décision sur l’ensemble de la période du GTFS, pas
+d’un import automatique. Dans HASTUS, choisir les dates proposées puis vérifier
+l’affectation des horaires au calendrier selon les règles de l’installation.
+Aucun GTFS ni horaire source n’est modifié.
+
+Après un clic sur **Voir cette journée** (ou sur une date du calendrier), une
+**synthèse par route** affiche les voyages à départ fixe, leur répartition par
+direction 0/1/non renseignée et les plages de service par fréquence sans départs
+fixes. Les départs `exact_times=1` sont développés ; les services par intervalle
+restent séparés. Seules les routes actives ce jour figurent dans le tableau.
+
+Le petit bouton **PDF** sur chaque ligne ouvre un aperçu imprimable de cette
+route et de cette date, dans un style **horaire de travail épuré**, inspiré
+du modèle de la route 333 : deux directions côte à côte, séparation centrale,
+codes des places à l’horizontale et colonnes voyage/route aux
+extrémités. Les variantes compatibles partagent une grille de points ordonnée ;
+les points non desservis apparaissent en pointillés. Les boucles conservent les
+passages répétés. HW reste calculé au premier point de chaque parcours.
+Cliquer ensuite sur **Imprimer / Enregistrer en PDF**.
+Le format Letter est portrait pour les petites grilles et paysage pour les
+routes avec davantage de points ; les grandes grilles sont paginées. Les codes
+proviennent des affectations courantes du regroupement, puis de working/stops.txt
+si disponible, puis du GTFS chargé (code de la station parente, sinon parent_station).
+Un stop sans place affiche « — » : son stop_id reste dans la légende, jamais
+présenté comme un code de place. La légende donne les descriptions complètes.
+Le sélecteur **AM/PM / Military (24 h)** dans l’aperçu commute entre 615a/125p
+et 06:15/13:25, y compris les plages de fréquence. Le PDF conserve le mode choisi ;
+un suffixe +1 signale le lendemain sans changer le jour de service GTFS.
+Le numéro de voyage affiché utilise trip_short_name s’il existe, sinon trip_id ;
+la colonne bloc n’est pas affichée. Les métadonnées HASTUS absentes (booking, scénario,
+crew schedule) ne sont pas inventées. Le tri est indépendant par direction :
+des voyages placés sur une même ligne ne constituent pas un enchaînement garanti.
+Les longues grilles sont réparties sur plusieurs pages sans supprimer de voyages.
+La direction non renseignée reste séparée et les plages par fréquence ont leur
+propre tableau. Les voyages sans timing point sont signalés comme absents du PDF ;
+le bouton est désactivé si aucun voyage de la route n’en possède. La synthèse et
+l’aperçu PDF suivent la langue de l’interface, sans charger de cartes réseau.
+
+Tests : `node tests/service-import-plan.test.cjs` et
+`node tests/day-route-summary.test.cjs`.
 
 - `calendar.txt` définit les services hebdomadaires et leurs périodes ;
 - `calendar_dates.txt`, lorsqu'il est présent, ajoute ou supprime les services

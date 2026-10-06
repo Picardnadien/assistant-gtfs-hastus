@@ -62,6 +62,7 @@ function initAppShell(){
     for(const area of areas)area.lang=language;
     if(persist){localStorage.setItem('hastus-ui-theme',theme);localStorage.setItem('hastus-ui-language',language);localStorage.setItem('hastus-genz-theme',theme==='genz'?'1':'0');}
     if(typeof refreshSchedulingUnits==='function')refreshSchedulingUnits();
+    if(typeof refreshServiceImportPlan==='function')refreshServiceImportPlan();
     translate();
   };
   // Translate only changed controls, not every map and table on every keystroke.

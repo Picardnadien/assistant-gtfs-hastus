@@ -45,7 +45,7 @@ function reportNetworkTools() {
           for(let startAt=start;startAt<end;startAt+=headway){if(departures.length>=10000)throw Error('frequencyLimit');departures.push({offset:startAt-base,id:trip.trip_id+' @ '+clock(startAt)});}
         }
         const key=JSON.stringify([trip.route_id,trip.direction_id||'?',rows.map(row=>row.stop_id)]);
-        for(const departure of departures){if(!patterns.has(key))patterns.set(key,{routeId:trip.route_id,direction:trip.direction_id||'?',stops:rows.map(row=>row.stop_id),trips:[]});patterns.get(key).trips.push({id:departure.id,headsign:trip.trip_headsign||'',service:trip.service_id,times:rows.map(row=>{const v=seconds(row.departure_time||row.arrival_time);return v===null?null:v+departure.offset;})});tripCount++;}
+        for(const departure of departures){if(!patterns.has(key))patterns.set(key,{routeId:trip.route_id,direction:trip.direction_id||'?',stops:rows.map(row=>row.stop_id),trips:[]});patterns.get(key).trips.push({id:departure.id,sourceId:trip.trip_id,headsign:trip.trip_headsign||'',service:trip.service_id,times:rows.map(row=>{const v=seconds(row.departure_time||row.arrival_time);return v===null?null:v+departure.offset;})});tripCount++;}
       }
       for(const p of patterns.values())p.trips.sort((a,b)=>(a.times.find(v=>v!==null)??Infinity)-(b.times.find(v=>v!==null)??Infinity)||a.id.localeCompare(b.id));
       return {patterns:[...patterns.values()],frequencies,tripCount};
