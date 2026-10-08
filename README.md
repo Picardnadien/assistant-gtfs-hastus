@@ -15,6 +15,18 @@ par le mécanisme de sauvegarde habituel.
 
 ## Démarrage
 
+### Espace privé Supabase (activation serveur requise)
+
+Le portail `portal.html` propose une connexion FR/EN, une bibliothèque privée
+et une administration des adresses autorisées. La clé publiée est uniquement
+une clé **publishable**, jamais une clé secrète. Les fichiers restent hors de Git.
+Voir `supabase/INSTALLATION.txt` et appliquer `supabase/001_private_portal.sql`
+avant toute utilisation. Le SQL, la vérification des e-mails et les accès réels
+doivent être validés sur le projet avant de charger les données client.
+Une inscription seule n'autorise aucun téléchargement. Tous les lecteurs
+autorisés partagent la même bibliothèque ; les jetons restent en mémoire.
+Révoquer un accès n'efface pas les copies déjà téléchargées.
+
 ### Accueil en ligne v13 et scénarios iPad
 
 GitHub Pages ouvre un menu FR/EN : application actuelle, démonstration fictive

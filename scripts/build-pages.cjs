@@ -26,6 +26,7 @@ function buildPages(root,destination){
   bundle(version,file=>fs.readFileSync(path.join(root,file)),'','app.html');
   for(const release of ARCHIVES)bundle(release,file=>cp.execFileSync('git',['show',`v${release}:${file}`],{cwd:root,maxBuffer:30*1024*1024}),`versions/v${release}/`);
   write('index.html',fs.readFileSync(path.join(root,'version-menu.html'),'utf8').replaceAll('__CURRENT_VERSION__',version));
+  for(const file of ['portal.html','portal.css','portal-config.js','portal.js'])write(file,fs.readFileSync(path.join(root,file)));
   const {buildDemo}=require('./build-review-demo.cjs');
   for(const [file,html] of Object.entries(buildDemo(root)))write(file,html);
   write('.nojekyll','');

@@ -17,6 +17,11 @@ Desktop.ini
 .vscode/
 .idea/
 
+# Local server credentials must never be committed.
+.env
+.env.*
+supabase/.temp/
+
 # Rapports synthétiques produits par les tests de l'éditeur client
 /tmp/report-editor-*.html
 /tmp/report-editor-*.zip

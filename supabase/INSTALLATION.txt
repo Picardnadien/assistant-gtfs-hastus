@@ -1,0 +1,86 @@
+ESPACE PRIVE — CONFIGURATION SUPABASE
+Projet : https://wlkneuryxlpuqzmbimax.supabase.co
+
+Etat au 7 octobre 2026 : script SQL installé, premiers contrôles anonymes
+effectués. La recette avec comptes administrateur et lecteur reste à faire.
+Aucun fichier OC Transpo n'a été envoyé. Ne rien envoyer avant la recette.
+
+1. SQL Editor
+Ouvrir le tableau de bord du projet, SQL Editor, New query.
+Coller tout le contenu de 001_private_portal.sql puis Run.
+Le script crée un bucket gtfs-private NON PUBLIC, une liste d'accès privée,
+des fonctions serveur et des politiques RLS. La limite par fichier est 50 Mio
+(la limite globale du projet peut être plus basse).
+Le script peut être rejoué : il ne supprime pas les fichiers ni les membres.
+Ne pas exposer le schéma gtfs_private dans les réglages Data API.
+Ne jamais rendre le bucket public. Ne jamais mettre une service_role/secret
+key dans un fichier JavaScript, dans GitHub ou dans un message de chat.
+
+2. Authentication
+Activer l'authentification Email avec mot de passe et CONFIRMATION D'E-MAIL.
+La confirmation est indispensable : les permissions dépendent de l'adresse
+vérifiée par Supabase. Ne jamais désactiver cette confirmation.
+L'inscription reste autorisée : elle ne donne aucun accès aux fichiers.
+Pour la production, configurer les limites d'envoi et la protection antibot.
+
+Dans Authentication > URL Configuration, définir Site URL et l'URL de
+redirection autorisée, EXACTEMENT :
+https://picardnadien.github.io/assistant-gtfs-hastus/portal.html
+Ajouter seulement pour les tests locaux :
+http://127.0.0.1:8765/portal.html
+Eviter les redirections wildcard ou les domaines non maîtrisés.
+
+3. E-mails
+Configurer un SMTP approuvé pour envoyer confirmations et récupération.
+Le service d'essai Supabase est limité, notamment aux adresses de l'équipe
+autorisées par Supabase : il n'est pas adapté aux invitations clients.
+Conserver le lien ConfirmationURL dans le modèle Confirm signup.
+Dans le modèle Reset password, afficher un code plutôt qu'un lien :
+
+  <h2>Réinitialiser votre mot de passe</h2>
+  <p>Recopiez ce code dans l'espace privé GTFS Missing Link :</p>
+  <p><strong>{{ .Token }}</strong></p>
+  <p>Ne communiquez ce code à personne.</p>
+
+Le portail vérifie ce code avec Supabase, puis modifie le mot de passe.
+Le mot de passe doit comporter au moins 12 caractères dans ce portail.
+Configurer également cette limite dans les paramètres Supabase Auth.
+
+4. Premier administrateur
+Le compte du tableau de bord Supabase N'EST PAS le compte de l'application.
+Ouvrir portal.html, Première connexion, créer le compte romainrenaux@me.com
+avec un mot de passe personnel et confirmer le lien reçu à cette adresse.
+Revenir à la page et se connecter volontairement avec ce mot de passe.
+Le script SQL réserve ce rôle à cette adresse ; il ne crée pas le compte et
+ne vérifie pas à lui seul que vous possédez la boîte mail.
+Un administrateur ne peut pas modifier son propre rôle depuis le portail.
+
+5. Recette AVANT données client
+- Visiteur anonyme : aucune liste, téléchargement ou écriture autorisée.
+- Compte confirmé mais absent de la liste : aucun accès.
+- Lecteur confirmé et autorisé : peut lister/télécharger, mais pas envoyer,
+  supprimer, modifier les membres ou promouvoir son rôle, même par API directe.
+- Administrateur confirmé : peut envoyer un petit fichier SYNTHETIQUE,
+  autoriser/révoquer un lecteur et supprimer ce fichier de test.
+- Révoquer le lecteur puis retester avec SON TOKEN ENCORE VALIDE : le serveur
+  doit refuser le prochain téléchargement. Ne pas utiliser d'URL publique/signée.
+- Vérifier qu'une URL /storage/v1/object/public/gtfs-private/... ne donne rien.
+- Vérifier un mot de passe oublié, les e-mails et la reconnexion sur iPad.
+Les tests locaux simulés ne prouvent PAS que le SQL et Auth sont correctement
+configurés sur votre projet : ces contrôles réels restent obligatoires.
+
+6. Partage
+Tous les lecteurs autorisés voient l'ensemble de cette bibliothèque (pas de
+séparation par client dans cette première version). L'administrateur autorise
+une adresse puis transmet le lien du portail ; ce bouton n'envoie aucun e-mail.
+La personne crée son compte, confirme son e-mail et se connecte.
+La révocation bloque les futures requêtes, pas les copies déjà téléchargées.
+Les fichiers sont téléchargés, pas exécutés dans la page d'administration.
+Pour consulter un HTML téléchargé, utiliser le scénario Revue privée du menu.
+Les jetons sont en mémoire seulement ; rechargement/fermeture efface la session.
+Les mots de passe et jetons ne sont pas enregistrés dans le stockage navigateur.
+
+Documentation :
+https://supabase.com/docs/guides/auth/passwords
+https://supabase.com/docs/guides/auth/auth-smtp
+https://supabase.com/docs/guides/storage/security/access-control
