@@ -26,6 +26,7 @@ assert.ok(ctx.assessmentReviewMarkup('en').includes('Maximum map'));
 for(const language of ['fr','en']){
   const html=ctx.assessmentReviewMarkup(language);
   for(const id of ['assessment-distance-choice','review-distance-choice'])assert.ok(html.includes(`id="${id}"`));
+  for(const id of ['assessment-label-size','review-label-size','assessment-label-style','review-label-style','map-place-stops','map-stops-body','map-stops-all'])assert.ok(html.includes(`id="${id}"`));
   for(const mode of ['off','small','large'])assert.ok(html.includes(`value="${mode}"`));
 }
 assert.ok(ctx.assessmentReviewStyles().includes('body[data-review-distances="small"]'));

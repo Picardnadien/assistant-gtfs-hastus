@@ -20,10 +20,71 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.locator('#assessment-review-tutorial').waitFor({state:'visible'});
     for(let i=0;i<7;i++)await page.locator('#review-tutorial-next').click();
     assert.equal(await page.locator('#assessment-review-tutorial').isVisible(),false);
+    async function assertOverviewFits(){
+      const original=await page.locator('#overview-body').innerHTML();
+      // Stress long reference families and unbroken IDs without changing report data.
+      await page.locator('#overview-body tr').first().evaluate(row=>{
+        const badge=row.querySelector('.place-code');
+        badge.querySelector('.code-main').textContent='REFERENCE1234567890'.repeat(5);
+        const detail=document.createElement('span');detail.className='code-detail';
+        detail.textContent='Attached places: '+Array.from({length:24},(_,i)=>'PLACE'+i).join(' · ');
+        badge.append(detail);
+        badge.querySelector('.code-description').textContent='Long station description / '.repeat(12);
+      });
+      for(const width of [390,768,1024,1366,1920]){
+        await page.setViewportSize({width,height:900});
+        const fits=await page.locator('#overview').evaluate(section=>{
+          const wrap=section.querySelector('.table-wrap'),table=section.querySelector('table');
+          return wrap.scrollWidth<=wrap.clientWidth+1&&table.getBoundingClientRect().width<=section.clientWidth+1&&
+            [...section.querySelectorAll('td,.place-code')].every(el=>el.scrollWidth<=el.clientWidth+1);
+        });
+        assert.ok(fits,'Overview codes, references and descriptions wrap without horizontal scrolling at '+width+'px');
+      }
+      await page.locator('#overview-body').evaluate((el,html)=>el.innerHTML=html,original);
+      assert.equal(await page.locator('#overview thead th').count(),2,'Overview has identity and validation columns only');
+      assert.equal(await page.locator('#overview-body tr').first().locator('td').count(),2);
+      assert.ok(await page.locator('#overview-body .place-code .code-description').count()>0,'Descriptions are inside clickable badges');
+      await page.setViewportSize({width:1366,height:768});
+      const link=page.locator('#overview-body [data-case-link]').first(),target=await link.getAttribute('data-case-link');
+      await link.click();
+      assert.equal(await page.locator(`#${target} > details`).getAttribute('open'),'','Overview navigation still opens the case');
+    }
+    await assertOverviewFits();
+    const normalLabel=page.locator('.map-host [data-map-place="AAA"]').first();
+    await normalLabel.click();
+    assert.equal(await page.locator('#map-place-stops').isVisible(),true);
+    assert.equal(await page.locator('#map-stops-body tr').count(),2,'All directly attached stops are shown, not only map-visible labels');
+    assert.ok((await page.locator('#map-stops-body').textContent()).includes('Physical stop AAA'));
+    await page.keyboard.press('Escape');
+    await page.locator('.map-host [data-map-place="REF"]').first().focus();await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#map-stops-body tr').count(),4,'Reference shows its own and attached places stops separately');
+    await page.locator('#map-stops-close').click();
+    await page.locator('#stop-scope').selectOption('tp');
+    await page.locator('.map-host [data-map-place="AAA"]').first().click();
+    assert.equal(await page.locator('#map-stops-body tr').count(),1,'Popup initially respects timing-point filter');
+    await page.locator('#map-stops-all').check();
+    assert.equal(await page.locator('#map-stops-body tr').count(),2,'Explicit option reveals the full list');
+    await page.locator('#map-stops-close').click();await page.locator('#stop-scope').selectOption('all');
+    await page.locator('#assessment-label-style').selectOption('compact');
+    assert.equal(await page.locator('.map-host .map-code-detail').first().isVisible(),false);
+    await page.locator('#assessment-label-size').selectOption('small');
+    assert.equal(await page.locator('#review-label-size').inputValue(),'small');
     const first=page.locator('[data-review-validate]').first(),id=await first.getAttribute('data-review-validate');
     await first.click();assert.equal(await page.locator(`[data-review-validate="${id}"]`).getAttribute('aria-pressed'),'true');
     await page.locator(`[data-review-open="${id}"]`).click();
     await page.locator('#assessment-review').waitFor({state:'visible'});
+    const reviewLabel=page.locator('#review-map [data-map-place="AAA"]');
+    await reviewLabel.click();assert.equal(await page.locator('#map-stops-body tr').count(),2);
+    await page.keyboard.press('Escape');assert.equal(await page.locator('#assessment-review').isVisible(),true,'Closing stop list keeps full-screen review open');
+    await page.locator('#review-label-style').selectOption('detailed');
+    assert.equal(await page.locator('#assessment-label-style').inputValue(),'detailed');
+    // Keep the viewport/layout fixed to measure SVG label scaling alone.
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const smallLabel=await reviewLabel.boundingBox();
+    await page.locator('#review-label-size').selectOption('large');
+    const largeLabel=await reviewLabel.boundingBox();
+    assert.ok(Math.abs(largeLabel.width/smallLabel.width-1.5)<.03,'Label size scales the full badge');
+    await page.locator('#review-label-style').selectOption('compact');
     assert.equal(await page.locator('#review-layout-choice').inputValue(),'max','New reports prioritize the maximum map');
     assert.equal(await page.locator('#review-details-panel').isVisible(),false);
     assert.ok(await page.locator('#review-map .review-distance').first().isVisible(),'Distances are visible without the details panel');
@@ -104,6 +165,8 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.reload();assert.equal(await page.locator('#assessment-review-tutorial').isVisible(),false);
     assert.equal(await page.locator('#assessment-distance-choice').inputValue(),'small','Distance size survives reload');
     assert.equal(await page.locator('#review-distance-choice').inputValue(),'small');
+    assert.equal(await page.locator('#assessment-label-size').inputValue(),'large','Label size survives reload');
+    assert.equal(await page.locator('#assessment-label-style').inputValue(),'compact');
     assert.ok((await page.locator('#assessment-log-body tr').count())>=4,'Draft replays after reload');
     assert.equal(await page.locator('body').getAttribute('class'),'assessment-comfort');
     await page.locator('#stop-scope').selectOption('tp');
@@ -122,11 +185,17 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await reopened.route('http://review.test/**',route=>route.fulfill({contentType:'text/html',body:savedHtml}));
     await reopened.goto('http://review.test/saved');assert.ok(await reopened.locator('#assessment-log-body tr').count()>=4);
     assert.equal(await reopened.locator('#assessment-distance-choice').inputValue(),'small','Saved HTML carries the distance preference without browser cache');
+    assert.equal(await reopened.locator('#assessment-label-size').inputValue(),'large');
+    assert.equal(await reopened.locator('#assessment-label-style').inputValue(),'compact');
+    await reopened.locator('.map-host [data-map-place="AAA"]').first().click();
+    assert.equal(await reopened.locator('#map-stops-body tr').count(),2,'Saved report retains the complete stop list');
+    await reopened.locator('#map-stops-close').click();
     assert.equal(await reopened.locator('#assessment-review').isVisible(),false);
     assert.equal(await reopened.locator('#assessment-review-tutorial').isVisible(),false);
     await other.close();
     await page.goto(`http://127.0.0.1:${server.address().port}/en`);await page.locator('#assessment-review-tutorial').waitFor({state:'visible'});
     assert.ok((await page.locator('#review-tutorial-title').textContent()).includes('Welcome'));await page.locator('#review-tutorial-close').click();
+    await assertOverviewFits();
     await page.locator('#start-assessment-review').click();await page.locator('#review-show-all').click();
     await page.locator('#review-toggle-details').click();
     const linked=page.locator('#review-detail [data-case-link]').first();
@@ -138,6 +207,15 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.locator('#start-assessment-review').click();await page.setViewportSize({width:1366,height:480});await assertMapFits();
     const aligned=await page.evaluate(()=>{const stage=document.querySelector('#review-map .map-stage'),a=stage.querySelector('svg').getBoundingClientRect(),b=stage.querySelector('iframe').getBoundingClientRect();return ['x','y','width','height'].every(key=>Math.abs(a[key]-b[key])<1);});
     assert.ok(aligned,'Online background and SVG keep identical dimensions and position');
+    await page.locator('#review-map [data-map-place="AAA"]').click();
+    assert.equal(await page.locator('#map-stops-body tr').count(),2,'Online fixed maps allow label interaction without enabling map pan or zoom');
+    await page.locator('#map-stops-close').click();
+    const tablet=await browser.newContext({viewport:{width:820,height:1180},hasTouch:true}),touchPage=await tablet.newPage();
+    await touchPage.goto(`http://127.0.0.1:${server.address().port}/en`);await touchPage.locator('#review-tutorial-close').click();
+    await touchPage.locator('.map-host [data-map-place="AAA"]').first().tap();
+    assert.equal(await touchPage.locator('#map-stops-body tr').count(),2,'Label popup works on touch screens');
+    await touchPage.screenshot({path:path.join(root,'tmp/assessment-label-stops-tablet.png')});
+    await tablet.close();
     assert.deepEqual(errors,[]);console.log('PASS: browser review/autosave/tutorial, responsive map containment in both layouts (mobile, short screen, Full HD, 4K, long titles/legends), online overlay alignment, saved HTML, FR/EN and scope isolation');
   }finally{await browser?.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

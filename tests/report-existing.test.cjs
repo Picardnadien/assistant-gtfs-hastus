@@ -42,6 +42,23 @@ assert.equal(points.find(p=>p.id==='stop-AAA').placeId,'AAA');
 assert.notEqual(points[0].lat,points[1].lat,'Stops keep physical coordinates instead of place centre');
 const geometry=ctx.existingReportMapGeometry(points);
 const distanceText=vm.runInContext('EXISTING_REPORT_TEXT.en',ctx);
+// Dense station cluster: badges must avoid physical stops and stay inside the map.
+const densePoints=[{id:'STATION',kind:'place',lat:45,lon:-75,references:['REF']},{id:'REF',kind:'place',isReference:true,attachedCodes:['STATION'],lat:45.0004,lon:-75.0004},
+  ...Array.from({length:16},(_,i)=>({id:'S'+i,kind:'stop',placeId:'STATION',timing:i%2===0,lat:45+(i%4-1.5)*.00006,lon:-75+(Math.floor(i/4)-1.5)*.00006}))];
+const denseBefore=JSON.stringify(densePoints);
+for(const lang of ['fr','en'])for(const features of [null,[]]){
+  const svg=ctx.existingReportMap(densePoints,features,vm.runInContext('EXISTING_REPORT_TEXT.'+lang,ctx));
+  const boxes=[...svg.matchAll(/<rect(?: class="(?:place-label|reference-label)")? x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/g)].map(m=>m.slice(1).map(Number)).filter(b=>b[2]>16);
+  const stops=[...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="6"/g)].map(m=>m.slice(1).map(Number));
+  assert.equal(boxes.length,3,'Two place badges and one distance badge tested');
+  for(const [x,y,w,h] of boxes){
+    assert.ok(x>=8&&y>=8&&x+w<=992.01&&y+h<=402.01,'Labels remain inside map');
+    for(const [sx,sy] of stops)assert.ok(sx+9<x||sx-9>x+w||sy+9<y||sy-9>y+h,'Badges do not mask physical stops in the dense fixture');
+  }
+  assert.equal((svg.match(/class="label-leader"/g)||[]).length,2,'Offset place badges keep their connector');
+  assert.equal(svg,ctx.existingReportMap(densePoints,features,vm.runInContext('EXISTING_REPORT_TEXT.'+lang,ctx)),'Placement is deterministic');
+}
+assert.equal(JSON.stringify(densePoints),denseBefore,'Label placement never changes coordinates or assignments');
 const distancePoints=[{id:'A',kind:'place',lat:45,lon:-75,references:['B'],distanceTargets:['B']},{id:'B',kind:'place',lat:45.001,lon:-75,references:['A']},{id:'C',kind:'place',lat:45.01,lon:-75}];
 const distanceMap=ctx.existingReportMap(distancePoints,[],distanceText);
 assert.equal((distanceMap.match(/class="review-distance"/g)||[]).length,1,'Reciprocal links and case targets do not duplicate distances');
@@ -86,7 +103,7 @@ for(const language of ['fr','en']){
   for(const c of cases.filter(c=>c.kind==='reference')){
     for(const html of [c.titleHtml,c.overviewCodesHtml])assert.equal((html.match(/<b class="code-main">5523<\/b>/g)||[]).length,1,'Main reference badge is not repeated');
     assert.equal((c.titleHtml.match(/Elgin \/ Sparks/g)||[]).length,1,'Reference description remains visible exactly once');
-    assert.equal((c.overviewDescriptionsHtml.match(/Elgin \/ Sparks/g)||[]).length,1);
+    assert.equal((c.overviewCodesHtml.match(/Elgin \/ Sparks/g)||[]).length,1,'Overview embeds the description once in its badge');
     const heading=c.html.split('</p>')[0];assert.equal((heading.match(/<b class="code-main">5523<\/b>/g)||[]).length,1,'Reference context links are also deduplicated');
   }
   assert.ok(cases[0].titleHtml.includes('<span class="reference-chip">5523</span>'),'Meaningful small reference chip on the attached place remains');
@@ -112,24 +129,25 @@ for(const language of ['fr','en']){
   assert.ok(aaa.html.includes(t.tp)&&aaa.html.includes(t.nonTp));
   assert.ok(joined.title.includes('JOIN')&&joined.title.includes('TARGET')&&joined.title.includes('↔'));
   assert.ok(joined.titleHtml.includes('<b class="code-main">JOIN</b>'));
-  assert.ok(joined.titleHtml.includes('<strong class="place-description">Place JOIN</strong>'));
+  assert.ok(joined.titleHtml.includes('<small class="code-description">Place JOIN</small>'));
+  assert.ok(!joined.titleHtml.includes('class="place-description"'),'Title descriptions are inside badges, not beside them');
   const reference=cases.find(c=>c.kind==='reference');
   assert.ok(reference.title.startsWith('REF · '+t.referenceRole));
   assert.ok(reference.titleHtml.includes('<span class="code-role">'+t.referenceRole+'</span>'));
   assert.ok(reference.titleHtml.includes(t.attachedPlaces+' : <span class="code-children">AAA · ZZZ</span>'));
   assert.ok(!reference.titleHtml.includes(t.referencePlace),'Reference titles use the compact badge in both languages');
-  assert.ok(aaa.html.includes('<span class="place-code reference-code"><span class="code-heading"><b class="code-main">REF</b>'),'Reference links and table cells share the purple badge');
+  assert.ok(aaa.html.includes('<span class="place-code reference-code with-description"><span class="code-heading"><b class="code-main">REF</b>'),'Reference links and table cells share the purple badge');
   assert.ok(aaa.titleHtml.includes('<b class="code-main">AAA</b>')&&aaa.titleHtml.includes(t.shortRef+' <span class="reference-chip">REF</span>'),'Attached places include their actual reference in a separate compact chip');
-  assert.ok(cases.find(c=>c.kind==='place'&&c.code==='REF').titleHtml.includes('class="place-code reference-code"'),'Reference identity stays purple on its own card');
+  assert.ok(cases.find(c=>c.kind==='place'&&c.code==='REF').titleHtml.includes('class="place-code reference-code with-description"'),'Reference identity stays purple on its own card');
   assert.ok(cases.find(c=>c.kind==='reference'&&c.code==='ABSENT').html.includes('<b class="code-main">ABSENT</b>'),'Missing references are also styled, without inventing a map position');
   assert.ok(joined.overviewCodesHtml.includes('JOIN')&&joined.overviewCodesHtml.includes('TARGET'));
-  assert.ok(!joined.overviewCodesHtml.includes('Place JOIN'),'Codes column excludes descriptions');
-  assert.ok(joined.overviewDescriptionsHtml.includes('Place JOIN')&&joined.overviewDescriptionsHtml.includes('Place TARGET'));
-  assert.ok(!joined.overviewDescriptionsHtml.includes('class="place-code"'),'Descriptions column excludes code badges');
+  assert.ok(joined.overviewCodesHtml.includes('<small class="code-description">Place JOIN</small>')&&joined.overviewCodesHtml.includes('<small class="code-description">Place TARGET</small>'),'Overview descriptions belong to the corresponding badges');
+  assert.ok(aaa.html.includes('<small class="code-description">Place AAA</small>'),'Table place badges include descriptions too');
+  assert.ok(cases.find(c=>c.kind==='issue').overviewCodesHtml.includes('Missing stop'),'Unresolved stop descriptions are not lost when removing the column');
   for(const c of cases){
-    assert.ok(!/<div|<br/.test(c.overviewCodesHtml+c.overviewDescriptionsHtml),'Overview entries contain no forced line breaks');
+    assert.ok(!/<div|<br/.test(c.overviewCodesHtml),'Overview entries contain no forced line breaks');
   }
-  assert.ok(joined.overviewDescriptionsHtml.includes(' ↔ '),'Inline descriptions follow code order');
+  assert.ok(joined.overviewCodesHtml.includes(' ↔ '),'Inline badges preserve the relationship');
   assert.ok(!cases.some(c=>/Place Code|Code place/.test(c.title+c.titleHtml+c.html)));
   assert.ok(aaa.html.includes('Stop ID:'));
   const rows=ctx.existingReportCsvRows(model,cases,t),csv=ctx.existingReportCsv(Object.values(rows).flat()),parsedCsv=ctx.parseCSV(csv);
@@ -163,7 +181,7 @@ for(const language of ['fr','en']){
     for(const match of maps[reference.id].matchAll(/class="(?:place|reference)-label" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/g)){
       const [,x,y,w,h]=match.map(Number);assert.ok(x>=8&&x+w<=992&&y>=8&&y+h<=402,'Badges stay inside the map');
     }
-    assert.ok(html.includes('<th>'+t.code+'</th><th>'+t.description+'</th>'),'Overview has separate translated columns');
+    assert.ok(html.includes('<th>'+t.code+'</th><th>'+t.type+'</th>'),'Overview has only identity and validation columns');
     assert.ok(html.includes('id="stop-scope"')&&html.includes(t.tpOnly),'FR/EN stop-scope control is embedded');
     new vm.Script(html.match(/<script>\(([\s\S]*?)<\/script>/)[0].replace(/^<script>/,'').replace(/<\/script>$/,''));
     if(offline){assert.ok(!html.includes('<iframe'));assert.ok(!html.includes('tile.openstreetmap'));assert.ok(html.includes('osm-road major'));}
@@ -176,7 +194,7 @@ const hostileModel=ctx.existingClientReportModel(hostile),hostileCases=ctx.exist
 assert.ok(!hostileCases[0].titleHtml.includes('<script>'),'Formatted descriptions remain HTML-escaped');
 const duplicateModel=ctx.existingClientReportModel({places:[{...make('PICO'),description:'PICO'}]});
 const duplicate=ctx.existingClientReportCases(duplicateModel,'en')[0];
-assert.equal(duplicate.titleHtml,'<span class="place-code"><span class="code-heading"><b class="code-main">PICO</b></span><span class="code-stops" title="Stops : stop-PICO">Stops : stop-PICO</span></span> <strong class="place-description">PICO</strong>','Identical code and description still have distinct visual roles');
+assert.equal(duplicate.titleHtml,'<span class="place-code with-description"><span class="code-heading"><b class="code-main">PICO</b></span><small class="code-description">PICO</small><span class="code-stops" title="Stops : stop-PICO">Stops : stop-PICO</span></span>','Identical code and description have distinct styles within one badge');
 const safe=ctx.existingClientReportHtml(hostileModel,hostileCases,{}, {language:'en',theme:'classic',logo:'',brand:'',client:'<img src=x onerror=alert(1)>',date:'test',offline:true});
 assert.ok(!safe.includes('<script>alert(1)'));assert.ok(!safe.includes('<img src=x onerror='));
 if(process.argv[2]){
@@ -206,8 +224,8 @@ async function testPrint(){
   get('open-assessment-guide').onclick();assert.equal(get('assessment-guide').open,true);
   await get('print-assessment').onclick();assert.equal(printed.length,cases.length,'print includes all pages');
   assert.ok(preview.document.html.includes('Save as PDF'));assert.ok(printed.some(node=>node.innerHTML.includes('QUIET17')));
-  assert.ok(printed.some(node=>node.innerHTML.includes('<strong class="place-description">Place JOIN</strong>')),'Print retains description emphasis');
-  assert.ok(get('overview-body').innerHTML.includes('class="place-code"'),'Overview uses formatted identities');
+  assert.ok(printed.some(node=>node.innerHTML.includes('<small class="code-description">Place JOIN</small>')),'Print retains descriptions inside badges');
+  assert.ok(get('overview-body').innerHTML.includes('class="place-code with-description"'),'Overview uses formatted identities with descriptions');
   assert.equal(get('print-assessment').disabled,false);
   get('stop-scope').value='tp';get('stop-scope').change();
   assert.ok(get('cases').innerHTML.includes('stop-AAA')&&!get('cases').innerHTML.includes('other-AAA'));

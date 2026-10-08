@@ -93,6 +93,21 @@ il s’agit d’un diagnostic, pas d’un fichier d’import HASTUS.
 
 ### Revue client du diagnostic HTML
 
+Les étiquettes de place sur la carte sont cliquables (également au clavier ou
+au toucher) : une fenêtre liste tous les stops associés avec description et
+statut TP, même sans coordonnées. Une référence inclut aussi les stops des
+places directement rattachées, avec une colonne indiquant leur place réelle.
+Le filtre TP est respecté à l'ouverture ; une case permet de consulter tous
+les stops dans cette fenêtre sans changer le filtre global ni les affectations.
+Les réglages **Étiquettes : Petites / Moyennes / Grandes** et **Contenu :
+Compact / Détaillé** s'appliquent aux cartes normales et aux trois vues de revue.
+Le mode compact conserve le code et le rôle/référence, sans les lignes de
+stops et de places rattachées. Les préférences sont conservées dans le navigateur
+et dans le HTML sauvegardé. Régénérer les anciens rapports pour en bénéficier.
+Dans toutes les étiquettes de place de la page principale, la description figure
+en petit sous le code. Le sommaire regroupe codes, références et descriptions dans
+une seule colonne, à côté du type de validation, avec retour à la ligne automatique.
+
 Le rapport propose désormais **Revue plein écran**, avec une grande carte,
 un panneau de détails défilant, des flèches de navigation et un bouton
 **Valider** également disponible sur les fiches normales. La disposition
