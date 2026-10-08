@@ -7,6 +7,7 @@ for(const file of ['index.html','tutorial.js','tutorial.css','app.js','report-ed
 for(const file of files)assert.ok(fs.statSync(path.join(destination,file)).isFile());
 for(const file of ['.git','tests','tmp','output','README.md','serve.py','supabase'])assert.ok(!fs.existsSync(path.join(destination,file)),file+' must not be deployed');
 for(const file of ['portal.html','portal.css','portal.js','portal-config.js'])assert.ok(files.includes(file));
+for(const file of ['assignment-diagnostics.js','assignment-diagnostics.css'])assert.ok(files.includes(file));
 const html=fs.readFileSync(path.join(destination,'index.html'),'utf8');
 assert.match(html,/v13\.0/);assert.match(html,/The GTFS Missing Link/);assert.match(html,/href="app.html"/);
 assert.match(fs.readFileSync(path.join(destination,'app.html'),'utf8'),/content="13\.0"/);
