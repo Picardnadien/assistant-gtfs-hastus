@@ -91,8 +91,10 @@ Des pastilles contrastées y affichent les deux codes de place et leur distance
 en mètres, pour les références existantes et les rapprochements proposés.
 Ces distances sont calculées à vol d’oiseau entre les centres des places,
 pas par le réseau routier ; aucune distance n’est inventée si un centre manque.
-Les autres dispositions restent inchangées. Régénérer le HTML pour bénéficier
-de ces pastilles dans un rapport déjà exporté.
+Le réglage **Distances : Masquées / Petites / Grandes** est commun au mode normal
+et aux vues **Carte maximale, Carte et Comparaison**. Il reste mémorisé lors de
+la navigation, du rechargement et dans le HTML enregistré ; les grandes pastilles
+sont le réglage initial. Régénérer le HTML pour mettre à jour un ancien rapport.
 Valider et naviguer restent possibles dans la barre du bas. **Afficher les
 détails** rétablit le panneau ; **Agrandir la carte** le replie. Ce choix est
 conservé avec les autres préférences, sans recadrer ni couper la carte.

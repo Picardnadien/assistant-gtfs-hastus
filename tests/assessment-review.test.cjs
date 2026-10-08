@@ -23,6 +23,14 @@ assert.ok(ctx.assessmentReviewStyles().includes('.review-map-frame'));
 assert.ok(ctx.assessmentReviewStyles().includes('#assessment-review.max-map-layout .review-layout'));
 assert.ok(ctx.assessmentReviewMarkup('fr').includes('id="review-map-validate"'));
 assert.ok(ctx.assessmentReviewMarkup('en').includes('Maximum map'));
+for(const language of ['fr','en']){
+  const html=ctx.assessmentReviewMarkup(language);
+  for(const id of ['assessment-distance-choice','review-distance-choice'])assert.ok(html.includes(`id="${id}"`));
+  for(const mode of ['off','small','large'])assert.ok(html.includes(`value="${mode}"`));
+}
+assert.ok(ctx.assessmentReviewStyles().includes('body[data-review-distances="small"]'));
+assert.ok(ctx.assessmentReviewStyles().includes('transform:scale(.72)'));
+assert.ok(!ctx.assessmentReviewStyles().includes('#assessment-review.max-map-layout .review-distance,'),'Visibility is independent of layout');
 assert.ok(ctx.assessmentReviewStyles().includes('min(50vw,clamp(600px,34vw,820px))'),'Wider details panel with a limit on small screens');
 assert.ok(!ctx.assessmentReviewStyles().includes('100dvh - 240px'),'Map sizing must not guess toolbar height');
 assert.ok(!ctx.assessmentReviewStyles().includes('42dvh - 80px'),'Small-screen maps must use the real panel size too');

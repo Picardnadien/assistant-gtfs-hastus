@@ -2,6 +2,8 @@
 
 ### Correctif v13.0 — distances en revue
 
+- Réglage commun « Distances : Masquées / Petites / Grandes » dans le mode normal et les trois dispositions de revue, mémorisé dans le navigateur et le HTML sauvegardé.
+
 - Mode « Maximum map » : distances à vol d’oiseau visibles entre les centres des places liées ou proposées au rapprochement, avec codes et mètres dans des pastilles contrastées. Disponible en français/anglais, cartes en ligne/hors ligne et filtre TP. Les rapports existants doivent être régénérés.
 
 ## 13.0 — 2026-10-07

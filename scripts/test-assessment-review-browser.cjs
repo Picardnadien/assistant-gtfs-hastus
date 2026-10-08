@@ -32,7 +32,24 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.locator('#review-map-validate').click();
     await page.locator('#review-toggle-details').click();
     assert.equal(await page.locator('#review-details-panel').isVisible(),true);
-    assert.equal(await page.locator('#review-map .review-distance').first().isVisible(),false,'Other map layouts remain unchanged');
+    assert.equal(await page.locator('#review-map .review-distance').first().isVisible(),true,'Distances also appear in Map layout');
+    for(const layout of ['max','map','compare']){
+      await page.locator('#review-layout-choice').selectOption(layout);
+      await page.locator('#review-distance-choice').selectOption('large');
+      const badge=page.locator('#review-map .review-distance-badge').first();
+      // Map fit runs on the next animation frame after each layout change.
+      await page.waitForFunction(()=>document.querySelector('#review-map .map-stage').getBoundingClientRect().width>100);
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      const large=await badge.boundingBox();
+      await page.locator('#review-distance-choice').selectOption('small');
+      const small=await badge.boundingBox();
+      assert.ok(Math.abs(small.width/large.width-.72)<.02,'Small distances reduce the complete badge, not only the text');
+      assert.equal(await page.locator('#assessment-distance-choice').inputValue(),'small','Normal-view control stays synchronized');
+      await page.locator('#review-distance-choice').selectOption('off');
+      assert.equal(await page.locator('#review-map .review-distance').first().isVisible(),false);
+      assert.equal(await page.locator('#review-map .review-distance-note').first().isVisible(),false);
+      await page.locator('#review-distance-choice').selectOption('large');
+    }
     await page.locator('.review-decision summary').click();
     await page.locator('#review-note').fill('Vérifier le retournement <script>unsafe</script>');await page.locator('#review-note').press('Tab');
     await page.locator('#review-validate').click();
@@ -75,6 +92,8 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       await page.screenshot({path:path.join(root,`tmp/assessment-review-${width}.png`)});
     }
     await page.locator('#review-close').click();
+    await page.locator('#assessment-distance-choice').selectOption('small');
+    assert.equal(await page.locator('body').getAttribute('data-review-distances'),'small');
     await page.locator('#autosave-assessment').click();
     await page.waitForFunction(()=>window.testFile.writes===1);
     await page.locator(`[data-review-validate="${id}"]`).click();
@@ -83,6 +102,8 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     const savedHtml=await page.evaluate(()=>window.testFile.content);
     assert.ok(savedHtml.includes('Vérifier le retournement'));assert.ok(!savedHtml.includes('<script>unsafe</script>'));
     await page.reload();assert.equal(await page.locator('#assessment-review-tutorial').isVisible(),false);
+    assert.equal(await page.locator('#assessment-distance-choice').inputValue(),'small','Distance size survives reload');
+    assert.equal(await page.locator('#review-distance-choice').inputValue(),'small');
     assert.ok((await page.locator('#assessment-log-body tr').count())>=4,'Draft replays after reload');
     assert.equal(await page.locator('body').getAttribute('class'),'assessment-comfort');
     await page.locator('#stop-scope').selectOption('tp');
@@ -100,6 +121,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     reopened.on('pageerror',e=>errors.push(e.message));
     await reopened.route('http://review.test/**',route=>route.fulfill({contentType:'text/html',body:savedHtml}));
     await reopened.goto('http://review.test/saved');assert.ok(await reopened.locator('#assessment-log-body tr').count()>=4);
+    assert.equal(await reopened.locator('#assessment-distance-choice').inputValue(),'small','Saved HTML carries the distance preference without browser cache');
     assert.equal(await reopened.locator('#assessment-review').isVisible(),false);
     assert.equal(await reopened.locator('#assessment-review-tutorial').isVisible(),false);
     await other.close();
