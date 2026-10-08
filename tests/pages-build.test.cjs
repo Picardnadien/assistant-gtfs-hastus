@@ -10,6 +10,7 @@ for(const file of ['portal.html','portal.css','portal.js','portal-config.js'])as
 for(const file of ['assignment-diagnostics.js','assignment-diagnostics.css'])assert.ok(files.includes(file));
 const html=fs.readFileSync(path.join(destination,'index.html'),'utf8');
 assert.match(html,/v13\.0/);assert.match(html,/The GTFS Missing Link/);assert.match(html,/href="app.html"/);
+assert.match(html,/id="release-notes"/);assert.match(html,/Les nouveautés depuis la v12/);assert.match(html,/What’s new since v12/);
 assert.match(fs.readFileSync(path.join(destination,'app.html'),'utf8'),/content="13\.0"/);
 for(const release of ['12.0','11.0','10.0']){
   const prefix=`versions/v${release}/`;
