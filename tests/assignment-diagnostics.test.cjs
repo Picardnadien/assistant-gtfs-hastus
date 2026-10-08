@@ -25,7 +25,10 @@ assert.equal(JSON.stringify(source),before,'Diagnostic must not change source as
 const dedup=ctx.assignmentDiagnosticModel({...source,groupingCandidates:[...source.groupingCandidates,{...source.groupingCandidates[0],place_a_id:'BETA',place_b_id:'ALPHA'}]});
 assert.equal(dedup.entries.filter(e=>e.kind==='grouping').length,1,'Reciprocal candidate pairs are deduplicated');
 const many={...source,referenceAnomalies:Array.from({length:105},(_,i)=>({...source.referenceAnomalies[0],distance_m:600+i}))};
-const manyHtml=ctx.assignmentDiagnosticsHtml(many,{language:'en'});assert.equal(vm.runInContext('assignmentDiagnosticView.entries.length',ctx),106);assert.equal((manyHtml.match(/class="ad-card"/g)||[]).length,8,'Pagination bounds initial rendering without losing cases');
+const manyHtml=ctx.assignmentDiagnosticsHtml(many,{language:'en'});assert.equal(vm.runInContext('assignmentDiagnosticView.entries.length',ctx),106);assert.equal((manyHtml.match(/class="ad-card"/g)||[]).length,106,'All cases are on one page');
+assert.ok(!manyHtml.includes('data-ad-page'),'No Previous/Next buttons');
+assert.equal((manyHtml.match(/data-ad-deferred/g)||[]).length,105,'Closed case details are generated only when opened');
+assert.equal((manyHtml.match(/class="ad-stop-list"/g)||[]).length,1,'Do not duplicate all stop tables in the initial DOM');
 vm.runInContext("assignmentDiagnosticQuery='West platform'",ctx);assert.ok(ctx.assignmentDiagnosticContent().includes('ALPHA'));
 vm.runInContext("assignmentDiagnosticQuery='no-such-stop'",ctx);assert.ok(ctx.assignmentDiagnosticContent().includes('No cases match'));
 vm.runInContext("assignmentDiagnosticQuery=''",ctx);
@@ -34,4 +37,4 @@ assert.ok(ctx.assignmentDiagnosticsHtml({places:[]},{language:'en'}).includes('d
 assert.ok(fs.readFileSync(path.join(root,'index.html'),'utf8').includes('assignment-diagnostics.js'));
 assert.ok(fs.readFileSync(path.join(root,'app.js'),'utf8').includes('activateAssignmentDiagnostics();'));
 fs.mkdirSync(path.join(root,'tmp'),{recursive:true});fs.writeFileSync(path.join(root,'tmp/assignment-diagnostics-fixture.json'),JSON.stringify(source));
-console.log('PASS: assignment diagnosis, source immutability, references, non-shared nearby places, missing coordinates, TP/endpoints, deduplication, pagination, search, FR/EN and escaping.');
+console.log('PASS: assignment diagnosis, source immutability, references, non-shared nearby places, missing coordinates, TP/endpoints, deduplication, single-page lazy details, search, FR/EN and escaping.');

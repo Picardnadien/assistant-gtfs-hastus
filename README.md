@@ -95,8 +95,10 @@ il s’agit d’un diagnostic, pas d’un fichier d’import HASTUS.
 
 Dans l’application, **Décisions d’affectation** présente aussi un diagnostic
 détaillé : références éloignées ou introuvables en premier, places proches sans
-référence commune et stops à rattacher. Filtres, recherche (y compris descriptions
-et Stop IDs) et pagination permettent de parcourir tous les cas. Chaque fiche
+référence commune et stops à rattacher. Tous les cas figurent sur une même page,
+sans boutons Précédent/Suivant. Filtres et recherche (y compris descriptions et
+Stop IDs) permettent de réduire la liste. Les détails et cartes sont préparés
+à l’ouverture des fiches pour limiter le chargement initial. Chaque fiche
 compare les références actuelles, la distance et le seuil, fournit une carte OSM,
 une recommandation et les stops associés avec statut TP et coordonnées.
 Les stops sans coordonnées restent dans les listes. Les débuts/fins identifiés

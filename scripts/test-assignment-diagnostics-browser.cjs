@@ -21,6 +21,21 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.locator('#app-language').selectOption('en');assert.ok((await page.locator('#assignment-diagnostics').textContent()).includes('Distant or suspect references'));
     for(const theme of ['clean','clean-dark','classic','genz']){
       await page.locator('#app-theme').selectOption(theme);await page.locator('#assignment-diagnostics').scrollIntoViewIfNeeded();
+      const palette=await page.locator('#assignment-diagnostics').evaluate(root=>{
+        const ordinary=root.querySelector('.place-code:not(.reference-code)'),ref=root.querySelector('.reference-code');
+        const rgb=value=>value.match(/[\d.]+/g).slice(0,3).map(Number);
+        const luminance=value=>rgb(value).map(x=>{x/=255;return x<=.04045?x/12.92:((x+.055)/1.055)**2.4;}).reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);
+        const contrast=(fg,bg)=>{const a=luminance(fg),b=luminance(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);};
+        const checks=[ordinary,ref,...root.querySelectorAll('.reference-chip,.ad-category,.ad-tp')].map(el=>{const style=getComputedStyle(el);return contrast(style.color,style.backgroundColor);});
+        for(const badge of [ordinary,ref])for(const child of badge.querySelectorAll('.code-description,.code-stops'))checks.push(contrast(getComputedStyle(child).color,getComputedStyle(badge).backgroundColor));
+        for(const [text,rect] of [['.marker.place:not(.reference-marker) .map-code-main','.place-label'],['.reference-marker .map-code-main','.reference-label'],['.review-distance-value','.review-distance rect']]){
+          const label=root.querySelector(text),bg=root.querySelector(rect);if(label&&bg)checks.push(contrast(getComputedStyle(label).fill,getComputedStyle(bg).fill));
+        }
+        return {background:getComputedStyle(ordinary).backgroundColor,reference:getComputedStyle(ref).backgroundColor,checks};
+      });
+      assert.ok(palette.checks.every(value=>value>=4.5),'Badge text has at least 4.5:1 contrast in '+theme);
+      assert.equal(palette.background,theme==='clean-dark'?'rgb(41, 57, 47)':'rgb(237, 243, 231)','Switching themes restores the correct badge palette');
+      assert.notEqual(palette.background,palette.reference,'References retain their distinct colour');
       for(const width of [768,1366]){await page.setViewportSize({width,height:900});assert.ok(await page.locator('#assignment-diagnostics').evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Diagnostic fits at '+width+' in '+theme);}
       await page.screenshot({path:path.join(root,`tmp/assignment-diagnostics-${theme}.png`)});
       await page.evaluate(()=>window.scrollTo(0,document.getElementById('assignment-diagnostics').getBoundingClientRect().top+scrollY-65));
@@ -28,6 +43,21 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     }
     const unchanged=await page.evaluate(()=>JSON.stringify({places:state.places,referenceAnomalies:state.referenceAnomalies,groupingCandidates:state.groupingCandidates,decisions:state.decisions}));
     assert.equal(unchanged,JSON.stringify({places:fixture.places,referenceAnomalies:fixture.referenceAnomalies,groupingCandidates:fixture.groupingCandidates,decisions:fixture.decisions}));
-    assert.deepEqual(errors,[]);console.log('PASS: real application assignment diagnostics, lazy maps, filters/search, missing coordinates, language switching, four themes and source immutability.');
+    await page.evaluate(source=>{
+      const many={...source,referenceAnomalies:Array.from({length:105},(_,i)=>({...source.referenceAnomalies[0],distance_m:600+i}))};
+      assignmentDiagnosticFilter='all';assignmentDiagnosticQuery='';
+      document.getElementById('assignment-diagnostics').outerHTML=assignmentDiagnosticsHtml(many,{language:'en'});activateAssignmentDiagnostics();
+    },fixture);
+    assert.equal(await page.locator('[data-ad-case]').count(),106,'All 106 cases are on the same page');
+    assert.equal(await page.locator('[data-ad-page]').count(),0);
+    assert.equal(await page.locator('.ad-map iframe').count(),1);
+    await page.locator('[data-ad-case]').last().locator(':scope > summary').click();
+    await page.locator('[data-ad-case]').last().locator('.ad-map iframe').waitFor();
+    assert.equal(await page.locator('.ad-stop-list').count(),2,'Opening the last case creates only its own details');
+    await page.locator('[data-ad-case]').last().locator('.ad-stop-list summary').click();
+    assert.equal(await page.locator('[data-ad-case]').last().locator('tbody tr').count(),3);
+    await page.locator('[data-ad-filter]').selectOption('grouping');assert.equal(await page.locator('[data-ad-case]').count(),1);
+    await page.locator('[data-ad-filter]').selectOption('all');assert.equal(await page.locator('[data-ad-case]').count(),106);
+    assert.deepEqual(errors,[]);console.log('PASS: real application assignment diagnostics, all cases on one page, lazy details/maps, filters/search, missing coordinates, language switching, four themes and source immutability.');
   }finally{await browser?.close();server.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
