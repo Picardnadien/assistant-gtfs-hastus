@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="application-version" content="12.0">
+  <meta name="application-version" content="13.0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The GTFS Missing Link</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="clean-theme.css?v=12.0">
-  <link rel="stylesheet" href="place-code-layout.css?v=12.0">
-  <link rel="stylesheet" href="service-import-plan.css?v=12.0">
-  <link rel="stylesheet" href="tutorial.css?v=12.0">
+  <link rel="stylesheet" href="styles.css?v=13.0">
+  <link rel="stylesheet" href="clean-theme.css?v=13.0">
+  <link rel="stylesheet" href="place-code-layout.css?v=13.0">
+  <link rel="stylesheet" href="service-import-plan.css?v=13.0">
+  <link rel="stylesheet" href="tutorial.css?v=13.0">
 </head>
 <body>
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
@@ -47,6 +47,29 @@
   </nav>
 
   <main>
+    <section id="mode-section" class="mode-section">
+      <div class="section-heading">
+        <div><p class="eyebrow">AVANT DE COMMENCER</p><h2>Choisir le contexte d'import</h2></div>
+        <p>Le parcours et les contrôles s'adaptent à la situation du client.</p>
+      </div>
+      <div class="mode-grid">
+        <button class="mode-card active" data-mode="geographic" aria-pressed="true">
+          <span class="mode-number">01</span><span><strong>Regroupement géographique</strong><small>Regrouper les points horaires proches, avec ou sans données HASTUS existantes.</small></span><span class="mode-check">✓</span>
+        </button>
+        <button class="mode-card" data-mode="network" aria-pressed="false">
+          <span class="mode-number">02</span><span><strong>Cartes des routes et timetables</strong><small>Cartes et horaires du GTFS ou du dossier working, deux directions et exports.</small></span><span class="mode-check">✓</span>
+        </button>
+        <button class="mode-card" data-mode="timetables" aria-pressed="false">
+          <span class="mode-number">03</span><span><strong>Comparaison des horaires</strong><small>Comparer les volumes quotidiens et produire des timetables de variations.</small></span><span class="mode-check">✓</span>
+        </button>
+        <button class="mode-card" data-mode="scheduling" aria-pressed="false">
+          <span class="mode-number">04</span><span><strong>Scheduling units</strong><small>Préparer les unités et le script d’import HASTUS à partir des routes.</small></span><span class="mode-check">✓</span>
+        </button>
+        <button class="mode-card" data-mode="reports" aria-pressed="false">
+          <span class="mode-number">05</span><span><strong>Rapports et exports</strong><small>Diagnostic HASTUS, validation client, PDF, HTML et fichiers de sortie.</small></span><span class="mode-check">✓</span>
+        </button>
+      </div>
+    </section>
     <section id="feed-section" class="panel feed-section">
       <div class="section-heading">
         <div><p class="eyebrow">SOURCE D’ANALYSE</p><h2 id="feed-title">Choisir les données à utiliser</h2></div>
@@ -73,30 +96,11 @@
       <div id="gtfs-source-status"><div id="gtfs-status" class="status-line">Aucun GTFS chargé</div><div id="gtfs-files" class="file-chips"></div></div>
     </section>
 
-    <section id="mode-section" class="mode-section">
-      <div class="section-heading">
-        <div><p class="eyebrow">AVANT DE COMMENCER</p><h2>Choisir le contexte d'import</h2></div>
-        <p>Le parcours et les contrôles s'adaptent à la situation du client.</p>
-      </div>
-      <div class="mode-grid">
-        <button class="mode-card active" data-mode="geographic" aria-pressed="true">
-          <span class="mode-number">01</span><span><strong>Regroupement géographique</strong><small>Regrouper les points horaires proches, avec ou sans données HASTUS existantes.</small></span><span class="mode-check">✓</span>
-        </button>
-        <button class="mode-card" data-mode="maps" aria-pressed="false">
-          <span class="mode-number">02</span><span><strong>Cartes des points horaires par route</strong><small>Tracer les shapes et afficher les points horaires avec leur description.</small></span><span class="mode-check">✓</span>
-        </button>
-        <button class="mode-card" data-mode="timetables" aria-pressed="false">
-          <span class="mode-number">03</span><span><strong>Comparaison des horaires</strong><small>Comparer les volumes quotidiens et produire des timetables de variations.</small></span><span class="mode-check">✓</span>
-        </button>
-        <button id="working-timetable-mode" class="mode-card locked" data-mode="workingTimetables" aria-pressed="false" disabled>
-          <span class="mode-number">04</span><span><strong>Timetables du dossier working</strong><small id="working-timetable-detail">Disponible dès qu’un parent_station est enregistré dans working/stops.txt.</small></span><span class="mode-lock">Verrouillé</span><span class="mode-check">✓</span>
-        </button>
-      </div>
-    </section>
 
-    <section id="network-module" class="panel" aria-labelledby="network-module-title">
-      <div class="section-heading"><div><p class="eyebrow">MODULE INDÉPENDANT</p><h2 id="network-module-title">Cartes des routes et timetables</h2></div><p>Consultation du GTFS chargé, séparée de la validation des places. Deux directions côte à côte, filtres calendrier et exports Excel / PDF.</p></div>
+    <section id="network-module" class="panel hidden" aria-labelledby="network-module-title">
+      <div class="section-heading"><div><p class="eyebrow">WORKFLOW 02</p><h2 id="network-module-title">Cartes des routes et timetables</h2></div><p>Consultation du GTFS chargé, séparée de la validation des places. Deux directions côte à côte, filtres calendrier et exports Excel / PDF.</p></div>
       <div class="place-report-options">
+        <label><span>Données des arrêts</span><select id="network-stop-source"><option value="gtfs">GTFS chargé</option><option value="working" id="network-working-option" disabled>working/stops.txt · places affectées</option></select><small id="working-timetable-detail">Disponible dès qu’un parent_station est enregistré dans working/stops.txt.</small></label>
         <label><span>Langue du rapport</span><select id="network-language"><option value="auto" selected>Langue de l’interface</option><option value="fr">Français</option><option value="en">English</option></select></label>
         <label><span>Thème</span><select id="network-theme"><option value="clean">Épuré compact</option><option value="classic">Classique</option></select></label>
         <label><span>Cartes</span><select id="network-map-mode"><option value="offline">Fixes et disponibles hors ligne</option><option value="online" selected>Connexion Internet</option></select></label>
@@ -165,6 +169,12 @@
       </div>
       <div id="notices"></div>
       <div id="decision-list" class="decision-list"></div>
+      <button id="go-to-reports" type="button" class="secondary">Ouvrir les rapports et exports →</button>
+    </section>
+    <section id="reports-workflow" class="panel hidden" aria-labelledby="reports-workflow-title">
+      <div class="section-heading"><div><p class="eyebrow">WORKFLOW 05</p><h2 id="reports-workflow-title">Rapports et exports</h2></div><p>Les rapports utilisent la dernière analyse géographique et ses décisions conservées.</p></div>
+      <p id="reports-workflow-empty" class="notice">Lancez d’abord une analyse dans le workflow Regroupement géographique pour préparer les rapports.</p>
+      <button id="reports-back-analysis" type="button" class="secondary">Revenir au regroupement géographique</button>
       <section id="place-report-panel" class="place-report-panel hidden" aria-labelledby="place-report-title">
         <div class="place-report-copy"><p class="eyebrow">RAPPORT DE VALIDATION</p><h3 id="place-report-title">Une place par page, prête à valider avec le client</h3><small>Une synthèse classe d’abord les places par besoin de décision. Chaque fiche présente ensuite le nom, le code, les stops associés, les stops en dehors du périmètre et une carte OpenStreetMap.</small></div>
         <div class="place-report-options">
@@ -185,8 +195,8 @@
         <div class="export-actions"><label class="report-type-label"><span>Contenu du rapport PDF</span><select id="report-type"><option value="all">Tous les stops</option><option value="assigned">Sans intervention</option><option value="review">À évaluer</option></select></label><button id="print-client-report" class="secondary">Ouvrir le rapport PDF</button><button id="print-reference-report" class="secondary hidden">Rapport PDF · références suspectes</button><button id="download-collisions" class="secondary hidden">Correspondance des ID</button><button id="download-report" class="secondary">Places par stop</button><button id="download-by-place" class="secondary">Stops par place</button><button id="download-grouping-candidates" class="secondary hidden">Regroupements suggérés</button><button id="download-reference-anomalies" class="secondary hidden">Références éloignées</button><button id="download-unused" class="secondary">Places sans timing point</button><button id="download-places" class="secondary">Places à créer</button><button id="download-times" class="primary">Télécharger stop_times_enrichi.txt</button><button id="download-gtfs" class="primary">Télécharger stops_enrichi.txt</button></div>
       </div>
     </section>
-    <section id="scheduling-unit-module" class="panel" aria-labelledby="scu-title">
-      <div class="section-heading"><div><p class="eyebrow">IMPORT HASTUS</p><h2 id="scu-title">Scheduling units</h2></div><p>Une unité par route, type timetable 1100, avec le script d’import CSched.</p></div>
+    <section id="scheduling-unit-module" class="panel hidden" aria-labelledby="scu-title">
+      <div class="section-heading"><div><p class="eyebrow">WORKFLOW 04</p><h2 id="scu-title">Scheduling units</h2></div><p>Une unité par route, type timetable 1100, avec le script d’import CSched.</p></div>
       <div class="place-report-options">
         <label><span>Source des routes</span><select id="scu-source"><option value="gtfs">GTFS chargé</option><option value="file">routes.txt séparé</option></select></label>
         <label><span>Charger uniquement routes.txt</span><input id="scu-routes-file" type="file" accept=".txt"></label>
@@ -198,24 +208,24 @@
       <div class="place-report-actions"><button id="scu-save" type="button" class="secondary" disabled>Enregistrer dans un dossier GTFS…</button><button id="scu-download" type="button" class="primary" disabled>Télécharger le ZIP avec les imports</button></div>
     </section>
   </main>
-  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v12.0</span></footer>
-  <script src="report-package.js?v=12.0"></script>
-  <script src="report-payload.js?v=12.0"></script>
-  <script src="report-network.js?v=12.0"></script>
-  <script src="report-timetable-export.js?v=12.0"></script>
-  <script src="report-network-document.js?v=12.0"></script>
-  <script src="report-editor.js?v=12.0"></script>
-  <script src="app-translations.js?v=12.0"></script>
-  <script src="app-shell.js?v=12.0"></script>
-  <script src="workspace-storage.js?v=12.0"></script>
-  <script src="report-existing.js?v=12.0"></script>
-  <script src="scheduling-units.js?v=12.0"></script>
-  <script src="service-import-plan.js?v=12.0"></script>
-  <script src="working-timetable.js?v=12.0"></script>
-  <script src="day-route-summary.js?v=12.0"></script>
-  <script src="app.js?v=12.0"></script>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v13.0</span></footer>
+  <script src="report-package.js?v=13.0"></script>
+  <script src="report-payload.js?v=13.0"></script>
+  <script src="report-network.js?v=13.0"></script>
+  <script src="report-timetable-export.js?v=13.0"></script>
+  <script src="report-network-document.js?v=13.0"></script>
+  <script src="report-editor.js?v=13.0"></script>
+  <script src="app-translations.js?v=13.0"></script>
+  <script src="app-shell.js?v=13.0"></script>
+  <script src="workspace-storage.js?v=13.0"></script>
+  <script src="report-existing.js?v=13.0"></script>
+  <script src="scheduling-units.js?v=13.0"></script>
+  <script src="service-import-plan.js?v=13.0"></script>
+  <script src="working-timetable.js?v=13.0"></script>
+  <script src="day-route-summary.js?v=13.0"></script>
+  <script src="app.js?v=13.0"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
-  <script src="tutorial.js?v=12.0"></script>
+  <script src="tutorial.js?v=13.0"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>
 </body>
 </html>

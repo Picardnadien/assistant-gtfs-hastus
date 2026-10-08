@@ -1,5 +1,12 @@
 /* UI copy only: never translate source data or independently generated reports. */
 const APP_ENGLISH = {
+  'Cartes et horaires du GTFS ou du dossier working, deux directions et exports.':'GTFS or working-folder route maps and timetables, both directions and exports.',
+  'Préparer les unités et le script d’import HASTUS à partir des routes.':'Prepare scheduling units and the HASTUS import script from routes.',
+  'Rapports et exports':'Reports and exports','Diagnostic HASTUS, validation client, PDF, HTML et fichiers de sortie.':'HASTUS assessment, client validation, PDF, HTML and output files.',
+  'Données des arrêts':'Stop data','working/stops.txt · places affectées':'working/stops.txt · assigned places',
+  'Les rapports utilisent la dernière analyse géographique et ses décisions conservées.':'Reports use the latest geographic analysis and its saved decisions.',
+  'Lancez d’abord une analyse dans le workflow Regroupement géographique pour préparer les rapports.':'Run a geographic grouping analysis first to prepare reports.',
+  'Revenir au regroupement géographique':'Back to geographic grouping','Ouvrir les rapports et exports →':'Open reports and exports →',
   'points horaires':'timing points','places proposées':'suggested places','groupes multi-stops':'multi-stop groups','places avec un stop':'single-stop places','stop_id remplacés':'replaced stop_id values','rayon appliqué':'applied radius','rayon intelligent moyen':'average smart radius',
   'déjà rattachés':'already assigned','à confirmer':'to confirm','sans place proche':'no nearby place','regroupements suggérés':'suggested groupings','références suspectes':'suspicious references','places sans timing point':'places without timing points','ID régénérés':'regenerated IDs',
   'Regroupement sans données HASTUS.':'Grouping without HASTUS data.','Deux stops ne sont placés ensemble que si chacun reste dans le rayon choisi de tous les autres stops du groupe.':'Two stops are grouped only if each stays within the selected radius of every other stop in the group.',

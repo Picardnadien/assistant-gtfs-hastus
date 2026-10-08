@@ -1,6 +1,6 @@
 # The GTFS Missing Link
 
-**Version 12.0** — voir les [notes de version](CHANGELOG.md).
+**Version 13.0** — voir les [notes de version](CHANGELOG.md).
 
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
@@ -14,6 +14,130 @@ L’historique n’est pas conservé après rechargement ; les noms restent sauv
 par le mécanisme de sauvegarde habituel.
 
 ## Démarrage
+
+### Accueil en ligne v13 et scénarios iPad
+
+GitHub Pages ouvre un menu FR/EN : application actuelle, démonstration fictive
+de revue, ouverture locale d’un rapport HTML privé et archives v12/v11/v10.
+Les archives ont leur propre base navigateur ; utiliser une copie des dossiers
+de travail avec une ancienne version. Le lancement local reste `index.html`.
+Le paquet public est construit par `node scripts/build-pages.cjs` à partir d’une
+liste explicite de ressources et des tags Git. Aucun dossier `output` ou `tmp`
+ni classeur client n’est publié. La démonstration est entièrement fictive :
+ses noms, identifiants et coordonnées ne proviennent pas des données OC Transpo.
+
+Pour la revue privée, transférer le rapport HTML sur l’iPad, ouvrir le menu,
+choisir « Revue privée · données réelles », sélectionner le fichier puis
+« Ouvrir le rapport sélectionné ». Aucun téléversement du rapport n’a lieu.
+Les cartes en ligne sollicitent OpenStreetMap. Télécharger une copie HTML
+à la fin pour conserver et transmettre les validations ; le brouillon navigateur
+reste un mécanisme de reprise, pas une sauvegarde durable.
+
+Recette facultative : `scripts/test-oc-transpo-browser.cjs` accepte le chemin du
+module Playwright, l’export des stops et l’export des variantes XLSX. Il utilise
+les fonctions de lecture de l’application, vérifie les originaux par SHA-256,
+produit les rapports privés FR/EN et le résultat de recette sous
+`output/oc-transpo-review/` (exclu de Git). Les contrôles tactiles et résolutions
+iPad sont simulés dans Edge ; ils ne remplacent pas un essai Safari sur iPad réel.
+`scripts/test-launcher-browser.cjs` vérifie le menu, les quatre versions,
+la démonstration et la réouverture locale d’une copie HTML téléchargée.
+
+### Workflows
+
+Le choix du workflow est placé avant les données sources. Seules les options du
+parcours sélectionné sont affichées : 01 Regroupement géographique, 02 Cartes des
+routes et timetables (GTFS ou working/stops.txt), 03 Comparaison des horaires,
+04 Scheduling units et 05 Rapports et exports. Les anciens modes cartes et
+timetables working rejoignent le workflow 02. Les décisions géographiques sont
+conservées lors du passage d’un workflow à l’autre ; les rapports utilisent la
+dernière analyse et ses réglages de langue, de cartes et de logos.
+
+Le diagnostic HTML HASTUS précise la place de référence de chaque place et le
+badge reprend les Stop IDs associés sous une forme compacte (six identifiants,
+puis « +N » ; liste complète dans les détails). Le filtre TP s’applique aussi
+aux étiquettes sur la carte. Les étiquettes liées n’impliquent aucune réaffectation.
+Le rapport précise également le
+statut TP des stops selon la source d’analyse. Bleu : TP ; orange : non TP ; gris :
+statut inconnu. Les centres de place sont carrés, les propositions portent un
+contour violet. Les titres des rapprochements nomment toutes les places proposées.
+Les étiquettes compactes distinguent le code principal et la mention « Réf. »
+suivie d’une pastille violette pour une place rattachée. Une place de référence
+utilise une étiquette violette avec le rôle « Référence » et une seconde ligne
+« Rattachées : PLACE1 · PLACE2 ». Sans référence, seul le code est affiché.
+Cette présentation est traduite en anglais et reprise dans les cartes et le PDF.
+Si une référence est elle-même rattachée dans les données sources, ce lien reste
+visible avec la mention « Référence à vérifier », sans valider cette hiérarchie
+ni modifier les données.
+Les pointillés relient uniquement les rattachements existants dans les données,
+pas les regroupements suggérés. Les cartes ajoutent les centres directement liés
+lorsque leurs coordonnées sont connues ; une référence absente n’est pas localisée
+artificiellement. Ces liens restent visibles avec le filtre TP.
+Le guide, l’export CSV et l’aperçu d’impression PDF sont accessibles dans le rapport.
+CSV et impression couvrent tous les résultats filtrés, pas seulement la page courante.
+L’impression ouvre un aperçu avec un bouton Imprimer / PDF : choisir ensuite
+« Enregistrer au format PDF » dans le navigateur. Les fonds en ligne nécessitent
+Internet. Le CSV distingue affectations actuelles et propositions non appliquées ;
+il s’agit d’un diagnostic, pas d’un fichier d’import HASTUS.
+
+### Revue client du diagnostic HTML
+
+Le rapport propose désormais **Revue plein écran**, avec une grande carte,
+un panneau de détails défilant, des flèches de navigation et un bouton
+**Valider** également disponible sur les fiches normales. La disposition
+**Carte** privilégie la présentation ; **Comparaison** élargit les tableaux.
+**Carte maximale**, choisie par défaut sans préférence antérieure, replie le
+panneau droit et utilise toute la largeur disponible, avec des bandeaux réduits.
+Valider et naviguer restent possibles dans la barre du bas. **Afficher les
+détails** rétablit le panneau ; **Agrandir la carte** le replie. Ce choix est
+conservé avec les autres préférences, sans recadrer ni couper la carte.
+Le panneau droit réserve davantage de largeur aux stops et références : environ
+600 px minimum sur un écran de bureau, avec adaptation aux petits écrans.
+Les liens vers les places permettent de consulter une fiche liée puis de
+revenir avec **↩ Retour**. Échap quitte la revue. Sans autorisation de plein
+écran natif, la revue occupe simplement la zone disponible du navigateur.
+La carte se redimensionne selon l’espace réellement laissé par le titre,
+les commandes et la légende, en conservant ses proportions et l’alignement
+des repères OSM. Le cadrage complet reste visible dans les deux dispositions,
+y compris après redimensionnement ; une légende très longue défile séparément.
+
+Les cas validés sortent de la file plein écran ; **Tous les cas** permet de
+les retrouver et d’annuler leur validation. Les filtres du rapport définissent
+la sélection à parcourir. Une validation ne s’étend pas aux fiches liées ni
+au périmètre « Tous les stops » si elle a été faite en « TP uniquement ».
+Les notes de décision sont facultatives ; modifier une note remet le cas à
+valider. Un compte rendu horodaté conserve l’avant/après des validations,
+annulations et notes, consultable dans le rapport, exportable en CSV et inclus
+dans l’aperçu PDF. Il trace des décisions de revue, pas des corrections GTFS :
+les affectations et références sources restent inchangées.
+
+Un tutoriel en sept étapes apparaît à la première ouverture et reste accessible
+par **Tutoriel guidé**. Le thème optionnel **Confort visuel** utilise des tons
+moins saturés, des fonds doux et aucune animation. Les symboles, légendes et
+libellés TP restent présents ; les préférences de réduction des mouvements du
+système sont également respectées. Les styles existants restent disponibles.
+
+Les décisions sont sauvegardées automatiquement comme brouillon dans le même
+navigateur, si son stockage local est autorisé. Ce brouillon ne remplace pas
+le fichier HTML et n’est pas transmis au client avec le fichier d’origine.
+**Activer l’auto save** permet, dans un navigateur compatible, de choisir une
+copie HTML de travail : les modifications suivantes remplacent ce fichier,
+sans téléchargement répété. À chaque réouverture, sélectionner à nouveau le
+fichier pour autoriser l’écriture. Les écritures sont sérialisées ; une erreur
+ou une modification externe suspend l’auto save et affiche un avertissement.
+**Télécharger une copie HTML** reste disponible sans accès direct aux fichiers.
+Le HTML enregistré contient le journal et les validations ; le stockage local
+reste un confort de reprise, pas une sauvegarde durable garantie.
+
+Tests : `node tests/assessment-review.test.cjs` et
+`node scripts/test-assessment-review-browser.cjs CHEMIN_VERS_PLAYWRIGHT`
+(Edge installé, profils temporaires et données synthétiques uniquement).
+
+Dans le rapport, le filtre « Stops à afficher » propose tous les stops ou les
+timing points uniquement. Le second choix exclut les stops non TP ou de statut
+inconnu des fiches, des cartes et des exports CSV/PDF. Les places et références
+restent visibles comme contexte ; les catégories et compteurs de l’analyse
+initiale ne sont pas recalculés. Le filtre est désactivé si le statut TP est
+indisponible. Revenir à « Tous les stops » restaure le contenu complet.
 
 ### Version en ligne
 
@@ -71,30 +195,89 @@ Avant de charger le GTFS, l'utilisateur peut choisir l'un des modes suivants :
 - conserver une sauvegarde uniquement dans le navigateur.
 
 Un espace local contient `original/` avec une copie intacte des fichiers du
-GTFS, `working/` avec les fichiers courants et `.hastus-workspace.json` avec
-l'état nécessaire à la reprise. Après une affectation ou un renommage,
+GTFS, `working/` avec les fichiers courants et `.hastus-workspace.json` qui
+pointe vers le fichier d’état `GTFS_HASTUS_Agence_AAAAMMJJ_HHMMSS.json`.
+Le nom de l’agence vient de `agency.txt` (sinon « Client ») ; la date et l’heure
+sont celles de la sauvegarde, dans le fuseau de l’ordinateur. Ce nom est aussi
+affiché dans les espaces récents et dans le statut de sauvegarde. En mode
+navigateur, le même libellé identifie l’état conservé, sans fichier téléchargé.
+Après une affectation ou un renommage,
 `working/stops.txt` et `working/stop_times.txt` sont réécrits automatiquement
 dès que les données sont valides. Les espaces récemment ouverts apparaissent
 dans la liste de reprise.
+
+Au rechargement, la dernière sauvegarde connue dans ce navigateur est reprise
+automatiquement, en comparant les dates de sauvegarde (pas celles d’ouverture).
+Les nouveaux espaces encore vides sont ignorés. Pour un dossier local, si
+l’autorisation n’est plus accordée, l’espace est présélectionné et un message
+invite à cliquer sur **Ouvrir** ; aucune autre sauvegarde n’est chargée à sa place.
+Une action commencée pendant cette reprise empêche le remplacement des données.
+La reprise nécessite la même adresse de l’application et le même profil de
+navigateur. Les récents ne survivent pas à l’effacement des données du navigateur.
 
 Les nouvelles sauvegardes locales écrivent et relisent l’état par blocs pour
 éviter la limite « Invalid string length » sur les gros GTFS. Le fichier
 `.hastus-workspace.json` reste dans le même dossier ; les anciennes sauvegardes
 sont toujours lisibles. Utiliser cette version de l’Assistant (ou une version
 ultérieure) pour rouvrir le nouveau format. Une écriture interrompue avant sa
-validation conserve le précédent fichier d’état. Les fichiers `original/`
+validation conserve le précédent fichier d’état. Après une sauvegarde réussie,
+le fichier daté précédent est remplacé, sans accumuler une copie à chaque édition.
+Conserver le dossier complet pour pouvoir le rouvrir. Les fichiers `original/`
 ne sont pas modifiés par cette évolution.
 
-Tests de sauvegarde : `node tests/workspace-storage.test.cjs` et
-`node tests/workspace-save.test.cjs`. Pour vérifier un GTFS extrait sans modifier
+Tests de sauvegarde : `node tests/workspace-storage.test.cjs`,
+`node tests/workspace-save.test.cjs`, `node tests/workspace-restore.test.cjs` et
+`node tests/workspace-named-storage.test.cjs`. Pour vérifier un GTFS extrait sans modifier
 ses fichiers : `node --expose-gc tests/workspace-real-gtfs.test.cjs "CHEMIN_DU_GTFS"`.
 
 L'accès direct au dossier repose sur le sélecteur sécurisé du navigateur : le
-navigateur demande toujours à l'utilisateur de choisir ou d'autoriser le
-dossier. Si cette fonction n'est pas disponible, la sauvegarde dans le
+navigateur demande à l'utilisateur de choisir ou d'autoriser le dossier lors
+du premier accès ; la reprise réutilise l’autorisation si elle est conservée.
+Si cette fonction n'est pas disponible, la sauvegarde dans le
 navigateur reste utilisable.
 
 ## Navigation et recherche
+
+### Revue client en présentation
+
+Le rapport HTML éditable propose **Revue plein écran** dans son menu de gauche.
+Le mode fenêtre reste le rapport normal, sans mode de revue supplémentaire.
+Un bouton **Valider cette place** sur chaque fiche normale
+partage exactement la même validation et permet aussi de l’annuler. La mise en
+page se compacte selon la largeur et la hauteur disponibles : carte et tableaux
+côte à côte sur les écrans larges, empilés sur les petites fenêtres, avec un
+défilement local pour les longues listes de stops. La hauteur disponible est
+recalculée selon la fenêtre, le bandeau et les titres réels de la fiche, sans
+réduire artificiellement tout le rapport. Consulter une autre place depuis le
+rapport normal reste dans ce rapport, avec un bouton de retour à la fiche initiale.
+La revue présente une place
+à la fois, sa carte et ses stops, en commençant
+par les cas nécessitant une décision. La coche **Choix validé** retire la place
+de la file « À traiter » ; le filtre « Toutes » permet de revenir sur ce choix.
+Les validations sont indépendantes des catégories initiales du diagnostic.
+
+**Voir une autre place** affiche les alternatives triées par distance avec leur
+nombre de stops. La consultation ne réaffecte rien ; le bouton de retour ramène
+à la place de départ. Le menu d’affectation habituel reste disponible pour les
+corrections. Les flèches précédent/suivant et Quitter restent dans un bandeau
+discret. Sans autorisation de plein écran du navigateur, la revue occupe toute
+la fenêtre.
+
+Changer le code, la description ou la liste des stops d’une place validée annule
+sa validation. Un transfert de stop peut donc remettre les deux places à revoir.
+Enregistrer le HTML (ou activer sa sauvegarde automatique) ou exporter le ZIP
+conserve les validations ; cocher seul n’écrit pas un fichier. Le compte rendu
+et le JSON du ZIP incluent leur état. Le rapport enregistré se rouvre en mode
+normal, avec la progression conservée.
+
+Le compte rendu client liste aussi, pour chaque place, les stops actuellement
+associés avec leur identifiant et leur description complète. Cette liste suit
+les réaffectations du client et accompagne les validations dans le HTML sauvegardé.
+
+Un petit guide français/anglais est proposé à la première ouverture et reste
+accessible depuis le menu. La proposition est mémorisée pour ce rapport dans
+le navigateur si possible, ainsi que dans le HTML enregistré. Sans stockage
+navigateur et sans enregistrement, elle pourra réapparaître.
 
 Le bouton **Tutoriel**, dans le bandeau supérieur, ouvre un guide local en sept
 étapes : sources et sauvegarde, regroupement, client existant, cartes et horaires,

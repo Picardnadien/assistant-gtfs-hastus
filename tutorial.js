@@ -21,7 +21,7 @@ const TutorialGuide={
         'Le rapport HTML « Diagnostic HASTUS » classe les places par type de validation et présente les références suspectes. Il est en consultation seule.'
       ],note:'Un stop absent de la liste des timing points n’est pas nécessairement inutilisé. Confirmez son rôle avant de supprimer une association.'},
       {title:'Consulter les cartes et timetables',lead:'Contexte 02 · Explorer le réseau et ses horaires.',items:[
-        'Chargez un GTFS puis ouvrez les cartes des routes. Les shapes donnent les tracés ; sans shapes, les stops restent visibles.',
+        'Choisissez le workflow 02 Cartes des routes et timetables. Utilisez le GTFS chargé ou working/stops.txt quand des places y sont affectées. Les shapes donnent les tracés ; sans shapes, les stops restent visibles.',
         'Le rapport réseau est séparé de la validation des places. Sélectionnez une date de service, une route et une direction, ou les deux directions.',
         'Ouvrez la section Timetable d’une route pour charger sa grille. Les variantes sont réunies, avec les codes de place, les headways et le choix AM/PM ou Military (24 h).',
         'Les boutons Excel et PDF exportent les horaires selon les filtres choisis. Vérifiez la date et les timing points avant de transmettre le document.'
@@ -33,7 +33,7 @@ const TutorialGuide={
         'Utilisez les dates proposées pour préparer vos imports dans HASTUS, puis confirmez qu’elles couvrent la période et les exceptions souhaitées.'
       ],note:'Le même nombre de voyages ne garantit pas les mêmes horaires. L’outil compare le service ; il ne lance pas l’import dans HASTUS.'},
       {title:'Préparer la validation client',lead:'Partagez un rapport adapté au travail attendu.',items:[
-        'Dans les options du rapport des places, choisissez la langue, les logos, l’orientation du PDF et le thème du HTML. La langue suit celle de l’interface par défaut.',
+        'Ouvrez le workflow 05 Rapports et exports après l’analyse géographique. Choisissez la langue, les logos, l’orientation du PDF et le thème du HTML. La langue suit celle de l’interface par défaut.',
         'Le PDF présente les places avec leurs stops et les cartes. Le HTML facilite la navigation et, pour le rapport de validation éditable, les changements de code, description et affectation.',
         'Cartes en ligne : une connexion reste nécessaire. Cartes hors ligne : générez les images pendant que vous êtes connecté, puis vérifiez le rapport avant de l’envoyer.',
         'Dans le rapport éditable, l’enregistrement direct nécessite un navigateur compatible et le choix explicite d’un fichier. Sans cette possibilité, utilisez la copie téléchargée.',
@@ -42,7 +42,7 @@ const TutorialGuide={
       {title:'Sauvegarder et finaliser',lead:'Gardez une trace de vos décisions avant l’import.',items:[
         'Vérifiez le statut de sauvegarde. Si une sauvegarde est interrompue, corrigez le problème ou téléchargez un export avant de fermer le navigateur.',
         'Corrigez les codes en double, les descriptions manquantes et les autres erreurs signalées avant d’exporter les données finalisées.',
-        'Le module Scheduling units, en bas de page, produit un import à partir de routes.txt, avec route_id par défaut ou route_short_name au choix, ainsi qu’une copie du script OIR.',
+        'Le workflow 04 Scheduling units produit un import à partir de routes.txt, avec route_id par défaut ou route_short_name au choix, ainsi qu’une copie du script OIR.',
         'Attention : l’archive Scheduling units conserve le GTFS source, sans appliquer les corrections de places. Elle ne remplace pas l’export du GTFS finalisé.',
         'Relisez le compte rendu client et contrôlez les fichiers avant de les importer dans HASTUS. L’outil n’écrit jamais directement dans HASTUS.'
       ],note:'Vous pouvez rouvrir ce tutoriel à tout moment : il ne modifie pas votre projet.'}
@@ -68,7 +68,7 @@ const TutorialGuide={
         'The “HASTUS diagnostic” HTML report groups places by validation type and shows suspicious references. It is read-only.'
       ],note:'A stop missing from the timing-point list is not necessarily unused. Confirm its role before removing an assignment.'},
       {title:'Explore maps and timetables',lead:'Context 02 · Explore the network and its schedules.',items:[
-        'Load a GTFS feed and open the route maps. Shapes provide route geometry; without shapes, stops can still be displayed.',
+        'Choose workflow 02 Route maps and timetables. Use the loaded GTFS or working/stops.txt once places have been assigned. Shapes provide route geometry; without shapes, stops can still be displayed.',
         'The network report is separate from place validation. Select a service date, route and direction, or both directions.',
         'Open a route’s Timetable section to load its grid. Patterns are combined, with place codes, headways and an AM/PM or Military (24-hour) switch.',
         'Excel and PDF exports follow the selected filters. Check the date and timing points before sharing the document.'
@@ -80,7 +80,7 @@ const TutorialGuide={
         'Use the suggested dates to plan HASTUS imports, then confirm that they cover the intended period and exceptions.'
       ],note:'Equal trip counts do not guarantee identical schedules. The tool compares service; it does not run the HASTUS import.'},
       {title:'Prepare client validation',lead:'Choose a report suited to the review task.',items:[
-        'In place-report options, choose the language, logos, PDF orientation and HTML theme. Report language follows the interface by default.',
+        'Open workflow 05 Reports and exports after geographic analysis. Choose the language, logos, PDF orientation and HTML theme. Report language follows the interface by default.',
         'PDF presents places, stops and maps. HTML makes navigation easier and, in the editable validation report, allows code, description and assignment changes.',
         'Online maps still need a connection. For offline maps, generate the images while connected and check the report before sharing it.',
         'Direct saving in the editable report requires a compatible browser and explicit file selection. Otherwise, use the downloaded-copy option.',
@@ -89,7 +89,7 @@ const TutorialGuide={
       {title:'Save and finalize',lead:'Keep a record of your decisions before importing.',items:[
         'Check the save status. If saving is interrupted, resolve the issue or download an export before closing your browser.',
         'Resolve duplicate codes, missing descriptions and other reported errors before exporting finalized data.',
-        'The Scheduling units module at the bottom of the page generates an import from routes.txt, using route_id by default or route_short_name, plus a copy of the OIR script.',
+        'Workflow 04 Scheduling units generates an import from routes.txt, using route_id by default or route_short_name, plus a copy of the OIR script.',
         'Important: the Scheduling units archive preserves the source GTFS without applying place corrections. It does not replace the finalized GTFS export.',
         'Review client changes and check the files before importing them into HASTUS. The tool never writes directly to HASTUS.'
       ],note:'You can reopen this tutorial at any time: it does not change your project.'}

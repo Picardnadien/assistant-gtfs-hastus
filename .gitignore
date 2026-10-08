@@ -8,6 +8,7 @@ GTFS_HASTUS_*/
 # Documents et exports client conservés uniquement sur ce poste
 /output/
 /_site/
+/tmp/
 
 # Fichiers usuels de Windows et des éditeurs
 Thumbs.db

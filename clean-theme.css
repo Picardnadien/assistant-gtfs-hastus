@@ -20,10 +20,12 @@ body.clean-theme :is(h2,.section-heading h2){font-size:22px}
 body.clean-theme :is(h3,.pamphlet-offer-head h3){font-size:18px}
 body.clean-theme h4{font-size:16px}
 body.clean-theme :is(button,input,select,textarea){font-size:13px;line-height:1.4}
-body.clean-theme button{border-radius:8px;font-weight:600}
+body.clean-theme button{border-radius:18px 0;font-weight:600}
 body.clean-theme :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea){border-radius:6px;border:1px solid var(--control-line);background:var(--surface);color:var(--ink)}
 body.clean-theme :is(.panel,.workspace-setup,.group-card,.decision,.route-map-card,.timetable-card,.calendar-month,.mode-card,.data-source-card,dialog){border-radius:10px}
 body.clean-theme :is(.mode-card,.data-source-card){border-width:1px}
+body.clean-theme :is(button.mode-card,button.data-source-card){border-radius:18px 0}
+body.clean-theme .hero #open-tutorial,body.clean-theme #tutorial-dialog button{border-radius:18px 0}
 body.clean-theme :is(.file-no,.mode-number,.metric strong,.calendar-date,.group-radius output){font-variant-numeric:tabular-nums;font-weight:600}
 body.clean-theme .brand{font-weight:600;font-size:15px;gap:12px;line-height:1.35}
 body.clean-theme :is(.eyebrow,label){font-weight:600}

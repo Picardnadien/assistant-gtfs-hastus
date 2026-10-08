@@ -1,5 +1,25 @@
 "use strict";
 
+// Stable entry point for reopening a folder; only the large snapshot is dated.
+async function readNamedWorkspace(directory,entryName){
+  const entry=await readChunkedWorkspace(await (await directory.getFileHandle(entryName)).getFile());
+  if(entry?.format!=="hastus-workspace-pointer")return {snapshot:entry,filename:entryName};
+  if(!validWorkspaceSnapshotName(entry.filename))throw new Error("Invalid workspace snapshot filename.");
+  return {snapshot:await readChunkedWorkspace(await (await directory.getFileHandle(entry.filename)).getFile()),filename:entry.filename};
+}
+function validWorkspaceSnapshotName(name){return typeof name==="string"&&/^GTFS_HASTUS_[A-Za-z0-9_-]+_\d{8}_\d{6}\.json$/.test(name);}
+async function saveNamedWorkspace(directory,entryName,filename,snapshot){
+  if(!validWorkspaceSnapshotName(filename))throw new Error("Invalid workspace snapshot filename.");
+  let previous;
+  try{const file=await (await directory.getFileHandle(entryName)).getFile();if(file.size<4096){const entry=JSON.parse(await file.text());if(entry.format==="hastus-workspace-pointer"&&validWorkspaceSnapshotName(entry.filename))previous=entry.filename;}}catch(error){if(error.name!=="NotFoundError"&&!(error instanceof SyntaxError))throw error;}
+  await saveChunkedWorkspace(directory,filename,snapshot);
+  const handle=await directory.getFileHandle(entryName,{create:true}),writer=await handle.createWritable();
+  try{await writer.write(JSON.stringify({format:"hastus-workspace-pointer",version:1,filename,savedAt:snapshot.savedAt}));await writer.close();}catch(error){try{await writer.abort();}catch{}throw error;}
+  // Delete only the exact former snapshot declared in our manifest, after commit.
+  // Legacy snapshots are never removed; no directory traversal or recursive delete.
+  if(previous&&previous!==filename)try{await directory.removeEntry(previous);}catch(error){console.warn("Previous workspace snapshot retained",error);}
+}
+
 // A valid JSON document, with independently readable records. Never stringify or
 // parse the whole workspace: large GTFS feeds can exceed the JS string limit.
 const WORKSPACE_CHUNK_HEADER='{"format":"hastus-workspace-chunks","version":1,"records":[';

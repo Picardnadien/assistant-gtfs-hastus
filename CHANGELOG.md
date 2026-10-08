@@ -1,5 +1,29 @@
 # Notes de version
 
+## 13.0 — 2026-10-07
+
+- **Accueil en ligne avec choix de version** : v13 recommandée et accès aux v12, v11 et v10. Les archives utilisent des espaces navigateur distincts ; travailler sur une copie des dossiers avec une ancienne version.
+- **Scénarios de revue** : démonstration publique fictive bilingue et ouverture d’un rapport HTML privé depuis l’appareil, sans téléversement. Les rapports OC Transpo non anonymisés restent exclusivement locaux.
+- **Workflows simplifiés** : regroupement géographique, cartes et timetables unifiées, comparaison des horaires, scheduling units, rapports et exports.
+- **Diagnostic HTML HASTUS** : références et places clairement identifiées, liens en pointillés sur les cartes, distinctions TP/non TP, filtre TP, sommaire compact et titres sans doublons.
+- **Étiquettes de places** : Stop IDs rattachés affichés en compact, avec « +N » pour les longues listes et détail complet conservé dans les fiches.
+- **Revue plein écran** : carte maximale, panneau de détails repliable, dispositions Carte et Comparaison, adaptation aux dimensions réelles de l’écran et navigation discrète. Valider reste aussi possible en mode normal.
+- **Suivi des décisions** : validations et notes horodatées, annulation, compte rendu avant/après, journal CSV et reprise dans le HTML enregistré. Les validations du diagnostic ne modifient pas les affectations GTFS/HASTUS.
+- **Auto save et accompagnement** : brouillon navigateur, écriture dans un même fichier après autorisation, tutoriel guidé bilingue, thème Confort visuel et commandes adaptées au tactile.
+- **Rapport HTML de validation des places** : revue client, validations par place, consultation des alternatives et compte rendu enrichi avec les stops et descriptions.
+- **Sauvegardes de l’application** : reprise automatique de la dernière sauvegarde, nom de l’agence et date/heure dans le fichier d’état ; compatibilité avec les anciennes sauvegardes.
+
+### Mise à jour et iPad
+
+Sauvegarder le travail avant la mise à jour. Régénérer les rapports HTML pour
+obtenir les nouveaux contrôles ; les anciens rapports ne changent pas seuls.
+Sur iPad, ouvrir le rapport dans un navigateur capable d’exécuter son JavaScript,
+pas uniquement dans un aperçu de pièce jointe. L’écriture directe dépend du
+navigateur ; télécharger une copie HTML pour transmettre ou conserver la revue.
+Le brouillon navigateur seul ne constitue pas une sauvegarde durable.
+Les essais couvrent des résolutions tablette simulées ; une vérification sur
+l’iPad réel reste nécessaire. Aucun GTFS ni rapport client n’est publié.
+
 ## 12.0 — 2026-10-06
 
 - Nouveau nom : **The GTFS Missing Link**, conservé en français et en anglais.
