@@ -87,6 +87,12 @@ un panneau de détails défilant, des flèches de navigation et un bouton
 **Carte** privilégie la présentation ; **Comparaison** élargit les tableaux.
 **Carte maximale**, choisie par défaut sans préférence antérieure, replie le
 panneau droit et utilise toute la largeur disponible, avec des bandeaux réduits.
+Des pastilles contrastées y affichent les deux codes de place et leur distance
+en mètres, pour les références existantes et les rapprochements proposés.
+Ces distances sont calculées à vol d’oiseau entre les centres des places,
+pas par le réseau routier ; aucune distance n’est inventée si un centre manque.
+Les autres dispositions restent inchangées. Régénérer le HTML pour bénéficier
+de ces pastilles dans un rapport déjà exporté.
 Valider et naviguer restent possibles dans la barre du bas. **Afficher les
 détails** rétablit le panneau ; **Agrandir la carte** le replie. Ce choix est
 conservé avec les autres préférences, sans recadrer ni couper la carte.

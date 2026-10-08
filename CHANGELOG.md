@@ -1,5 +1,9 @@
 # Notes de version
 
+### Correctif v13.0 — distances en revue
+
+- Mode « Maximum map » : distances à vol d’oiseau visibles entre les centres des places liées ou proposées au rapprochement, avec codes et mètres dans des pastilles contrastées. Disponible en français/anglais, cartes en ligne/hors ligne et filtre TP. Les rapports existants doivent être régénérés.
+
 ## 13.0 — 2026-10-07
 
 - **Accueil en ligne avec choix de version** : v13 recommandée et accès aux v12, v11 et v10. Les archives utilisent des espaces navigateur distincts ; travailler sur une copie des dossiers avec une ancienne version.

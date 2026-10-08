@@ -26,10 +26,13 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.locator('#assessment-review').waitFor({state:'visible'});
     assert.equal(await page.locator('#review-layout-choice').inputValue(),'max','New reports prioritize the maximum map');
     assert.equal(await page.locator('#review-details-panel').isVisible(),false);
+    assert.ok(await page.locator('#review-map .review-distance').first().isVisible(),'Distances are visible without the details panel');
+    assert.ok((await page.locator('#review-map .review-distance-value').first().textContent()).includes(' m'));
     assert.equal(await page.locator('#review-map-validate').getAttribute('aria-pressed'),'true');
     await page.locator('#review-map-validate').click();
     await page.locator('#review-toggle-details').click();
     assert.equal(await page.locator('#review-details-panel').isVisible(),true);
+    assert.equal(await page.locator('#review-map .review-distance').first().isVisible(),false,'Other map layouts remain unchanged');
     await page.locator('.review-decision summary').click();
     await page.locator('#review-note').fill('Vérifier le retournement <script>unsafe</script>');await page.locator('#review-note').press('Tab');
     await page.locator('#review-validate').click();

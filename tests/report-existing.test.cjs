@@ -41,6 +41,14 @@ assert.ok(ctx.existingReportPlaceBadge(model.byId.get('AAA'),vm.runInContext('EX
 assert.equal(points.find(p=>p.id==='stop-AAA').placeId,'AAA');
 assert.notEqual(points[0].lat,points[1].lat,'Stops keep physical coordinates instead of place centre');
 const geometry=ctx.existingReportMapGeometry(points);
+const distanceText=vm.runInContext('EXISTING_REPORT_TEXT.en',ctx);
+const distancePoints=[{id:'A',kind:'place',lat:45,lon:-75,references:['B'],distanceTargets:['B']},{id:'B',kind:'place',lat:45.001,lon:-75,references:['A']},{id:'C',kind:'place',lat:45.01,lon:-75}];
+const distanceMap=ctx.existingReportMap(distancePoints,[],distanceText);
+assert.equal((distanceMap.match(/class="review-distance"/g)||[]).length,1,'Reciprocal links and case targets do not duplicate distances');
+assert.ok(distanceMap.includes('111 m')&&distanceMap.includes('Straight-line distance'));
+assert.ok(!distanceMap.includes('data-to="C"'),'Unrelated context places do not generate a full distance matrix');
+assert.ok(!ctx.existingReportMap([distancePoints[0]],[],distanceText).includes('class="review-distance"'),'Unknown reference coordinates do not create a distance');
+assert.ok(ctx.existingReportMap([{...distancePoints[0],references:[],distanceTargets:['B']},{...distancePoints[1],references:[]}],null,distanceText).includes('review-distance-link'),'Suggested grouping also receives a visible measurement');
 const tightPoints=[{id:'P',description:'Place',kind:'place',lat:45.4,lon:-75.7},{id:'TP',kind:'stop',timing:true,lat:45.4001,lon:-75.7001},{id:'FAR',kind:'stop',timing:false,lat:45.45,lon:-75.75}];
 assert.ok(ctx.existingReportMapGeometry(tightPoints.filter(p=>p.kind==='place'||p.timing)).zoom>ctx.existingReportMapGeometry(tightPoints).zoom,'TP view can frame closer after excluding distant non-TP stops');
 assert.equal(ctx.existingReportMapGeometry([tightPoints[0]]).zoom,18,'Single-location view retains street context');
@@ -99,6 +107,7 @@ for(const language of ['fr','en']){
   assert.ok(tpView.cases.find(c=>c.code==='QUIET00').html.includes(t.noTpStops));
   assert.equal(JSON.stringify(source),before,'Viewing scope never mutates source');
   const aaa=cases.find(c=>c.kind==='place'&&c.code==='AAA'),joined=cases.find(c=>c.kind==='place'&&c.code==='JOIN');
+  assert.ok(joined.points.find(p=>p.id==='JOIN'&&p.kind==='place').distanceTargets.includes('TARGET'),'Suggested pair is passed to both online and offline map rendering');
   assert.ok(aaa.html.includes(t.referencePlace)&&aaa.html.includes('REF'));
   assert.ok(aaa.html.includes(t.tp)&&aaa.html.includes(t.nonTp));
   assert.ok(joined.title.includes('JOIN')&&joined.title.includes('TARGET')&&joined.title.includes('↔'));
