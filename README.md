@@ -312,12 +312,15 @@ corrections. Les flèches précédent/suivant et Quitter restent dans un bandeau
 discret. Sans autorisation de plein écran du navigateur, la revue occupe toute
 la fenêtre.
 
-Cliquer sur la carte d’une fiche ouvre cette place en revue plein écran ;
-recliquer sur la carte revient à la vue précédente, en conservant la recherche,
-la position de défilement et l’ouverture des tableaux. La carte est aussi
-accessible au clavier avec Entrée/Espace ; Échap ou Quitter permet de revenir.
-Ce raccourci fonctionne avec les cartes en ligne et hors ligne sans modifier
-les affectations ni les validations.
+Cliquer sur la carte d’une fiche ouvre **uniquement la carte** sur tout l’écran,
+avec un cadrage rapproché des stops, leurs identifiants et descriptions dans des
+étiquettes lisibles reliées aux points. Les champs, tableaux et commandes de revue
+ne sont pas affichés. Recliquer sur la carte revient à la vue précédente, en
+conservant la recherche, le défilement et les tableaux ouverts/fermés. Entrée/Espace,
+Échap et une croix discrète sont également disponibles. Les cartes hors ligne
+réutilisent le fond enregistré (la couverture n’est pas étendue par Internet).
+Les affectations et validations restent inchangées ; le mode revue existant
+reste accessible séparément depuis son bouton habituel.
 
 Changer le code, la description ou la liste des stops d’une place validée annule
 sa validation. Un transfert de stop peut donc remettre les deux places à revoir.

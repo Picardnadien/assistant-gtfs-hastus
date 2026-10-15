@@ -2,7 +2,7 @@
 
 ## 13.01 — 2026-10-15
 
-- Carte des fiches HTML : clic pour ouvrir la place en revue plein écran, second clic pour revenir à la vue précédente. Recherche, défilement et tableaux ouverts/fermés conservés. Accessible au clavier, cartes en ligne et hors ligne, FR/EN.
+- Carte des fiches HTML : clic pour afficher uniquement la carte sur tout l’écran, cadrée autour des stops avec identifiants et descriptions lisibles. Second clic pour revenir à la vue précédente. Recherche, défilement et tableaux ouverts/fermés conservés ; mode revue séparé. Accessible au clavier, cartes en ligne et hors ligne, FR/EN.
 - Rapport HTML : une fiche trouvée par recherche reste visible pendant son renommage, jusqu’au changement de recherche ou de filtre.
 - Compte rendu : validations complètes repliées par défaut, commande Afficher/Masquer, liste compacte et statut sur une ligne, en français et en anglais.
 - Liste des validations : codes et descriptions cliquables vers la fiche de place ; chaque stop ouvre sa place actuellement affectée, même après réaffectation ou recherche.

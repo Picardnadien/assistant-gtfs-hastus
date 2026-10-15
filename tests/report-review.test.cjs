@@ -27,6 +27,8 @@ saved.clientReview.approvals.ghost={signature:'stale'};assert.equal(reopened.rec
 assert.ok(source.includes('reviewer?.cleanClone(clone)'));assert.ok(source.includes('placeApprovals}'));
 assert.ok(source.includes("clone.querySelectorAll('[data-review-runtime]')"));
 const app=fs.readFileSync('app.js','utf8');assert.ok(app.includes('${reportReviewModel.toString()}'));assert.ok(app.includes('${mountReportReview.toString()}'));
+assert.ok(app.includes('${mountReportMapViewer.toString()}'),'Standalone reports embed the map-only viewer');
+assert.ok(source.includes("classList.remove('review-mode','map-only-open')"),'Saved HTML does not retain modal scroll locking');
 assert.ok(source.includes('button.onclick=()=>approve(id,!model.approved(id))'),'normal cards use the shared approval handler');
 assert.ok(source.includes("onchange=event=>approve(key,event.target.checked)"),'review uses the same approval handler');
 assert.ok(!source.includes('Windowed review'),'ordinary report is the only windowed mode');
