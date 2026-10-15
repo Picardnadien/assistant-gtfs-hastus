@@ -160,10 +160,13 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
   const model=reportReviewModel(data,edits),en=data.language==='en',t=(fr,english)=>en?english:fr;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let active=false,key=null,trail=[],all=false,ownsFullscreen=false,scrollBefore=0;
+  let returnView=null,fullscreenRequest=0;
+  const mapSurfaces=new Map();
   const runtime=node=>{node.dataset.reviewRuntime='';return node;};
   const style=runtime(document.createElement('style'));
   style.textContent=`.review-launch{padding:14px 0;display:grid;gap:8px}.review-launch button{padding:10px;border:1px solid #bdcbb0;border-radius:18px 0;background:#eef3e7;color:#303b35;font:600 13px Arial}.review-launch small{color:inherit}.review-toolbar{display:none}.review-mode{overflow:hidden!important}.review-mode .sidebar,.review-mode .report-modules{display:none!important}.review-mode .report-shell{display:block!important}.review-mode .main{position:fixed;inset:var(--review-toolbar-height,100px) 0 0;overflow:auto;padding:20px 3vw!important;background:#f5f6f3}.review-mode .main>:not(.review-active){display:none!important}.review-mode .main>.review-active{display:block!important;content-visibility:visible;max-width:1600px;margin:0 auto}.review-mode .back-link{display:none}.review-toolbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:#fff;color:#303b35;border-bottom:1px solid #bdcbb0;padding:10px 20px;gap:8px;align-items:center;flex-wrap:wrap;font:13px/1.4 Arial}.review-mode .review-toolbar{display:flex}.review-toolbar button,.review-toolbar select,.review-dialog button,.review-dialog select,.review-stop-link{padding:8px 11px;border:1px solid #bdcbb0;border-radius:16px 0;background:#fff;color:#303b35;font:inherit;cursor:pointer}.review-toolbar button:disabled{opacity:.4;cursor:default}.review-toolbar label{display:flex;align-items:center;gap:6px}.review-toolbar select{width:auto;margin:0;max-width:180px}.review-toolbar strong{margin-right:auto}.review-progress{color:#637167}.review-stop-link{display:block;margin-top:5px;font-size:11px}.review-mode .place-map svg{max-height:55vh}.review-dialog{width:min(680px,calc(100vw - 32px));max-height:85vh;overflow:auto;border:1px solid #bdcbb0;border-radius:12px;padding:24px;color:#303b35;background:#fff;font:15px/1.55 Arial}.review-dialog::backdrop{background:#0008}.review-dialog h2{font:600 24px Arial;margin-top:0}.review-dialog select{width:100%;border-radius:5px}.review-dialog footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:20px}.review-summary{margin:18px 0}.review-summary td,.review-summary th{overflow-wrap:anywhere}.review-complete{text-align:center;padding:80px 20px!important}.review-toolbar :focus-visible,.review-dialog :focus-visible{outline:3px solid #557630;outline-offset:3px}@media(max-width:700px){.review-toolbar{padding:8px;font-size:12px}.review-mode .main{padding:12px!important}.review-mode .detail-grid{display:block}.review-mode .place-card{padding:14px}}@media print{.review-toolbar,.review-launch,.review-stop-link,.review-dialog{display:none!important}.review-mode{overflow:visible!important}.review-mode .main{position:static!important;overflow:visible}.review-mode .main>[data-report-place]{display:block!important}}`;
   document.head.append(style);
+  style.textContent+='[data-review-map-toggle]{cursor:zoom-in;touch-action:manipulation}.review-mode [data-review-map-toggle]{cursor:zoom-out}[data-review-map-toggle]:focus-visible{outline:3px solid #557630;outline-offset:-3px}';
   style.textContent+=`.change-summary table{font-size:12px;line-height:1.35}.change-summary td,.change-summary th{padding:6px 8px;vertical-align:top}.review-summary>summary{cursor:pointer;font:600 13px Arial;padding:9px 12px;border:1px solid #bdcbb0;border-radius:16px 0;width:fit-content;min-height:36px}.review-summary .review-hide,.review-summary[open] .review-show{display:none}.review-summary[open] .review-hide{display:inline}.review-summary .summary-stop-list{list-style:none;padding:0;margin:0;line-height:1.4}.review-summary .summary-stop-list li{display:inline}.review-summary .summary-stop-list li+li:before{content:' · ';color:#647067}.review-summary .approval-status{white-space:nowrap;overflow-wrap:normal;width:1%}.review-summary .approval-status span{display:inline-block;white-space:nowrap;font-size:11px;padding:2px 6px;border-radius:4px;background:#edf1e8}.review-summary .approval-status .approved{background:#dfead4;color:#304a23}.review-summary>p{font-size:12px;margin:8px 0}.review-summary>summary:focus-visible{outline:3px solid #557630;outline-offset:3px}`;
   // The taller client menu must scroll as a whole, without covering export buttons.
   style.textContent+=`.review-summary a{color:inherit;text-decoration:underline;text-decoration-color:#8b9c7b;text-underline-offset:3px}.review-summary a:hover{color:#385220}.review-summary .approval-toggle{min-height:32px;border:1px solid #ac8743;border-radius:10px 0;padding:5px 9px;background:#fff1d5;color:#704b0e;font:600 11px/1.3 Arial;white-space:nowrap;cursor:pointer}.review-summary .approval-toggle.approved{border-color:#6e9255;background:#e2efd7;color:#2d511f}.review-summary .approval-toggle:disabled{opacity:.55;cursor:not-allowed}.review-summary .approval-toggle span{background:none;padding:0;border-radius:0;font:inherit}.review-summary a:focus-visible,.review-summary .approval-toggle:focus-visible{outline:3px solid #557630;outline-offset:3px}@media(pointer:coarse){.review-summary .approval-toggle{min-height:44px}}`;
@@ -291,6 +294,14 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
     for(const card of cards.values())visibility.observe(card);
   }else for(const card of cards.values())visibleCards.add(card);
   for(const card of cards.values())card.querySelectorAll('details').forEach(node=>node.addEventListener('toggle',fit));
+  for(const [id,card] of cards){
+    const surface=card.querySelector('.place-map .browser-map-stage')||card.querySelector('.place-map svg,.place-map img');
+    if(!surface)continue;
+    mapSurfaces.set(id,surface);surface.dataset.reviewMapToggle=id;surface.tabIndex=0;surface.setAttribute('role','button');
+    const toggle=()=>active?exit():start(id,surface);
+    surface.addEventListener('click',event=>{if(event.button!==0||event.target.closest('a,button,input,select,textarea'))return;toggle();});
+    surface.addEventListener('keydown',event=>{if(event.target===surface&&['Enter',' '].includes(event.key)){event.preventDefault();event.stopPropagation();if(!event.repeat)toggle();}});
+  }
   function draw(){
     const pending=order().filter(id=>!model.approved(id));panel.querySelector('[data-review-count]').textContent=`${pending.length} ${t('à traiter','to review')} · ${cards.size-pending.length}/${cards.size} ${t('validées','validated')}`;
     for(const [id,card] of cards){
@@ -299,6 +310,8 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
       button.textContent=approved?t('✓ Validée · Annuler la validation','✓ Validated · Remove approval'):t('Valider cette place','Validate this place');
       button.setAttribute('aria-pressed',String(approved));button.disabled=!approved&&hasErrors();
       button.title=button.disabled?t('Corrigez les erreurs du rapport avant de valider.','Resolve report errors before approving.'):'';
+      const surface=mapSurfaces.get(id);
+      if(surface){const label=active?t('Revenir à la vue précédente','Return to previous view'):t('Ouvrir la place en plein écran : ','Open place in full screen: ')+currentPlace(id).code;surface.setAttribute('title',label);surface.setAttribute('aria-label',label);surface.setAttribute('aria-pressed',String(active&&id===key));}
     }
     complete.classList.toggle('review-active',active&&!key);
     complete.hidden=!(active&&!key);
@@ -319,15 +332,25 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
     const card=cards.get(key);card?.querySelectorAll('details').forEach(node=>node.open=true);
     draw();document.querySelector('main').scrollTop=0;
   }
-  function start(id){
-    if(!active){scrollBefore=window.scrollY;active=true;document.body.classList.remove('show-network');document.body.classList.add('review-mode');document.querySelectorAll('[data-report-module]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.reportModule==='places')));}
+  function start(id,trigger=null){
+    if(!active){
+      scrollBefore=window.scrollY;
+      returnView={x:window.scrollX,y:scrollBefore,main:document.querySelector('main').scrollTop,sidebar:document.querySelector('.sidebar')?.scrollTop||0,focus:trigger||document.activeElement,details:[...cards.values()].flatMap(card=>[...card.querySelectorAll('details')].map(node=>[node,node.open]))};
+      active=true;document.body.classList.remove('show-network');document.body.classList.add('review-mode');document.querySelectorAll('[data-report-module]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.reportModule==='places')));
+    }
     show(id||queue()[0]||null);
-    if(!document.fullscreenElement&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().then(()=>{ownsFullscreen=true;fit();}).catch(()=>{});
+    mapSurfaces.get(key)?.focus({preventScroll:true});
+    if(!document.fullscreenElement&&document.documentElement.requestFullscreen){const request=++fullscreenRequest;document.documentElement.requestFullscreen().then(()=>{if(request!==fullscreenRequest||!active){if(!active&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});return;}ownsFullscreen=true;fit();}).catch(()=>{});}
   }
   function exit(){
+    if(!active)return;
+    const previous=returnView;returnView=null;fullscreenRequest++;
     active=false;trail=[];document.body.classList.remove('review-mode');document.body.style.removeProperty('--review-toolbar-height');draw();applyFilter();
-    if(ownsFullscreen&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});ownsFullscreen=false;
-    window.scrollTo(0,scrollBefore);panel.querySelector('[data-start-review]').focus();
+    for(const [node,open] of previous?.details||[])node.open=open;
+    const restore=()=>{if(active)return;document.querySelector('main').scrollTop=previous?.main||0;const sidebar=document.querySelector('.sidebar');if(sidebar)sidebar.scrollTop=previous?.sidebar||0;(previous?.focus?.isConnected?previous.focus:panel.querySelector('[data-start-review]')).focus({preventScroll:true});window.scrollTo(previous?.x||0,previous?.y??scrollBefore);fit();};
+    const leaveFullscreen=ownsFullscreen&&document.fullscreenElement;ownsFullscreen=false;
+    if(leaveFullscreen)document.exitFullscreen().then(restore).catch(restore);
+    restore();requestAnimationFrame(restore);
   }
   function advance(offset){const ids=queue();if(!ids.length){show(null);return;}const index=ids.indexOf(key);show(ids[(Math.max(0,index)+offset+ids.length)%ids.length]);}
   function chooseOther(point){
