@@ -4,6 +4,8 @@
 
 - Rapport HTML : une fiche trouvée par recherche reste visible pendant son renommage, jusqu’au changement de recherche ou de filtre.
 - Compte rendu : validations complètes repliées par défaut, commande Afficher/Masquer, liste compacte et statut sur une ligne, en français et en anglais.
+- Liste des validations : codes et descriptions cliquables vers la fiche de place ; chaque stop ouvre sa place actuellement affectée, même après réaffectation ou recherche.
+- Statut interactif : bouton ambre « À valider » / vert « Validée », synchronisé avec la fiche et le mode revue. Le retour en attente demande confirmation. Les choix sont conservés dans le rapport sauvegardé.
 - ZIP GTFS finalisé : sous-dossier `hastus_import/places` avec `places.csv` (codes/descriptions finaux) et copie du script `place - GTFS DESC.oir`. Contrôle des caractères incompatibles avec le modèle d’import. Import dans HASTUS à confirmer.
 - Régénérer les rapports HTML existants pour utiliser ces corrections.
 

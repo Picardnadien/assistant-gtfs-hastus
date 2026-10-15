@@ -11,6 +11,7 @@ for(const file of ['assignment-diagnostics.js','assignment-diagnostics.css'])ass
 const html=fs.readFileSync(path.join(destination,'index.html'),'utf8');
 assert.match(html,/v13\.01/);assert.match(html,/The GTFS Missing Link/);assert.match(html,/href="app.html"/);
 assert.match(html,/id="release-13-01"/);assert.match(html,/hastus_import\/places/);
+assert.match(html,/Navigation depuis les validations/);assert.match(html,/Clickable status/);
 assert.match(html,/id="release-notes"/);assert.match(html,/Les nouveautés depuis la v12/);assert.match(html,/What’s new since v12/);
 assert.match(fs.readFileSync(path.join(destination,'app.html'),'utf8'),/content="13\.01"/);
 for(const release of ['12.0','11.0','10.0']){

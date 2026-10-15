@@ -1035,6 +1035,11 @@ ou le filtre recalcule la sélection. Le compte rendu montre les modifications ;
 la liste complète **Validation des places / Place approvals** est repliée par
 défaut et dispose d’une commande Afficher/Masquer. Les stops y sont présentés
 en ligne compacte, avec un statut de validation sans retour à la ligne.
+Les codes et descriptions de cette liste ouvrent leur fiche, même si la recherche
+la masquait. Un stop ouvre la fiche de sa place actuellement affectée, y compris
+après réaffectation. Le bouton de statut est ambre en attente et vert après
+validation ; il utilise la même validation que la fiche et le mode revue.
+Recliquer sur un statut validé demande confirmation avant de le remettre en attente.
 
 Le `GTFS_finalise.zip` contient aussi `hastus_import/places/places.csv` et
 `hastus_import/places/place - GTFS DESC.oir`. Le CSV reprend toutes les places
