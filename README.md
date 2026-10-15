@@ -1,6 +1,6 @@
 # The GTFS Missing Link
 
-**Version 13.0** — voir les [notes de version](CHANGELOG.md).
+**Version 13.01** — voir les [notes de version](CHANGELOG.md).
 
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
@@ -1028,6 +1028,24 @@ fiche), sans réinitialiser les autres places. Une saisie continue dans un champ
 compte comme une modification. Si le même stop a ensuite été modifié ailleurs,
 il faut annuler cette dernière affectation d'abord. L'historique d'annulation est
 conservé dans le HTML corrigé, y compris celui contenu dans le ZIP de retour.
+
+Lors d’une recherche, la fiche en cours d’édition reste affichée même si le code
+ou la description ne correspond plus au texte recherché. Changer la recherche
+ou le filtre recalcule la sélection. Le compte rendu montre les modifications ;
+la liste complète **Validation des places / Place approvals** est repliée par
+défaut et dispose d’une commande Afficher/Masquer. Les stops y sont présentés
+en ligne compacte, avec un statut de validation sans retour à la ligne.
+
+Le `GTFS_finalise.zip` contient aussi `hastus_import/places/places.csv` et
+`hastus_import/places/place - GTFS DESC.oir`. Le CSV reprend toutes les places
+du rapport, avec leurs codes et descriptions finaux, triées par code, selon
+le modèle `Keyword;plc_identifier;plc_description` (UTF-8, lignes CRLF).
+Le script OIR fourni est inclus à l’identique. Son modèle ne précisant pas
+d’échappement, les points-virgules, guillemets et retours à la ligne dans les
+champs sont signalés et bloquent le ZIP, sans altérer les données.
+L’import effectif dans HASTUS reste à valider. Régénérer les anciens rapports
+pour bénéficier de ces corrections ; les rapports déjà envoyés ne se mettent
+pas à jour automatiquement.
 
 Dans les options de génération, **Simplifier le retour client** est coché par
 défaut : les téléchargements séparés de `stops.txt` et `stop_times.txt` sont

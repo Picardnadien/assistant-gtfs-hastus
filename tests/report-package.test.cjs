@@ -23,7 +23,7 @@ const data={language:'fr',filename:'Client_test',placeCodeMaxLength:8,
   gtfs:{stops:tools.parse(original['stops.txt']),times:tools.parse(original['stop_times.txt']),sourceFileNames:Object.keys(original),
     archiveEntries:Object.entries(original).filter(([name])=>!['stops.txt','stop_times.txt'].includes(name)).map(([name,text])=>({name,text})),externalStopReferences:['AAA','BBB'],sourceStopIdRemap:[]}
 };
-const edits={places:[{key:'a',code:'Abcdefgh',description:'École, "Nord"'}],assignments:{'001':'b'}};
+const edits={places:[{key:'a',code:'Abcdefgh',description:'École, Nord'}],assignments:{'001':'b'}};
 const immutable=JSON.stringify(data);
 assert.equal(tools.availability(data).ready,true);
 assert.ok(engine(data,edits).errors.includes('externalReferences'));
@@ -32,7 +32,7 @@ assert.equal(corrected.errors.length,0);
 const result=tools.files(data,corrected),byName=new Map(result.map(entry=>[entry.name,entry.text]));
 assert.equal(result.length,Object.keys(original).length);
 assert.equal(tools.parse(byName.get('stops.txt')).rows.find(row=>row.stop_id==='001').parent_station,'BBB');
-assert.ok(tools.parse(byName.get('stops.txt')).rows.some(row=>row.stop_id==='Abcdefgh'&&row.stop_name==='École, "Nord"'));
+assert.ok(tools.parse(byName.get('stops.txt')).rows.some(row=>row.stop_id==='Abcdefgh'&&row.stop_name==='École, Nord'));
 assert.equal(byName.get('stop_times.txt'),original['stop_times.txt']);
 assert.equal(tools.parse(byName.get('transfers.txt')).rows[0].from_stop_id,'Abcdefgh');
 assert.equal(tools.parse(byName.get('translations.txt')).rows[0].record_id,'Abcdefgh');
@@ -50,7 +50,8 @@ assert.equal(tools.changes(data,{assignments:{'001':'__keep__'}}).stops.length,0
 for(const lang of ['fr','en']){
   const html=tools.reviewHtml({...data,language:lang},edits,'2026-10-02T16:00:00Z');
   assert.ok(html.includes(lang==='fr'?'Avant — rapport initial':'Before — initial report'));
-  assert.ok(html.includes('École, &quot;Nord&quot;'));
+  assert.ok(html.includes('École, Nord'));
+  assert.ok(tools.reviewHtml({...data,language:lang},{places:[{key:'a',description:'École, "Nord"'}]}).includes('École, &quot;Nord&quot;'));
   assert.ok(!tools.reviewHtml(data,{places:[{key:'a',description:'<script>alert(1)</script>'}]}).includes('<script>'));
 }
 const swapped=tools.files(data,engine(data,{places:[{key:'a',code:'BBB'},{key:'b',code:'AAA'}]},true,true));
@@ -70,7 +71,19 @@ assert.throws(()=>tools.files(unknownStop,corrected),/brokenFeedReferences/);
 assert.throws(()=>tools.zip([{name:'../bad.txt',text:'x'}]),/duplicateFiles/);
 assert.throws(()=>tools.zip([{name:'a.txt',text:'x'},{name:'A.txt',text:'x'}]),/duplicateFiles/);
 const out=path.join(root,'tmp');fs.mkdirSync(out,{recursive:true});
-const gtfsZip=tools.zip(result);
+assert.throws(()=>tools.placeImportFiles({...corrected,places:[{code:'AAA',description:'École "Nord"'}]}),/invalidPlaceImport/,'OIR quoting must not be guessed');
+const importResult=corrected;
+const imports=tools.placeImportFiles(importResult);
+assert.equal(imports[0].name,'hastus_import/places/places.csv');
+assert.equal(imports[0].text,'Keyword;plc_identifier;plc_description\r\nplace;Abcdefgh;École, Nord\r\nplace;BBB;Second place\r\n');
+assert.equal(imports[1].name,'hastus_import/places/place - GTFS DESC.oir');
+assert.match(imports[1].text,/separator ";"/);
+assert.match(imports[1].text,/item plc_identifier\r\n    item plc_description/);
+for(const description of ['A;B','A"B','A\nB','A\rB','A\x00B'])assert.throws(()=>tools.placeImportFiles({...importResult,places:[{code:'AAA',description}]}),/invalidPlaceImport/);
+assert.equal(tools.placeImportFiles({...importResult,places:[{code:'0001',description:'École du Nord'}]})[0].text.split('\r\n')[1],'place;0001;École du Nord');
+for(const name of ['../bad.txt','a/../bad.txt','/bad.txt','a//bad.txt','C:/bad.txt','a\\bad.txt'])assert.throws(()=>tools.zip([{name,text:'x'}],{allowPaths:true}),/duplicateFiles/);
+assert.throws(()=>tools.zip([...imports,imports[0]],{allowPaths:true}),/duplicateFiles/);
+const gtfsZip=tools.zip([...result,...imports],{allowPaths:true});
 const bundle=tools.zip([{name:'GTFS_finalise.zip',bytes:gtfsZip},{name:'rapport_corrige.html',text:'<!doctype html><main>'+tools.reviewHtml(data,edits)+'</main>'},{name:'modifications.json',text:JSON.stringify(review)}]);
 fs.writeFileSync(path.join(out,'report-editor-package-test.zip'),bundle);
 console.log('PASS: complete ZIP, unchanged optional files, dependent references, ID remapping, code swaps, before/after summary, saved/reverted edits, FR/EN, missing/inconsistent GTFS, filename safety.');

@@ -73,6 +73,16 @@ function reportPackageTools() {
     }
     return output;
   }
+  function placeImportFiles(result){
+    if(result.errors.length)throw new Error(result.errors.join(', '));
+    const places=[...result.places].sort((a,b)=>a.code.localeCompare(b.code,'en',{numeric:true,sensitivity:'base'}));
+    // The supplied OIR specifies a separator, but no quoted-field convention.
+    // Never silently strip characters or emit ambiguous import records.
+    if(places.some(place=>[place.code,place.description].some(value=>/[;"\r\n\x00]/.test(text(value)))))throw new Error('invalidPlaceImport');
+    const content=['Keyword;plc_identifier;plc_description',...places.map(place=>'place;'+place.code+';'+place.description)].join('\r\n')+'\r\n';
+    const oir='#____________________________________________________________________________\r\n#\r\n# Module: files\\oir\\place.oir\r\n#\r\n# Copyright (c) 2001, Giro inc.\r\n#\r\n#____________________________________________________________________________\r\n\r\nseparator ";"\r\n\r\nline place\r\n  {keyword place\r\n   object place\r\n    item plc_identifier\r\n    item plc_description\r\n  \r\n  }\r\n\r\n\r\n\r\n\r\n';
+    return [{name:'hastus_import/places/places.csv',text:content},{name:'hastus_import/places/place - GTFS DESC.oir',text:oir}];
+  }
   function changes(data,edits){
     const originals=new Map(data.places.map(place=>[place.key,place]));
     const current=new Map(data.places.map(place=>{const edit=(edits.places||[]).find(item=>item.key===place.key)||{};return [place.key,{...place,code:text(edit.code??place.code).trim(),description:text(edit.description??place.description).trim()}];}));
@@ -132,5 +142,5 @@ function reportPackageTools() {
     for(const chunk of [...chunks,...central,end]){result.set(chunk,at);at+=chunk.length;}
     return result;
   }
-  return {availability,files,changes,reviewHtml,zip,parse};
+  return {availability,files,placeImportFiles,changes,reviewHtml,zip,parse};
 }

@@ -1,5 +1,12 @@
 # Notes de version
 
+## 13.01 — 2026-10-15
+
+- Rapport HTML : une fiche trouvée par recherche reste visible pendant son renommage, jusqu’au changement de recherche ou de filtre.
+- Compte rendu : validations complètes repliées par défaut, commande Afficher/Masquer, liste compacte et statut sur une ligne, en français et en anglais.
+- ZIP GTFS finalisé : sous-dossier `hastus_import/places` avec `places.csv` (codes/descriptions finaux) et copie du script `place - GTFS DESC.oir`. Contrôle des caractères incompatibles avec le modèle d’import. Import dans HASTUS à confirmer.
+- Régénérer les rapports HTML existants pour utiliser ces corrections.
+
 ### Correctif v13.0 — distances en revue
 
 - Réglage commun « Distances : Masquées / Petites / Grandes » dans le mode normal et les trois dispositions de revue, mémorisé dans le navigateur et le HTML sauvegardé.

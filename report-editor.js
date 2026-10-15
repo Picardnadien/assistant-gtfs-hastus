@@ -164,6 +164,7 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
   const style=runtime(document.createElement('style'));
   style.textContent=`.review-launch{padding:14px 0;display:grid;gap:8px}.review-launch button{padding:10px;border:1px solid #bdcbb0;border-radius:18px 0;background:#eef3e7;color:#303b35;font:600 13px Arial}.review-launch small{color:inherit}.review-toolbar{display:none}.review-mode{overflow:hidden!important}.review-mode .sidebar,.review-mode .report-modules{display:none!important}.review-mode .report-shell{display:block!important}.review-mode .main{position:fixed;inset:var(--review-toolbar-height,100px) 0 0;overflow:auto;padding:20px 3vw!important;background:#f5f6f3}.review-mode .main>:not(.review-active){display:none!important}.review-mode .main>.review-active{display:block!important;content-visibility:visible;max-width:1600px;margin:0 auto}.review-mode .back-link{display:none}.review-toolbar{position:fixed;top:0;left:0;right:0;z-index:1000;background:#fff;color:#303b35;border-bottom:1px solid #bdcbb0;padding:10px 20px;gap:8px;align-items:center;flex-wrap:wrap;font:13px/1.4 Arial}.review-mode .review-toolbar{display:flex}.review-toolbar button,.review-toolbar select,.review-dialog button,.review-dialog select,.review-stop-link{padding:8px 11px;border:1px solid #bdcbb0;border-radius:16px 0;background:#fff;color:#303b35;font:inherit;cursor:pointer}.review-toolbar button:disabled{opacity:.4;cursor:default}.review-toolbar label{display:flex;align-items:center;gap:6px}.review-toolbar select{width:auto;margin:0;max-width:180px}.review-toolbar strong{margin-right:auto}.review-progress{color:#637167}.review-stop-link{display:block;margin-top:5px;font-size:11px}.review-mode .place-map svg{max-height:55vh}.review-dialog{width:min(680px,calc(100vw - 32px));max-height:85vh;overflow:auto;border:1px solid #bdcbb0;border-radius:12px;padding:24px;color:#303b35;background:#fff;font:15px/1.55 Arial}.review-dialog::backdrop{background:#0008}.review-dialog h2{font:600 24px Arial;margin-top:0}.review-dialog select{width:100%;border-radius:5px}.review-dialog footer{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px;margin-top:20px}.review-summary{margin:18px 0}.review-summary td,.review-summary th{overflow-wrap:anywhere}.review-complete{text-align:center;padding:80px 20px!important}.review-toolbar :focus-visible,.review-dialog :focus-visible{outline:3px solid #557630;outline-offset:3px}@media(max-width:700px){.review-toolbar{padding:8px;font-size:12px}.review-mode .main{padding:12px!important}.review-mode .detail-grid{display:block}.review-mode .place-card{padding:14px}}@media print{.review-toolbar,.review-launch,.review-stop-link,.review-dialog{display:none!important}.review-mode{overflow:visible!important}.review-mode .main{position:static!important;overflow:visible}.review-mode .main>[data-report-place]{display:block!important}}`;
   document.head.append(style);
+  style.textContent+=`.change-summary table{font-size:12px;line-height:1.35}.change-summary td,.change-summary th{padding:6px 8px;vertical-align:top}.review-summary>summary{cursor:pointer;font:600 13px Arial;padding:9px 12px;border:1px solid #bdcbb0;border-radius:16px 0;width:fit-content;min-height:36px}.review-summary .review-hide,.review-summary[open] .review-show{display:none}.review-summary[open] .review-hide{display:inline}.review-summary .summary-stop-list{list-style:none;padding:0;margin:0;line-height:1.4}.review-summary .summary-stop-list li{display:inline}.review-summary .summary-stop-list li+li:before{content:' · ';color:#647067}.review-summary .approval-status{white-space:nowrap;overflow-wrap:normal;width:1%}.review-summary .approval-status span{display:inline-block;white-space:nowrap;font-size:11px;padding:2px 6px;border-radius:4px;background:#edf1e8}.review-summary .approval-status .approved{background:#dfead4;color:#304a23}.review-summary>p{font-size:12px;margin:8px 0}.review-summary>summary:focus-visible{outline:3px solid #557630;outline-offset:3px}`;
   // The taller client menu must scroll as a whole, without covering export buttons.
   style.textContent+='.sidebar .search-box{position:static}';
   style.textContent+=`.review-mode .main>.review-active[data-report-place]{display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px 20px;padding:20px}.review-mode .review-active>header,.review-mode .review-active>h3{display:none}.review-mode .review-active>.title-row{grid-column:1/-1;margin:0}.review-mode .review-active>.title-row h2{margin:5px 0;font-size:24px}.review-mode .review-active .place-code{padding:10px 16px}.review-mode .review-active>.client-editor{grid-column:1/-1;margin:0;padding:10px 14px}.review-mode .client-editor h3{display:none}.review-mode .client-editor .place-undo{padding:5px 10px;margin-top:6px}.review-mode .review-active>.facts{grid-column:1/-1;margin:0}.review-mode .facts>div{padding:8px 12px}.review-mode .review-active>.place-map{grid-column:1;grid-row:4;align-self:start}.review-mode .review-active>.detail-grid{grid-column:2;grid-row:4;display:block;margin:0;min-width:0}.review-mode .review-active>.map-note{grid-column:1/-1;margin:0}.review-mode .detail-grid details{margin-bottom:12px}.review-mode .detail-grid td{overflow-wrap:anywhere}.review-mode .detail-grid .assignment-select{min-width:140px}.review-mode .review-active>.place-map svg{width:100%;height:auto;max-height:55vh}.review-mode .review-active>.place-map .map-legend{flex-wrap:wrap}@media(max-width:1100px){.review-mode .main>.review-active[data-report-place]{display:block!important}.review-mode .review-active>.place-map{margin-top:12px}.review-mode .review-active>.detail-grid{margin-top:12px}}`;
@@ -389,10 +390,10 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
   help.addEventListener('cancel',remember);
   panel.querySelector('[data-review-help]').onclick=()=>guide();bar.querySelector('[data-review-help]').onclick=()=>guide();
   function summary(){return model.summary();}
-  function summaryHtml(){
+  function summaryHtml(expanded=document.querySelector('.review-summary')?.open||false){
     const rows=summary();
     const stopsHtml=stops=>stops.length?`<ul class="summary-stop-list">${stops.map(stop=>`<li><strong>${esc(stop.label)}${stop.label!==stop.id?' ('+esc(stop.id)+')':''}</strong> — ${esc(stop.description||t('Description non disponible','Description unavailable'))}</li>`).join('')}</ul>`:t('Aucun stop associé','No associated stops');
-    return `<section class="review-summary"><h3>${t('Validation des places','Place approvals')}</h3><p>${rows.filter(row=>row.validated).length} / ${rows.length} ${t('places validées','places approved')}</p><p>${t('Stops associés selon les choix actuels du client.','Associated stops reflect the client’s current choices.')}</p><div class="table-scroll"><table><thead><tr><th>${t('Code','Code')}</th><th>${t('Description','Description')}</th><th>${t('Stops associés · ID et description','Associated stops · ID and description')}</th><th>${t('Revue','Review')}</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.code)}</td><td>${esc(row.description)}</td><td>${stopsHtml(row.stops)}</td><td>${row.validated?t('Validée','Approved'):t('À traiter','Pending')}</td></tr>`).join('')}</tbody></table></div></section>`;
+    return `<details class="review-summary"${expanded?' open':''}><summary><span class="review-show">${t('Afficher la validation des places','Show place approvals')}</span><span class="review-hide">${t('Masquer la validation des places','Hide place approvals')}</span></summary><p>${rows.filter(row=>row.validated).length} / ${rows.length} ${t('places validées','places approved')} · ${t('Stops associés selon les choix actuels du client.','Associated stops reflect the client’s current choices.')}</p><div class="table-scroll"><table><thead><tr><th>${t('Code','Code')}</th><th>${t('Description','Description')}</th><th>${t('Stops associés · ID et description','Associated stops · ID and description')}</th><th class="approval-status">${t('Statut','Status')}</th></tr></thead><tbody>${rows.map(row=>`<tr><td>${esc(row.code)}</td><td>${esc(row.description)}</td><td>${stopsHtml(row.stops)}</td><td class="approval-status"><span class="${row.validated?'approved':'pending'}">${row.validated?t('Validée','Approved'):t('À valider','Pending')}</span></td></tr>`).join('')}</tbody></table></div></details>`;
   }
   function cleanClone(clone){clone.querySelectorAll('[data-review-runtime]').forEach(node=>node.remove());clone.querySelector('body').classList.remove('review-mode');clone.querySelector('body').style.removeProperty('--review-toolbar-height');clone.querySelector('body').style.removeProperty('--report-anchor-offset');clone.querySelectorAll('[data-report-place]').forEach(node=>{node.style.removeProperty('--place-table-height');node.style.removeProperty('--place-map-height');node.style.removeProperty('--place-map-width');});clone.querySelectorAll('.review-active').forEach(node=>node.classList.remove('review-active'));}
   refresh();if(!seen)guide(true);
@@ -417,6 +418,7 @@ function placeReportEditorRuntime() {
     brokenFeedReferences: message('Références incohérentes entre les fichiers du GTFS : archive non créée.', 'Inconsistent references between GTFS files: archive not created.'),
     zipTooLarge: message('Archive trop volumineuse pour ce format ZIP (4 Go maximum).', 'Archive too large for this ZIP format (4 GB maximum).')
   });
+  t.invalidPlaceImport=message('Import des places : les codes et descriptions ne doivent pas contenir de point-virgule, guillemet ou saut de ligne avec ce modèle OIR. Corrigez ces caractères avant l’export ZIP.','Place import: codes and descriptions must not contain semicolons, quotes or line breaks with this OIR template. Correct these characters before ZIP export.');
   const edits = data.edits || {places: data.places.map(({key, code, description}) => ({key, code, description})), assignments: {...data.assignments}};
   const placeByKey = new Map(data.places.map(p => [p.key, p]));
   const cardByKey = new Map([...document.querySelectorAll('[data-report-place]')].map(card => [card.dataset.placeKey, card]));
@@ -424,6 +426,8 @@ function placeReportEditorRuntime() {
   const status = document.getElementById('client-edit-status');
   const norm = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
   let filter = 'all', dirty = false, corrected;
+  // Preserve only cards edited within the current search, not all historical names.
+  const retainedSearchPlaces=new Set();
   let fileSaver,reviewer;
   const markChanged=()=>{dirty=true;fileSaver.changed();};
   const currentPlace = key => ({...placeByKey.get(key), ...edits.places.find(p => p.key === key)});
@@ -486,7 +490,7 @@ function placeReportEditorRuntime() {
     let shown = 0;
     for (const [key, card] of cardByKey) {
       const place = currentPlace(key), names = points.filter(p => assigned(p.id) === key).map(p => p.id + ' ' + p.description).join(' ');
-      const visible = (filter === 'all' || card.dataset.kind === filter) && norm(place.code + ' ' + place.description + ' ' + names).includes(norm(search.value.trim()));
+      const visible = (filter === 'all' || card.dataset.kind === filter) && (retainedSearchPlaces.has(key)||norm(place.code + ' ' + place.description + ' ' + names).includes(norm(search.value.trim())));
       card.hidden = !visible;
       if (visible) shown++;
       for (const item of document.querySelectorAll('[data-report-filter-item]')) if (item.dataset.placeKey === key) item.hidden = !visible;
@@ -632,12 +636,13 @@ function placeReportEditorRuntime() {
     refreshNames(); updateMaps(); applyFilter(); validate();
   }
   document.querySelectorAll('button[data-filter]').forEach(button => button.addEventListener('click', () => {
+    retainedSearchPlaces.clear();
     filter = button.dataset.filter;
     document.querySelectorAll('button[data-filter]').forEach(other => {const active = other === button; other.classList.toggle('active', active); other.setAttribute('aria-pressed', String(active));});
     applyFilter();
     document.getElementById('report-top').scrollIntoView({block: 'start'});
   }));
-  search.addEventListener('input', applyFilter);
+  search.addEventListener('input',()=>{retainedSearchPlaces.clear();applyFilter();});
   let activeInput=null;
   document.addEventListener('focusout',()=>{activeInput=null;});
   document.addEventListener('focusin',event=>{if(event.target.matches('[data-stop-assignment]'))fillAssignment(event.target,event.target.dataset.assignmentId,true);});
@@ -645,6 +650,7 @@ function placeReportEditorRuntime() {
   document.addEventListener('input', event => {
     if (!event.target.matches('[data-place-code],[data-place-description]')) return;
     const key = event.target.closest('[data-report-place]').dataset.placeKey;
+    if(search.value.trim()&&!cardByKey.get(key).hidden)retainedSearchPlaces.add(key);
     controls.set(key,key,event.target.matches('[data-place-code]')?'code':'description',event.target.value,activeInput===event.target);
     activeInput=event.target;
     markChanged(); refreshNames(); applyFilter(); validate();
@@ -679,7 +685,7 @@ function placeReportEditorRuntime() {
     refreshReview(true);
     const snapshot = {...data, edits, undoHistory:controls.history, savedAt};
     const clone = document.documentElement.cloneNode(true);
-    clone.querySelector('#client-change-summary').innerHTML=(document.querySelector('#report-top header')?.outerHTML||'')+packageTools.reviewHtml(data,edits,savedAt)+(reviewer?.summaryHtml()||'');
+    clone.querySelector('#client-change-summary').innerHTML=(document.querySelector('#report-top header')?.outerHTML||'')+packageTools.reviewHtml(data,edits,savedAt)+(reviewer?.summaryHtml(false)||'');
     reviewer?.cleanClone(clone);
     // Never serialize an active permission or a misleading "saved" indicator.
     clone.querySelector('#client-autosave-controls')?.remove();
@@ -761,6 +767,7 @@ function placeReportEditorRuntime() {
   document.querySelectorAll('button[data-filter]').forEach(button => {const active = button.dataset.filter === 'all'; button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));});
   refreshAssignments();
   function revealPlace(key){
+    retainedSearchPlaces.clear();
     filter='all';search.value='';
     document.querySelectorAll('button[data-filter]').forEach(button=>{const selected=button.dataset.filter==='all';button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected));});
     applyFilter();cardByKey.get(key)?.scrollIntoView({block:'start',behavior:'instant'});

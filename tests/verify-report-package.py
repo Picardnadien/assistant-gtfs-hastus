@@ -15,8 +15,11 @@ with zipfile.ZipFile(path) as bundle:
     assert len(changes["places"]) == len(changes["stops"]) == 1
     with zipfile.ZipFile(io.BytesIO(bundle.read("GTFS_finalise.zip"))) as gtfs:
         assert gtfs.testzip() is None
-        assert len(gtfs.namelist()) == 12
-        assert all("/" not in name for name in gtfs.namelist())
+        assert len(gtfs.namelist()) == 14
+        imports = {"hastus_import/places/places.csv", "hastus_import/places/place - GTFS DESC.oir"}
+        assert {name for name in gtfs.namelist() if "/" in name} == imports
+        places = list(csv.DictReader(io.StringIO(gtfs.read("hastus_import/places/places.csv").decode("utf-8")), delimiter=";"))
+        assert places[0] == {"Keyword": "place", "plc_identifier": "Abcdefgh", "plc_description": "École, Nord"}
         assert "Abcdefgh" in gtfs.read("stops.txt").decode("utf-8")
         assert "Été" in gtfs.read("locations.geojson").decode("utf-8")
 print("PASS: outer ZIP and nested GTFS ZIP independently verified, CRCs valid, UTF-8 preserved.")
@@ -39,7 +42,7 @@ if len(sys.argv) > 1:
         changes = json.loads(bundle.read('modifications.json'))
         assert len(changes['places']) == len(changes['stops']) == 1
         with zipfile.ZipFile(io.BytesIO(bundle.read('GTFS_finalise.zip'))) as gtfs:
-            assert gtfs.testzip() is None and len(gtfs.namelist()) == 6
+            assert gtfs.testzip() is None and len(gtfs.namelist()) == 8
             rows = list(csv.DictReader(io.StringIO(gtfs.read('stops.txt').decode('utf-8'))))
             assert next(r for r in rows if r['stop_id'] == '001')['parent_station'] == 'BBB'
             assert next(r for r in rows if r['stop_id'] == 'Abcdefgh')['stop_name'] == 'École du Nord – entrée principale'
