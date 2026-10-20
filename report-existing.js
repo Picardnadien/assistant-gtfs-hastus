@@ -1,5 +1,28 @@
 "use strict";
 
+// Read only the directed place pairs needed by the diagnostic, not travel-time rules.
+// Keep a compact, serializable table for workspaces; duplicate time bands count once.
+function parseDeadheadMatrix(text){
+  const places=new Map(),pairs=new Set(),key=s=>String(s||'').trim().toUpperCase();
+  let records=0;
+  for(const [i,line] of String(text).replace(/^\uFEFF/,'').split(/\r?\n/).entries()){
+    if(!line.trim())continue;
+    const cells=line.split(';').map(s=>s.trim());
+    if(cells[0].toLowerCase()!=='linkdt'||!cells[1]||!cells[2])throw new Error(`Deadhead: invalid linkdt record / ligne linkdt invalide (${i+1}).`);
+    const from=key(cells[1]),to=key(cells[2]),pair=JSON.stringify([from,to]);records++;
+    if(pairs.has(pair))continue;pairs.add(pair);
+    for(const code of [from,to])if(!places.has(code))places.set(code,{place_code:code,outgoing:0,incoming:0});
+    places.get(from).outgoing++;places.get(to).incoming++;
+  }
+  if(!records)throw new Error('Deadhead: empty matrix / matrice vide.');
+  return {headers:['place_code','outgoing','incoming'],rows:[...places.values()],records,pairs:pairs.size};
+}
+
+function existingReportDeadheadHtml(places,model,t){
+  const e=escapeHtml;
+  return `<div class="notice"><b>${e(t.deadheadTitle)}</b><p>${e(model.deadheadKnown?t.deadheadHelp:t.deadheadUnknown)}</p>${model.deadheadKnown?places.map(p=>`<p>${existingReportPlaceBadge(p,t)} — ${e(p.hasDeadhead?t.deadheadYes:t.deadheadNo)} · ${e(t.deadheadOut)} : ${p.deadhead.outgoing} · ${e(t.deadheadIn)} : ${p.deadhead.incoming}</p>`).join(''):''}</div>`;
+}
+
 // Read-only HASTUS diagnostic. Keep original associations separate from proposals.
 function existingClientReportModel(source){
   const clean=value=>String(value??"").trim(),stopKey=value=>clean(value).replace(/^:/,""),byId=new Map();
@@ -13,6 +36,30 @@ function existingClientReportModel(source){
   }
   for(const d of source.decisions||[])if(timingIds.has(matchKey(d.originalId||d.id)))timingAliases.set(matchKey(d.id),true);
   const timing=id=>!timingKnown?null:timingIds.has(matchKey(id))||timingAliases.get(matchKey(id))===true;
+  const endpointIds=new Set([...(source.endpointStopIds||[])].map(matchKey));
+  const times=source.parsed?.times?.rows||source.parsed?.stop_times?.rows||[];
+  // GTFS endpoints use the complete trip sequence, not the subset of timing points.
+  if(source.timingPointSource!=='variants'){
+    const trips=new Map();
+    for(const row of times){
+      if(!clean(row.trip_id)||!clean(row.stop_id)||!clean(row.stop_sequence)||!Number.isFinite(Number(row.stop_sequence)))continue;
+      const seq=Number(row.stop_sequence),trip=trips.get(row.trip_id);
+      if(!trip)trips.set(row.trip_id,{min:seq,max:seq,first:[row.stop_id],last:[row.stop_id]});
+      else{
+        if(seq<trip.min){trip.min=seq;trip.first=[row.stop_id];}else if(seq===trip.min)trip.first.push(row.stop_id);
+        if(seq>trip.max){trip.max=seq;trip.last=[row.stop_id];}else if(seq===trip.max)trip.last.push(row.stop_id);
+      }
+    }
+    for(const trip of trips.values())for(const id of [...trip.first,...trip.last])endpointIds.add(matchKey(id));
+  }
+  for(const s of source.gtfsStops||source.parsed?.stops?.rows||[])if(endpointIds.has(matchKey(s.stop_id))&&source.associationKey==='stop_code'&&clean(s.stop_code))endpointIds.add(matchKey(s.stop_code));
+  for(const d of source.decisions||[])if(endpointIds.has(matchKey(d.originalId||d.id)))endpointIds.add(matchKey(d.id));
+  const endpointKnown=endpointIds.size>0;
+  const deadheadKnown=Boolean(source.parsed?.deadhead);
+  const deadheadIndex=new Map((source.parsed?.deadhead?.rows||[]).map(r=>[clean(r.place_code).toUpperCase(),{outgoing:Number(r.outgoing)||0,incoming:Number(r.incoming)||0}]));
+  const rawThreshold=source.stopPlaceThreshold??500;
+  const stopPlaceThreshold=Number.isFinite(Number(rawThreshold))?Math.max(0,Math.min(1000,Number(rawThreshold))):500;
+  const distance=(a,b)=>{const rad=Math.PI/180,dlat=(b.lat-a.lat)*rad,dlon=(b.lon-a.lon)*rad,h=Math.sin(dlat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dlon/2)**2;return 6371000*2*Math.asin(Math.sqrt(Math.min(1,Math.max(0,h))));};
   const coordinate=(lat,lon)=>clean(lat)!==""&&clean(lon)!==""&&Number.isFinite(Number(lat))&&Number.isFinite(Number(lon))&&Math.abs(Number(lat))<=90&&Math.abs(Number(lon))<=180;
   function place(id,description=""){
     id=clean(id);if(!id)return null;
@@ -22,7 +69,7 @@ function existingClientReportModel(source){
   function addStop(p,stop){
     if(!p)return;const id=stopKey(stop.id),hasCoord=coordinate(stop.lat,stop.lon);
     if(p.stops.some(row=>row.id===id))return;
-    p.stops.push({id,description:clean(stop.description),timing:timing(id),lat:hasCoord?Number(stop.lat):null,lon:hasCoord?Number(stop.lon):null});
+    p.stops.push({id,description:clean(stop.description),timing:timing(id),endpoint:endpointIds.has(matchKey(id)),lat:hasCoord?Number(stop.lat):null,lon:hasCoord?Number(stop.lon):null});
   }
   function tag(p,value){if(p&&!p.tags.includes(value))p.tags.push(value);}
   for(const item of source.places||[]){
@@ -62,7 +109,7 @@ function existingClientReportModel(source){
     }
   }
   for(const row of source.unusedPlaceStops||[]){const p=place(row.place_id,row.place_description);if(p){p.unused.push({...row});tag(p,"unused");}}
-  const priority=["distantReference","missingReference","data","grouping","assignment","creation","unused","none"];
+  const priority=["distantReference","missingReference","distantStop","data","grouping","assignment","creation","unused","none"];
   const places=[...byId.values()];
   const referenceIds=new Set([...places.flatMap(p=>p.references),...anomalies.map(a=>clean(a.reference_place_id))].filter(Boolean));
   const referenceChildren=new Map();
@@ -71,6 +118,8 @@ function existingClientReportModel(source){
     referenceChildren.get(ref).add(p.code);
   }
   for(const p of places){
+    p.deadhead=deadheadIndex.get(p.code.toUpperCase())||{outgoing:0,incoming:0};
+    p.hasDeadhead=Boolean(p.deadhead.outgoing||p.deadhead.incoming);
     p.isReference=referenceIds.has(p.code);
     p.attachedCodes=[...(referenceChildren.get(p.code)||[])].sort((a,b)=>a.localeCompare(b,'fr',{numeric:true}));
     if(p.stops.some(stop=>stop.lat===null))tag(p,"data");
@@ -78,12 +127,16 @@ function existingClientReportModel(source){
     if(p.lat===null&&points.length){p.lat=points.reduce((n,s)=>n+s.lat,0)/points.length;p.lon=points.reduce((n,s)=>n+s.lon,0)/points.length;}
     if(p.proposed&&p.lat===null){const d=p.decisions.find(d=>d.target===p.id&&d.lat!==null);if(d){p.lat=d.lat;p.lon=d.lon;}}
     if(p.lat===null)tag(p,"data");
+    p.hasEndpoint=p.stops.some(s=>s.endpoint);
+    for(const s of p.stops){s.placeDistance=p.lat!==null&&s.lat!==null?distance(p,s):null;s.distant=s.placeDistance!==null&&s.placeDistance>stopPlaceThreshold;}
+    p.distantStops=p.stops.filter(s=>s.distant);
+    if(p.distantStops.length)tag(p,"distantStop");
     p.tags.sort((a,b)=>priority.indexOf(a)-priority.indexOf(b));if(!p.tags.length)p.tags.push("none");
     p.primary=p.tags[0];p.stops.sort((a,b)=>a.id.localeCompare(b.id,"fr",{numeric:true}));
   }
   places.sort((a,b)=>priority.indexOf(a.primary)-priority.indexOf(b.primary)||a.code.localeCompare(b.code,"fr",{numeric:true,sensitivity:"base"}));
   places.forEach((p,i)=>p.anchor=`place-${i}`);
-  return {places,anomalies,unresolved,priority,byId,referenceIds,referenceChildren,radius:source.radius??300,threshold:source.threshold??500,timingKnown,timingSource:source.timingPointSource||'gtfs',timingInferred:Boolean(source.timepointFallback)};
+  return {places,anomalies,unresolved,priority,byId,referenceIds,referenceChildren,radius:source.radius??300,threshold:source.threshold??500,stopPlaceThreshold,endpointKnown,endpointsOnly:Boolean(source.endpointsOnly),deadheadKnown,deadheadOnly:Boolean(source.deadheadOnly),timingKnown,timingSource:source.timingPointSource||'gtfs',timingInferred:Boolean(source.timepointFallback)};
 }
 
 const EXISTING_REPORT_TEXT={
@@ -99,12 +152,36 @@ const EXISTING_REPORT_TEXT={
     advice:{distantReference:"Check the actual repositioning movement and review the shared reference if the grouping is not operationally justified.",missingReference:"Check the reference identifier and export completeness before correcting or creating a reference.",data:"Complete missing coordinates or assignments before drawing conclusions.",grouping:"Consider a common reference. Keep distinct places when orientation or repositioning requires it.",assignment:"Confirm the proposed assignment using the physical stop location and trip start/end requirements.",creation:"Validate the proposed place code, description and associated stops.",unused:"Check whether the place is still required, particularly at trip endpoints. Do not delete automatically.",none:"Retain current assignments, subject to operational validation."}}
 };
 
+for(const [language,t] of Object.entries(EXISTING_REPORT_TEXT)){
+  const en=language==='en';
+  t.categories.distantStop=en?'Stops far from their place':'Stops éloignés de leur place';
+  t.advice.distantStop=en?'Review the physical stop location and its current place assignment. No reassignment is applied automatically.':'Vérifier la position physique du stop et son affectation actuelle. Aucune réaffectation n’est appliquée automatiquement.';
+  Object.assign(t,{
+    deadheadTitle:en?'Deadhead matrix · direct links':'Matrice deadhead / HLP · liens directs',
+    deadheadFilter:en?'Places with a direct deadhead link only':'Places avec un lien deadhead direct uniquement',
+    deadheadUnknown:en?'Deadhead matrix not loaded: link status unknown.':'Matrice deadhead non chargée : présence de liens non renseignée.',
+    deadheadHelp:en?'Unique directed links in the supplied matrix. No inherited links through references or calendar/time-band availability inferred. A comparison is retained only if every place has a direct link.':'Liens orientés uniques dans la matrice fournie. Aucun lien déduit via les références ni disponibilité selon le calendrier ou la plage horaire. Une comparaison est retenue uniquement si toutes ses places possèdent un lien direct.',
+    deadheadYes:en?'Present in matrix':'Présente dans la matrice',
+    deadheadNo:en?'No direct link in supplied matrix':'Aucun lien direct dans la matrice fournie',
+    deadheadOut:en?'Outgoing':'Sortants',
+    deadheadIn:en?'Incoming':'Entrants',
+    stopThreshold:en?'Stop-to-place alert threshold':'Seuil d’alerte stop–place',
+    stopDistance:en?'Distance to current place':'Distance à la place actuelle',
+    endpointFilter:en?'Places used at trip start/end only':'Places utilisées en début/fin de voyage uniquement',
+    endpointUnavailable:en?'No trip endpoints identified: filter unavailable. Load trip sequences or route versions with ordered stops.':'Aucun début/fin identifié : filtre indisponible. Charger les séquences des voyages ou des versions de routes avec stops ordonnés.',
+    endpointHelp:en?'Only cases where every place has an identified trip start or end are retained.':'Seuls les cas dont toutes les places ont un début ou une fin de voyage identifié sont retenus.',
+    centreHelp:en?'Distances use the place centre used by the analysis, computed from its stops if no separate position is provided.':'Distances calculées depuis le centre de place utilisé par l’analyse, calculé à partir des stops si aucune position distincte n’est fournie.',
+    endpoint:en?'Trip start/end identified':'Début/fin de voyage identifié',
+    csched:en?'CSched recommendation':'Préconisation CSched'
+  });
+}
+
 Object.assign(EXISTING_REPORT_TEXT.fr,{
   shortRef:'Réf.',referenceRole:'Référence',attachedPlaces:'Rattachées',referenceReview:'Référence à vérifier',
   stopScope:'Stops à afficher',allStops:'Tous les stops',tpOnly:'Timing points uniquement',noTpStops:'Aucun stop confirmé TP actuellement associé à cette place.',tpScope:'Filtre TP actif : seuls les stops confirmés TP sont affichés et exportés. Les places, références, catégories et compteurs du diagnostic initial sont conservés ; l’analyse géographique n’est pas recalculée.',
   placeCode:'Place',stopId:'Stop ID',referencePlace:'Place de référence',noReference:'Non renseignée',timing:'Statut TP',tp:'TP',nonTp:'Non TP',unknownTp:'TP inconnu',timingSource:'Source du statut TP',variants:'Versions de routes HASTUS',gtfs:'GTFS',inferred:'TP déduits des heures de passage selon les réglages de l’analyse',unknownSource:'Statut TP indisponible dans cette analyse',
   legend:'■ Centre de place · ● Bleu : TP · ● Orange : non TP · ● Gris : statut TP inconnu · contour violet : proposition non appliquée · pointillés : rattachements existants à une référence',
-  guide:'Petit guide',csv:'Exporter CSV',print:'Imprimer / PDF',exportScope:'Les exports couvrent tous les résultats des filtres, pas seulement la page affichée.',printWait:'Préparation de toutes les fiches filtrées…',printReady:'Aperçu prêt. Dans la fenêtre d’impression, choisir « Enregistrer au format PDF ». Vérifier le chargement des cartes en ligne avant de confirmer.',printFailed:'Impossible de préparer l’impression.',close:'Fermer',
+  guide:'Petit guide',csv:'Exporter CSV',print:'Imprimer / PDF',exportScope:'CSV / PDF : résultats filtrés. HTML client : fiches cochées, même hors filtres.',printWait:'Préparation de toutes les fiches filtrées…',printReady:'Aperçu prêt. Dans la fenêtre d’impression, choisir « Enregistrer au format PDF ». Vérifier le chargement des cartes en ligne avant de confirmer.',printFailed:'Impossible de préparer l’impression.',close:'Fermer',
   guideTitle:'Lire le diagnostic HASTUS',guideSteps:['Filtrer par type de cas ou rechercher une place, une référence ou un stop. Le sommaire permet d’ouvrir chaque fiche.','Chaque fiche distingue le code et sa description en petit dans une même étiquette, puis indique sa place de référence et les stops actuellement associés. Les propositions restent séparées et ne modifient pas les données.','TP signifie point horaire dans la source d’analyse choisie. Bleu : TP ; orange : non TP ; gris : inconnu. Un stop peut être TP sur certains voyages seulement.','Les carrés représentent les centres de place ; les cercles représentent les coordonnées physiques des stops. Le contour violet indique une proposition.','Exporter CSV couvre tous les résultats filtrés. Imprimer / PDF ouvre toutes les fiches filtrées dans un aperçu distinct : choisir ensuite Enregistrer au format PDF. Les cartes en ligne demandent une connexion ; les cartes fixes restent disponibles hors ligne.']
 });
 Object.assign(EXISTING_REPORT_TEXT.en,{
@@ -112,9 +189,12 @@ Object.assign(EXISTING_REPORT_TEXT.en,{
   stopScope:'Stops to display',allStops:'All stops',tpOnly:'Timing points only',noTpStops:'No confirmed timing-point stop is currently assigned to this place.',tpScope:'TP filter active: only confirmed timing-point stops are displayed and exported. Places, references, categories and totals from the original assessment are retained; the spatial analysis is not recalculated.',
   placeCode:'Place',stopId:'Stop ID',referencePlace:'Reference place',noReference:'Not provided',timing:'TP status',tp:'TP',nonTp:'Non-TP',unknownTp:'Unknown TP',timingSource:'TP status source',variants:'HASTUS route versions',gtfs:'GTFS',inferred:'TPs inferred from passing times using the analysis settings',unknownSource:'TP status unavailable in this assessment',
   legend:'■ Place centre · ● Blue: TP · ● Orange: non-TP · ● Grey: unknown TP status · purple outline: unapplied proposal · dotted lines: existing reference assignments',
-  guide:'Quick guide',csv:'Export CSV',print:'Print / PDF',exportScope:'Exports include all filtered results, not just the displayed page.',printWait:'Preparing all filtered records…',printReady:'Preview ready. Choose “Save as PDF” in the print dialog. Check that online maps have loaded before confirming.',printFailed:'Could not prepare printing.',close:'Close',
+  guide:'Quick guide',csv:'Export CSV',print:'Print / PDF',exportScope:'CSV / PDF: filtered results. Client HTML: checked cases, including outside filters.',printWait:'Preparing all filtered records…',printReady:'Preview ready. Choose “Save as PDF” in the print dialog. Check that online maps have loaded before confirming.',printFailed:'Could not prepare printing.',close:'Close',
   guideTitle:'Reading the HASTUS assessment',guideSteps:['Filter by case type or search for a place, reference or stop. Open a record from the overview.','Each record distinguishes the code and its smaller description within the same badge, then identifies the reference place and currently assigned stops. Proposals remain separate and do not change the data.','TP means timing point in the selected analysis source. Blue: TP; orange: non-TP; grey: unknown. A stop can be a timing point on only some trips.','Squares are place centres; circles use physical stop coordinates. A purple outline marks an unapplied proposal.','Export CSV includes all filtered results. Print / PDF opens all filtered records in a separate preview: then choose Save as PDF. Online maps require a connection; embedded fixed maps remain available offline.']
 });
+
+EXISTING_REPORT_TEXT.fr.guideSteps.push('Replier le sommaire ou décocher « Regrouper par place » pour revenir à une ligne par cas. Cocher « Proposer au client » dans les fiches souhaitées, puis « Exporter la sélection client · HTML ». Seules ces fiches et leur contexte sont inclus ; les filtres ne décochent pas les fiches. « Éléments de la carte » masque uniquement les repères, sans supprimer de données.');
+EXISTING_REPORT_TEXT.en.guideSteps.push('Collapse the overview or uncheck “Group by place” to return to one row per case. Check “Include for client” in the desired cases, then “Export selected cases · HTML”. Only these cases and their context are included; filters do not deselect cases. “Map elements” only hides markers, without deleting data.');
 
 function existingReportPlaceLabelParts(p){
   const code=p.code??p.id,refs=[...new Set(p.references||[])].filter(id=>id!==code).sort((a,b)=>a.localeCompare(b,'fr',{numeric:true}));
@@ -218,7 +298,7 @@ function existingReportMap(points,features,t){
     return `<line class="reference-relation" data-reference="${escapeHtml(id)}" data-place="${escapeHtml(p.id)}" x1="${a.x.toFixed(2)}" y1="${a.y.toFixed(2)}" x2="${b.x.toFixed(2)}" y2="${b.y.toFixed(2)}" stroke="#80629f" stroke-width="2" stroke-dasharray="3 5"/>`;
   })).join('');
   const labelBoxes=[],orderedPoints=[...points.filter(p=>p.kind!=='place'),...centres];
-  const stopLabel=p=>t.stopId+': '+p.id+' · '+(p.timing===true?t.tp:p.timing===false?t.nonTp:t.unknownTp);
+  const stopLabel=p=>t.stopId+': '+p.id+' · '+(p.timing===true?t.tp:p.timing===false?t.nonTp:t.unknownTp)+(p.distant?' · ⚠ '+Math.round(p.placeDistance)+' m':'');
   const obstacles=orderedPoints.flatMap((p,i)=>{
     const {x,y}=project(p),r=p.kind==='place'?11:9,marker={x:x-r,y:y-r,w:r*2,h:r*2,marker:true};
     if(p.kind==='place')return [marker];
@@ -227,7 +307,7 @@ function existingReportMap(points,features,t){
   });
   const markers=relations+orderedPoints.map((p,i)=>{
     const {x,y}=project(p),place=p.kind==="place",left=x>width-250,status=p.timing===true?'tp':p.timing===false?'non-tp':'unknown-tp';
-    const label=place?existingReportPlaceCode(p,t):t.stopId+': '+p.id+' · '+(p.timing===true?t.tp:p.timing===false?t.nonTp:t.unknownTp);
+    const label=place?existingReportPlaceCode(p,t):stopLabel(p);
     const shape=place?`<rect x="${(x-8).toFixed(2)}" y="${(y-8).toFixed(2)}" width="16" height="16"/>`:`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="6"/>`;
     let tx=x+(left?-14:14),ty=y+(place?-14:14+(i%2)*12),anchor=left?'end':'start',badge='',labelText='';
     if(place){
@@ -255,7 +335,7 @@ function existingReportMap(points,features,t){
       }
       labelText+=lines.map((s,i)=>`<text class="map-code-detail" x="${tx.toFixed(2)}" y="${(ty+17*(i+1)).toFixed(2)}">${escapeHtml(s)}</text>`).join('')+'</g>';
     }
-    return `<g class="marker ${p.kind} ${place?(p.isReference?'reference-marker':''):status}"><title>${escapeHtml(label+' · '+p.description)}</title>${shape}${badge}${place?labelText:`<text x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" text-anchor="${anchor}">${escapeHtml(label)}</text>`}</g>`;
+    return `<g class="marker ${p.kind} ${place?(p.isReference?'reference-marker':''):status}" data-owner="${escapeHtml(place?p.id:p.placeId||p.target||p.original||'')}"><title>${escapeHtml(label+' · '+p.description)}</title>${shape}${badge}${place?labelText:`<text x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" text-anchor="${anchor}">${escapeHtml(label)}</text>`}</g>`;
   }).join('');
   const distancePairs=new Map();
   for(const p of centres)for(const id of [...(p.references||[]),...(p.distanceTargets||[])]){
@@ -293,13 +373,13 @@ function existingClientReportCases(model,language){
   const timingLabel=s=>s.timing===true?t.tp:s.timing===false?t.nonTp:t.unknownTp;
   const references=p=>p.references.length?p.references.map(id=>model.byId.has(id)?link(model.byId.get(id)):placeLabel(id)).join('; '):e(t.noReference);
   const table=(headers,rows)=>`<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${e(h)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
-  const stopTable=places=>table([t.placeCode,t.referencePlace,t.stopId,t.description,t.timing,t.coordinates],places.flatMap(p=>p.stops.map(s=>`<tr><td>${placeLabel(p.code)}</td><td>${references(p)}</td><td>${e(t.stopId)}: ${e(s.id)}</td><td>${e(s.description)}</td><td>${e(timingLabel(s))}</td><td>${e(coords(s))}</td></tr>`)));
+  const stopTable=places=>table([t.placeCode,t.stopId,t.description,t.timing,t.stopDistance],places.flatMap(p=>p.stops.map(s=>`<tr><td>${placeLabel(p.code)}</td><td>${e(t.stopId)}: ${e(s.id)}</td><td>${e(s.description)}</td><td>${e(timingLabel(s))}${s.endpoint?`<small class="stop-detail">✓ ${e(t.endpoint)}</small>`:''}</td><td>${s.placeDistance==null?e(t.missing):Math.round(s.placeDistance)+' m'}${s.distant?' · ⚠':''}<small class="stop-detail">${e(t.coordinates)}<br>${e(coords(s))}</small></td></tr>`))).replace('<table>','<table class="assessment-stop-table">');
   for(const row of model.anomalies){
     const places=[...new Set([row.place_a_id,row.place_b_id,row.reference_place_id])].map(id=>model.byId.get(id)).filter(Boolean),category=row.anomaly==="REFERENCE_INTROUVABLE"?"missingReference":"distantReference";
     const html=`<p>${referenceHeading(row,id=>model.byId.has(id)?link(model.byId.get(id)):placeLabel(id))}</p><p>${e(t.distance)} : ${row.distance_m===""||row.distance_m==null?e(t.missing):e(row.distance_m)+' m'} · ${e(t.threshold)} : ${model.threshold} m</p><p class="notice">${e(t.advice[category])}</p><h3>${e(t.stops)}</h3>${stopTable(places)}`;
     const title=referenceHeading(row,id=>titlePlace(placeInfo(id)));
     const titleHtml=referenceHeading(row,id=>identity(placeInfo(id)));
-    cases.push({id:row.anchor,kind:"reference",code:row.reference_place_id,title,titleHtml,tags:[category],html,points:existingReportMapPoints(places,[],model),search:[row.reference_place_id,...places.flatMap(p=>[p.code,p.description,...p.stops.flatMap(s=>[s.id,s.description])])].join(' ')});
+    cases.push({id:row.anchor,kind:"reference",hasEndpoint:places.some(p=>p.hasEndpoint),code:row.reference_place_id,title,titleHtml,tags:[category],html,points:existingReportMapPoints(places,[],model),search:[row.reference_place_id,...places.flatMap(p=>[p.code,p.description,...p.stops.flatMap(s=>[s.id,s.description])])].join(' ')});
   }
   for(const p of model.places){
     const extra=p.decisions.filter(d=>d.target===p.id&&d.original!==p.id),alerts=p.tags.map(tag=>`<p class="notice"><b>${e(t.categories[tag])}</b> — ${e(t.advice[tag])}</p>`).join('');
@@ -307,14 +387,14 @@ function existingClientReportCases(model,language){
     const suggestions=p.suggestions.map(s=>{const other=model.byId.get(s.place_a_id===p.id?s.place_b_id:s.place_a_id);return `<li>${e(s.entity_type==="STOP_SANS_PLACE"?t.stopId+': '+s.stop_id+' · '+s.stop_description:t.categories.grouping)} ${other?link(other):''} · ${e(s.distance_m)} m</li>`;}).join('');
     const decisions=p.decisions.map(d=>`<tr><td>${e(t.stopId)}: ${e(d.id)}</td><td>${e(d.description)}</td><td>${e(timingLabel(d))}</td><td>${placeLabel(d.original)}</td><td>${placeLabel(d.target)}${d.target===d.original?' · '+e(t.unchanged):d.isNew?' · '+e(t.newPlace):''}</td></tr>`);
     const unused=p.unused.map(s=>`<tr><td>${e(t.stopId)}: ${e(s.stop_id)}</td><td>${e(s.stop_description)}</td><td>${e(s.status==="ABSENT_DES_VERSIONS"?t.absent:t.noTP)}</td></tr>`);
-    const html=`<p class="reference-field"><b>${e(t.referencePlace)} :</b> ${references(p)} ${p.proposed?' · '+e(t.newPlace):''}</p>${alerts}${anomalyLinks?`<h3>${e(t.refs)}</h3><ul>${anomalyLinks}</ul>`:''}${suggestions?`<h3>${e(t.categories.grouping)}</h3><ul>${suggestions}</ul>`:''}<h3>${e(t.stops)} (${p.stops.length})</h3>${p.stops.length?stopTable([p]):`<p>${e(t.noStops)}</p>`}${decisions.length?`<h3>${e(t.proposal)}</h3>${table([t.stopId,t.description,t.timing,t.current,t.proposed],decisions)}`:''}${unused.length?`<h3>${e(t.categories.unused)}</h3>${table([t.stopId,t.description,t.type],unused)}`:''}`;
+    const html=`<p class="reference-field"><b>${e(t.referencePlace)} :</b> ${references(p)} ${p.proposed?' · '+e(t.newPlace):''}</p>${alerts}${p.distantStops?.length?`<p><b>${e(t.stopThreshold)} : ${model.stopPlaceThreshold} m</b></p><p>${e(t.centreHelp)}</p><h3>${e(t.categories.distantStop)}</h3>${stopTable([{...p,stops:p.distantStops}])}`:''}${anomalyLinks?`<h3>${e(t.refs)}</h3><ul>${anomalyLinks}</ul>`:''}${suggestions?`<h3>${e(t.categories.grouping)}</h3><ul>${suggestions}</ul>`:''}<h3>${e(t.stops)} (${p.stops.length})</h3>${p.stops.length?stopTable([p]):`<p>${e(t.noStops)}</p>`}${decisions.length?`<h3>${e(t.proposal)}</h3>${table([t.stopId,t.description,t.timing,t.current,t.proposed],decisions)}`:''}${unused.length?`<h3>${e(t.categories.unused)}</h3>${table([t.stopId,t.description,t.type],unused)}`:''}`;
     const neighbors=[...new Set(p.suggestions.filter(s=>s.entity_type==='PLACES_PROCHES').flatMap(s=>[s.place_a_id,s.place_b_id]))].filter(id=>id!==p.id).map(id=>model.byId.get(id)).filter(Boolean);
     neighbors.sort((a,b)=>a.code.localeCompare(b.code,language,{numeric:true}));
     const title=neighbors.length?t.categories.grouping+' — '+titlePlace(p)+' ↔ '+neighbors.map(titlePlace).join(' / '):titlePlace(p);
     const titleHtml=neighbors.length?e(t.categories.grouping)+' — '+identity(p)+' ↔ '+neighbors.map(identity).join(' / '):identity(p);
-    cases.push({id:p.anchor,kind:"place",code:p.code,title,titleHtml,tags:p.tags,html,points:existingReportMapPoints([p,...neighbors],extra,model),search:[p.code,p.description,...neighbors.flatMap(n=>[n.code,n.description]),...p.references,...p.stops.flatMap(s=>[s.id,s.description]),...p.decisions.flatMap(d=>[d.id,d.description]),...p.unused.flatMap(s=>[s.stop_id,s.stop_description])].join(' ')});
+    cases.push({id:p.anchor,kind:"place",hasEndpoint:p.hasEndpoint||neighbors.some(n=>n.hasEndpoint),code:p.code,title,titleHtml,tags:p.tags,html,points:existingReportMapPoints([p,...neighbors],extra,model),search:[p.code,p.description,...neighbors.flatMap(n=>[n.code,n.description]),...p.references,...p.stops.flatMap(s=>[s.id,s.description]),...p.decisions.flatMap(d=>[d.id,d.description]),...p.unused.flatMap(s=>[s.stop_id,s.stop_description])].join(' ')});
   }
-  for(const [i,d] of model.unresolved.entries())cases.push({id:`issue-${i}`,kind:"issue",code:d.id,title:t.stopId+': '+d.id+' · '+d.description,tags:["data"],html:`<p class="notice">${e(t.advice.data)}</p><p>${e(t.current)} : ${placeLabel(d.original)}</p><p>${e(t.timing)} : ${e(timingLabel(d))}</p>`,points:existingReportMapPoints([], [d]),search:d.id+' '+d.description});
+  for(const [i,d] of model.unresolved.entries())cases.push({id:`issue-${i}`,kind:"issue",hasEndpoint:Boolean(model.byId.get(d.original)?.hasEndpoint),code:d.id,title:t.stopId+': '+d.id+' · '+d.description,tags:["data"],html:`<p class="notice">${e(t.advice.data)}</p><p>${e(t.current)} : ${placeLabel(d.original)}</p><p>${e(t.timing)} : ${e(timingLabel(d))}</p>`,points:existingReportMapPoints([], [d]),search:d.id+' '+d.description});
   // One clickable entry per validation: descriptions travel with their badges.
   for(const c of cases){
     if(c.kind==='issue'){
@@ -338,6 +418,23 @@ function existingClientReportCases(model,language){
       if(point&&pair.place_b_id)point.distanceTargets=[...new Set([...(point.distanceTargets||[]),pair.place_b_id])];
     }
   }
+  for(const c of cases){
+    let ids=[];
+    if(c.kind==='reference'){
+      const row=model.anomalies.find(a=>a.anchor===c.id);
+      ids=[row.place_a_id,row.place_b_id,row.reference_place_id];
+    }else if(c.kind==='place'){
+      const p=model.byId.get(c.code);
+      ids=[p.code,...p.suggestions.filter(s=>s.entity_type==='PLACES_PROCHES').flatMap(s=>[s.place_a_id,s.place_b_id])];
+    }else ids=[model.unresolved[Number(c.id.replace('issue-',''))]?.original];
+    const involved=[...new Set(ids)].map(id=>model.byId.get(id)).filter(Boolean);
+    c.hasDeadhead=involved.some(p=>p.hasDeadhead);
+    c.allHaveDeadhead=ids.filter(Boolean).length>0&&ids.filter(Boolean).every(id=>model.byId.get(id)?.hasDeadhead);
+    c.allHaveEndpoint=ids.filter(Boolean).length>0&&ids.filter(Boolean).every(id=>model.byId.get(id)?.hasEndpoint);
+    c.overviewPlaces=involved.map(p=>({code:p.code,html:identity(p),anchor:p.anchor,tags:c.kind==='reference'?c.tags:c.tags.filter(tag=>p.tags.includes(tag))}));
+    c.mapCodes=[...new Set(c.points.filter(p=>p.kind==='place').map(p=>p.id))];
+    c.html=c.html.replace('</p>','</p>'+existingReportDeadheadHtml(involved,model,t));
+  }
   return cases;
 }
 
@@ -345,9 +442,9 @@ function existingReportCsvRows(model,cases,t){
   const status=s=>s.timing===true?t.tp:s.timing===false?t.nonTp:t.unknownTp;
   const source=model.timingKnown?(model.timingSource==='variants'?t.variants:t.gtfs)+(model.timingInferred?' · '+t.inferred:''):t.unknownSource;
   return Object.fromEntries(cases.map(c=>{
-    const base={case_id:c.id,case_type:c.kind,validation_types:c.tags.map(tag=>t.categories[tag]).join('; '),record_type:'',place_code:'',place_description:'',reference_place_codes:'',related_place_code:'',stop_id:'',stop_description:'',tp_status:'',tp_source:source,proposed_place_code:'',distance_m:'',latitude:'',longitude:''};
+    const base={case_id:c.id,case_type:c.kind,validation_types:c.tags.map(tag=>t.categories[tag]).join('; '),record_type:'',place_code:'',place_description:'',reference_place_codes:'',related_place_code:'',stop_id:'',stop_description:'',tp_status:'',is_trip_endpoint:'',stop_place_distance_m:'',stop_place_threshold_m:model.stopPlaceThreshold,distant_from_place:'',tp_source:source,proposed_place_code:'',distance_m:'',latitude:'',longitude:''};
     const forPlace=p=>({...base,place_code:p.code,place_description:p.description,reference_place_codes:p.references.join('; ')});
-    const forStop=s=>({stop_id:s.id,stop_description:s.description,tp_status:status(s),latitude:s.lat??'',longitude:s.lon??''});
+    const forStop=s=>({stop_id:s.id,stop_description:s.description,tp_status:status(s),is_trip_endpoint:s.endpoint?1:0,stop_place_distance_m:s.placeDistance==null?'':Math.round(s.placeDistance),distant_from_place:s.distant?1:0,latitude:s.lat??'',longitude:s.lon??''});
     const current=p=>p.stops.length?p.stops.map(s=>({...forPlace(p),record_type:'current_assignment',...forStop(s)})):[{...forPlace(p),record_type:'place'}];
     let rows=[];
     if(c.kind==='place'){
@@ -359,12 +456,19 @@ function existingReportCsvRows(model,cases,t){
       rows=[...new Set([a.place_a_id,a.place_b_id,a.reference_place_id])].map(id=>model.byId.get(id)).filter(Boolean).flatMap(current).map(row=>({...row,distance_m:a.distance_m??''}));
       rows.unshift({...base,record_type:'reference_anomaly',place_code:a.place_a_id,related_place_code:a.place_b_id||'',reference_place_codes:a.reference_place_id,proposed_place_code:'',distance_m:a.distance_m??''});
     }else{const d=model.unresolved[Number(c.id.replace('issue-',''))];rows=[{...base,record_type:'unresolved',...forStop(d),place_code:d.original}];}
+    // Proposal rows name their original place, not the proposed destination.
+    for(const row of rows){
+      const p=model.byId.get(row.place_code);
+      row.deadhead_status=!model.deadheadKnown?'unknown':p?(p.hasDeadhead?'present':'absent'):'';
+      row.deadhead_outgoing=model.deadheadKnown&&p?p.deadhead.outgoing:'';
+      row.deadhead_incoming=model.deadheadKnown&&p?p.deadhead.incoming:'';
+    }
     return [c.id,rows];
   }));
 }
 
 function existingReportCsv(rows){
-  const headers=['case_id','case_type','validation_types','record_type','place_code','place_description','reference_place_codes','related_place_code','stop_id','stop_description','tp_status','tp_source','proposed_place_code','distance_m','latitude','longitude'];
+  const headers=['case_id','case_type','validation_types','record_type','place_code','place_description','reference_place_codes','related_place_code','stop_id','stop_description','tp_status','is_trip_endpoint','stop_place_distance_m','stop_place_threshold_m','distant_from_place','deadhead_status','deadhead_outgoing','deadhead_incoming','csched_recommendation','decision_note','validated','tp_source','proposed_place_code','distance_m','latitude','longitude'];
   // Quote every field, preserve line breaks, and neutralize spreadsheet formulas.
   const cell=value=>{let text=String(value??'');if(/^[\s]*[=+@-]/.test(text)&&!(typeof value==='number'))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';};
   return '\uFEFF'+[headers,...rows.map(row=>headers.map(key=>row[key]??''))].map(row=>row.map(cell).join(',')).join('\r\n')+'\r\n';
@@ -375,7 +479,7 @@ function existingReportCsv(rows){
 function existingReportTimingPointView(model,language){
   const key=id=>String(id??'').trim().replace(/^:/,'').toUpperCase();
   const timed=new Set([...model.places.flatMap(p=>[...p.stops,...p.decisions]),...model.unresolved].filter(s=>s.timing===true).map(s=>key(s.id)));
-  const places=model.places.map(p=>({...p,stops:p.stops.filter(s=>s.timing===true),decisions:p.decisions.filter(s=>s.timing===true),unused:[],suggestions:p.suggestions.filter(s=>!s.stop_id||timed.has(key(s.stop_id)))}));
+  const places=model.places.map(p=>({...p,stops:p.stops.filter(s=>s.timing===true),distantStops:(p.distantStops||[]).filter(s=>s.timing===true),decisions:p.decisions.filter(s=>s.timing===true),unused:[],suggestions:p.suggestions.filter(s=>!s.stop_id||timed.has(key(s.stop_id)))}));
   const scoped={...model,places,byId:new Map(places.map(p=>[p.id,p]))};
   const cases=existingClientReportCases(scoped,language).filter(c=>c.kind!=='issue'||model.unresolved[Number(c.id.replace('issue-',''))].timing===true);
   const t=EXISTING_REPORT_TEXT[language];
@@ -383,16 +487,30 @@ function existingReportTimingPointView(model,language){
   return {cases:cases.map(({points,...c})=>c),csvRows:existingReportCsvRows(scoped,cases,t)};
 }
 
+// Export a genuinely smaller dataset, not a full report with hidden cases.
+function assessmentSubsetData(data,review,ids){
+  const selected=new Set(ids),pick=obj=>Object.fromEntries(Object.entries(obj||{}).filter(([id])=>selected.has(id)));
+  const pruneLinks=html=>String(html||'').replace(/<a href="#([^"]+)" data-case-link="[^"]+">([\s\S]*?)<\/a>/g,(all,id,body)=>selected.has(id)?all:body);
+  const cases=list=>(list||[]).filter(c=>selected.has(c.id)).map(c=>({...c,html:pruneLinks(c.html),overviewCodesHtml:pruneLinks(c.overviewCodesHtml)}));
+  const kept=cases(data.cases),codes=new Set(kept.flatMap(c=>c.mapCodes||c.overviewPlaces?.map(p=>p.code)||[]));
+  const presentation={...(data.presentation||{}),selected:kept.map(c=>c.id),layers:pick(data.presentation?.layers)};
+  return {...data,reportId:globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2),
+    cases:kept,maps:pick(data.maps),tpMaps:pick(data.tpMaps),csvRows:pick(data.csvRows),
+    tpView:data.tpView?{cases:cases(data.tpView.cases),csvRows:pick(data.tpView.csvRows)}:null,
+    mapPlaces:(data.mapPlaces||[]).filter(p=>codes.has(p.code)).map(p=>({...p,attachedCodes:(p.attachedCodes||[]).filter(code=>codes.has(code))})),
+    review:{version:1,events:(review.events||[]).filter(event=>selected.has(event.id))},presentation,filename:data.filename+'_selection',clientSelection:true};
+}
+
 // Review decisions are deliberately separate from source assignments/proposals.
 function assessmentReviewModel(cases,saved={}){
   const known=new Set(cases.map(c=>c.id)),events=[];
-  const clean=value=>({validated:value?.validated===true,note:String(value?.note||'').slice(0,2000)});
+  const clean=value=>({validated:value?.validated===true,note:String(value?.note||'').slice(0,2000),csched:String(value?.csched||'').slice(0,2000)});
   for(const event of Array.isArray(saved.events)?saved.events:[])if(event&&known.has(event.id)&&['all','tp'].includes(event.scope)&&Number.isFinite(Date.parse(event.at)))events.push({id:event.id,scope:event.scope,at:event.at,before:clean(event.before),after:clean(event.after)});
   const values=new Map();for(const event of events)values.set(event.id+'|'+event.scope,event.after);
-  const get=(id,scope)=>({...values.get(id+'|'+scope)||{validated:false,note:''}});
+  const get=(id,scope)=>({...values.get(id+'|'+scope)||{validated:false,note:'',csched:''}});
   function set(id,scope,value,at=new Date().toISOString()){
     if(!known.has(id)||!['all','tp'].includes(scope))return false;
-    const before=get(id,scope),after=clean(value);if(JSON.stringify(before)===JSON.stringify(after))return false;
+    const before=get(id,scope),after=clean({...before,...value});if(JSON.stringify(before)===JSON.stringify(after))return false;
     events.push({id,scope,at,before,after});values.set(id+'|'+scope,after);return true;
   }
   return {get,set,events,snapshot:()=>({version:1,events:events.map(event=>({...event,before:{...event.before},after:{...event.after}}))})};
@@ -441,9 +559,9 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
   function journal(){
     const events=model.events;
     document.getElementById('assessment-review-status').textContent=tr('Journal : ','Log: ')+events.length+tr(' événement(s). ',' event(s). ')+(cacheAvailable?tr('Brouillon conservé dans ce navigateur. ','Draft kept in this browser. '):tr('Brouillon navigateur indisponible. ','Browser draft unavailable. '))+tr('Enregistrez le HTML pour transmettre les validations.','Save the HTML to share validations.');
-    document.getElementById('assessment-log-body').innerHTML=events.slice().reverse().map(event=>`<tr><td>${e(stamp(event.at))}</td><td><a href="#${e(event.id)}" data-case-link="${e(event.id)}">${e(byId.get(event.id).title)}</a><small>${e(scopeText(event.scope))}</small></td><td>${e(statusText(event.before))}${event.before.note?'<p>'+e(event.before.note)+'</p>':''}</td><td>${e(statusText(event.after))}${event.after.note?'<p>'+e(event.after.note)+'</p>':''}</td></tr>`).join('')||`<tr><td colspan="4">${tr('Aucune validation enregistrée.','No review decisions recorded.')}</td></tr>`;
+    document.getElementById('assessment-log-body').innerHTML=events.slice().reverse().map(event=>`<tr><td>${e(stamp(event.at))}</td><td><a href="#${e(event.id)}" data-case-link="${e(event.id)}">${e(byId.get(event.id).title)}</a><small>${e(scopeText(event.scope))}</small></td><td>${e(statusText(event.before))}${event.before.note?'<p>'+e(event.before.note)+'</p>':''}${event.before.csched?'<p><b>'+e(data.text.csched)+'</b> : '+e(event.before.csched)+'</p>':''}</td><td>${e(statusText(event.after))}${event.after.note?'<p>'+e(event.after.note)+'</p>':''}${event.after.csched?'<p><b>'+e(data.text.csched)+'</b> : '+e(event.after.csched)+'</p>':''}</td></tr>`).join('')||`<tr><td colspan="4">${tr('Aucune validation enregistrée.','No review decisions recorded.')}</td></tr>`;
   }
-  function controls(c){const value=get(c.id);return `<div class="assessment-case-tools"><button type="button" data-review-validate="${e(c.id)}" aria-pressed="${value.validated}">${value.validated?'✓ '+tr('Validé · annuler','Validated · undo'):tr('Valider','Validate')}</button><button type="button" data-review-open="${e(c.id)}">⛶ ${tr('Revue plein écran','Full-screen review')}</button><span>${e(scopeText(scope()))}</span><details class="assessment-note"><summary>${tr('Note de décision','Decision note')}</summary><textarea data-review-note="${e(c.id)}" maxlength="2000" aria-label="${tr('Note de décision','Decision note')}">${e(value.note)}</textarea></details></div>`;}
+  function controls(c){const value=get(c.id);return `<div class="assessment-case-tools"><button type="button" data-review-validate="${e(c.id)}" aria-pressed="${value.validated}">${value.validated?'✓ '+tr('Validé · annuler','Validated · undo'):tr('Valider','Validate')}</button><button type="button" data-review-open="${e(c.id)}">⛶ ${tr('Revue plein écran','Full-screen review')}</button><span>${e(scopeText(scope()))}</span><details class="assessment-note"><summary>${tr('Note de décision','Decision note')}</summary><textarea data-review-note="${e(c.id)}" maxlength="2000" aria-label="${tr('Note de décision','Decision note')}">${e(value.note)}</textarea></details><details class="assessment-note"><summary>${e(data.text.csched)}</summary><textarea data-review-csched="${e(c.id)}" maxlength="2000" aria-label="${e(data.text.csched)}">${e(value.csched)}</textarea></details></div>`;}
   const eligible=()=>api.filtered().filter(c=>!c.tags.includes('none'));
   const queue=()=>eligible().filter(c=>showAll||!get(c.id).validated);
   let mapResizeObserver=null,mapFitFrame=0;
@@ -474,7 +592,8 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
     document.getElementById('review-show-all').setAttribute('aria-pressed',String(showAll));
     document.getElementById('review-title').innerHTML=c?(c.titleHtml||e(c.title)):tr('Revue terminée pour cette sélection','Review complete for this selection');
     document.getElementById('review-map').innerHTML=c?api.map(c.id):`<p class="review-complete">✓ ${tr('Tous les cas de cette sélection ont été traités.','All cases in this selection have been reviewed.')}</p>`;
-    document.getElementById('review-detail').innerHTML=c?c.html:'';
+    document.getElementById('review-detail').innerHTML=c?(api.caseTools?.(c)||'')+c.html:'';
+    const recommendation=document.getElementById('review-csched');recommendation.value=c?get(c.id).csched:'';recommendation.disabled=!c;
     const note=document.getElementById('review-note'),validate=document.getElementById('review-validate');
     note.value=c?get(c.id).note:'';note.disabled=!c;validate.disabled=!c;validate.textContent=c&&get(c.id).validated?'✓ '+tr('Validé · annuler','Validated · undo'):tr('Valider','Validate');validate.setAttribute('aria-pressed',String(Boolean(c&&get(c.id).validated)));
     const mapValidate=document.getElementById('review-map-validate');mapValidate.disabled=validate.disabled;mapValidate.textContent=validate.textContent;mapValidate.setAttribute('aria-pressed',validate.getAttribute('aria-pressed'));
@@ -490,7 +609,7 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
     if(advance&&!old.validated&&!showAll){active=items[index+1]?.id||queue()[0]?.id||null;trail=[];}
     draw();
   }
-  function note(id,text){const old=get(id);if(old.note!==text)change(id,{validated:false,note:text});}
+  function note(id,text){const old=get(id);if(old.note!==text)change(id,{...old,validated:false,note:text});}
   function step(delta){const items=queue(),i=items.findIndex(c=>c.id===active);active=items[Math.max(0,Math.min(items.length-1,i+delta))]?.id||null;trail=[];draw();}
   function close(){
     mapResizeObserver?.disconnect();if(mapFitFrame)cancelAnimationFrame(mapFitFrame);mapFitFrame=0;
@@ -508,6 +627,7 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
   document.getElementById('review-prev').onclick=()=>step(-1);document.getElementById('review-next').onclick=()=>step(1);
   document.getElementById('review-validate').onclick=()=>{if(active)validate(active,true);};
   document.getElementById('review-map-validate').onclick=()=>{if(active)validate(active,true);};
+  document.getElementById('review-csched').onchange=event=>{if(active){change(active,{...get(active),validated:false,csched:event.target.value});draw();}};
   document.getElementById('review-note').onchange=event=>{if(active){note(active,event.target.value);draw();}};
   document.getElementById('review-show-all').onclick=()=>{showAll=!showAll;active=queue()[0]?.id||null;trail=[];draw();};
   document.getElementById('review-return').onclick=()=>{active=trail.pop()||active;draw();};
@@ -519,16 +639,28 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
     if(validateButton){validate(validateButton.dataset.reviewValidate);return;}
     if(openButton)open(openButton.dataset.reviewOpen);
   });
-  document.addEventListener('change',event=>{const id=event.target.dataset?.reviewNote;if(id){note(id,event.target.value);draw();}});
+  document.addEventListener('change',event=>{const id=event.target.dataset?.reviewNote,cschedId=event.target.dataset?.reviewCsched;if(id){note(id,event.target.value);draw();}if(cschedId){change(cschedId,{...get(cschedId),validated:false,csched:event.target.value});draw();}});
   window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
-  function htmlSnapshot(savedAt=new Date().toISOString()){
-    const clone=document.documentElement.cloneNode(true),payload={...data,review:model.snapshot(),reviewSavedAt:savedAt};
+  function htmlSnapshot(savedAt=new Date().toISOString(),selectedIds=null){
+    const clone=document.documentElement.cloneNode(true),payload=selectedIds?api.subset(data,model.snapshot(),selectedIds):{...data,review:model.snapshot(),reviewSavedAt:savedAt};
     clone.querySelector('#assessment-data').textContent=JSON.stringify(payload).replace(/</g,'\\u003c');
     clone.querySelectorAll('dialog').forEach(node=>node.removeAttribute('open'));
     clone.querySelector('#assessment-change-log').setAttribute('open','');
-    for(const id of ['review-map','review-detail','cases','overview-body','map-stops-body','map-stops-title','map-stops-summary'])clone.querySelector('#'+id).innerHTML='';
-    clone.querySelector('#review-note').textContent='';
+    for(const id of ['review-title','review-map','review-detail','cases','overview-body','map-stops-body','map-stops-title','map-stops-summary'])clone.querySelector('#'+id).innerHTML='';
+    clone.querySelector('#review-note').textContent='';clone.querySelector('#review-csched').textContent='';
+    clone.querySelector('#deadhead-scope').toggleAttribute('checked',document.getElementById('deadhead-scope').checked);
+    clone.querySelector('#endpoint-scope').toggleAttribute('checked',document.getElementById('endpoint-scope').checked);
     for(const id of ['assessment-file-status','review-save-state'])clone.querySelector('#'+id).textContent='';
+    if(selectedIds){
+      clone.querySelector('#assessment-log-body').innerHTML='';
+      for(const id of ['assessment-review-status','export-status','page-status','client-selection-status'])clone.querySelector('#'+id).textContent='';
+      clone.querySelector('.metrics').innerHTML=`<div>${tr('Fiches sélectionnées','Selected cases')}<strong>${payload.cases.length}</strong></div>`;
+      clone.querySelector('#search').setAttribute('value','');
+      for(const id of ['endpoint-scope','deadhead-scope'])clone.querySelector('#'+id).removeAttribute('checked');
+      for(const id of ['kind','type','stop-scope'])for(const option of clone.querySelector('#'+id).options)option.toggleAttribute('selected',option.value==='all');
+      const issueOption=clone.querySelector('#kind option[value="issue"]');
+      if(issueOption)issueOption.textContent=data.text.issues+' ('+payload.cases.filter(c=>c.kind==='issue').length+')';
+    }
     return '<!doctype html>\n'+clone.outerHTML;
   }
   function downloadCopy(){
@@ -596,7 +728,7 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
     [tr('2 · Lire la carte en grand','2 · Read the larger map'),tr('Ouvrez « Revue plein écran ». Carte maximale occupe toute la largeur. « Afficher les détails » ouvre les stops, références et recommandations à droite. Bleu : TP ; orange : non TP ; gris : statut inconnu. Les places de référence sont violettes. Cliquez sur une étiquette pour consulter tous ses stops. Les réglages Étiquettes et Contenu ajustent la taille et le niveau de détail. Les fonds en ligne nécessitent Internet.','Open “Full-screen review”. Maximum map uses the full width. “Show details” opens stops, references and recommendations on the right. Blue: timing point; orange: non-timing point; grey: unknown status. Reference places are purple. Click a label to inspect its stops. Labels and Content settings adjust the size and detail level. Online backgrounds require Internet.')],
     [tr('3 · Naviguer et valider','3 · Navigate and validate'),tr('Les flèches changent de cas. Cliquez sur une place liée pour la consulter, puis sur ↩ Retour. « Valider » fonctionne aussi en mode normal et retire le cas de la file plein écran. « Tous les cas » permet de revenir sur une validation et de l’annuler. Échap ferme la revue.','Arrows change the case. Click a linked place to inspect it, then ↩ Return. “Validate” also works in normal view and removes the case from the fullscreen queue. “All cases” lets you revisit and undo a validation. Escape closes review.')],
     [tr('4 · Adapter votre espace','4 · Adapt your workspace'),tr('Carte maximale replie les détails ; Carte les garde visibles. Comparaison élargit les listes de stops. Confort visuel réduit la saturation des couleurs, évite les animations et conserve des commandes stables. Vous pouvez le désactiver à tout moment.','Maximum map collapses details; Map keeps them visible. Comparison widens the stop lists. Visual comfort reduces colour saturation, avoids animation and keeps controls stable. You can turn it off at any time.')],
-    [tr('5 · Documenter la décision','5 · Document the decision'),tr('Ajoutez une note si nécessaire. Modifier la note remet le cas à valider. Le compte rendu affiche la date, le périmètre et l’avant/après de chaque validation, annulation ou note. Chaque fiche liée reste à valider indépendamment.','Add a note if needed. Editing the note returns the case to pending. The log shows the date, scope and before/after for each approval, reversal or note. Related records must be validated independently.')],
+    [tr('5 · Documenter la décision','5 · Document the decision'),tr('Ajoutez une note si nécessaire. Modifier la note ou la préconisation CSched remet le cas à valider. Le compte rendu affiche la date, le périmètre et l’avant/après de chaque validation, annulation ou note. Chaque fiche liée reste à valider indépendamment.','Add a note if needed. Editing the note or CSched recommendation returns the case to pending. The log shows the date, scope and before/after for each approval, reversal or note. Related records must be validated independently.')],
     [tr('6 · Sauvegarder et transmettre','6 · Save and share'),tr('Le brouillon est sauvegardé automatiquement dans ce navigateur, si autorisé. Pour mettre à jour un même fichier, activez l’auto save et choisissez une copie HTML de travail. Sinon, téléchargez une copie. Avant de fermer, vérifiez le statut de sauvegarde. Envoyez le HTML enregistré et, si utile, le journal CSV.','A draft is automatically saved in this browser, if allowed. To update the same file, enable autosave and choose a working HTML copy. Otherwise, download a copy. Before closing, check the save status. Send the saved HTML and, if useful, the CSV log.')]
   ];
   function showTutorial(){document.getElementById('review-tutorial-title').textContent=steps[tutorialStep][0];document.getElementById('review-tutorial-text').textContent=steps[tutorialStep][1];document.getElementById('review-tutorial-progress').textContent=(tutorialStep+1)+' / '+steps.length;document.getElementById('review-tutorial-prev').disabled=tutorialStep===0;document.getElementById('review-tutorial-next').textContent=tutorialStep===steps.length-1?tr('Commencer','Start'):tr('Suivant →','Next →');}
@@ -610,54 +742,120 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
   if(!seen)setTimeout(()=>{showTutorial();tutorial.showModal();},0);
   document.getElementById('export-assessment-log').onclick=()=>{
     const cell=value=>'"'+String(value??'').replace(/^[\s]*[=+@-]/,match=>"'"+match).replace(/"/g,'""')+'"';
-    const rows=[[tr('Date et heure','Date and time'),tr('Cas','Case'),tr('Périmètre','Scope'),tr('Avant','Before'),tr('Après','After'),tr('Note avant','Previous note'),tr('Note après','New note')],...model.events.map(event=>[event.at,byId.get(event.id).title,scopeText(event.scope),statusText(event.before),statusText(event.after),event.before.note,event.after.note])];
+    const rows=[[tr('Date et heure','Date and time'),tr('Cas','Case'),tr('Périmètre','Scope'),tr('Avant','Before'),tr('Après','After'),tr('Note avant','Previous note'),tr('Note après','New note'),tr('Préconisation CSched avant','Previous CSched recommendation'),tr('Préconisation CSched après','New CSched recommendation')],...model.events.map(event=>[event.at,byId.get(event.id).title,scopeText(event.scope),statusText(event.before),statusText(event.after),event.before.note,event.after.note,event.before.csched,event.after.csched])];
     download(data.filename+tr('_journal.csv','_review_log.csv'),'\uFEFF'+rows.map(row=>row.map(cell).join(',')).join('\r\n'),'text/csv;charset=utf-8');
   };
   journal();
-  return {controls,badge:id=>get(id).validated?' · ✓ '+tr('Validé','Validated'):'',navigate(id){if(!dialog.open)return false;if(!byId.has(id))return true;trail.push(active);active=id;draw();return true;},print:()=>{const log=document.getElementById('assessment-change-log').cloneNode(true);log.open=true;return log.outerHTML;},refresh:draw};
+  return {controls,value:get,touch:persist,exportSelected:ids=>download(data.filename+tr('_selection_client.html','_client_selection.html'),htmlSnapshot(new Date().toISOString(),ids),'text/html;charset=utf-8'),annotation:id=>{const v=get(id);return '<p><b>'+e(data.text.csched)+'</b> : '+e(v.csched||'—')+'</p><p><b>'+tr('Note de décision','Decision note')+'</b> : '+e(v.note||'—')+'</p>';},badge:id=>get(id).validated?' · ✓ '+tr('Validé','Validated'):'',navigate(id){if(!dialog.open)return false;if(!byId.has(id))return true;trail.push(active);active=id;draw();return true;},print:()=>{const log=document.getElementById('assessment-change-log').cloneNode(true);log.open=true;return log.outerHTML;},refresh:draw};
 }
 
-function existingClientReportRuntime(csvFile,reviewMount,reviewModel,saverFactory){
-  const data=JSON.parse(document.getElementById('assessment-data').textContent),t=data.text,size=12;
+function existingClientReportRuntime(csvFile,reviewMount,reviewModel,saverFactory,subsetBuilder){
+  const data=JSON.parse(document.getElementById('assessment-data').textContent),t=data.text;
   const kind=document.getElementById('kind'),type=document.getElementById('type'),search=document.getElementById('search'),list=document.getElementById('cases'),summary=document.getElementById('overview-body');
-  const stopScope=document.getElementById('stop-scope');
-  let page=0,filtered=[],review=null;
+  const stopScope=document.getElementById('stop-scope'),endpointScope=document.getElementById('endpoint-scope'),deadheadScope=document.getElementById('deadhead-scope');
+  let filtered=[],review=null;
+  const en=document.documentElement.lang==='en',tr=(fr,english)=>en?english:fr;
+  const presentationKey='hastus-assessment-review:'+data.reportId+':presentation';
+  try{data.presentation=JSON.parse(localStorage.getItem(presentationKey)||'null')||data.presentation||{};}catch{data.presentation=data.presentation||{};}
+  const presentation=data.presentation;presentation.selected=(presentation.selected||[]).filter(id=>data.cases.some(c=>c.id===id));presentation.layers=presentation.layers||{};
+  const grouped=document.getElementById('overview-grouped'),overview=document.getElementById('overview');
+  if(grouped)grouped.checked=presentation.grouped!==false;
+  if(overview)overview.open=presentation.overviewOpen!==false;
+  const selected=id=>presentation.selected.includes(id);
+  function savePresentation(){
+    try{localStorage.setItem(presentationKey,JSON.stringify(presentation));}catch{}
+    review?.touch();
+  }
   const tpOnly=()=>stopScope.value==='tp'&&Boolean(data.tpView);
   const currentView=()=>tpOnly()?data.tpView:data;
   // New reports provide a tighter, separately framed TP view. The fallback
   // supports report builders without a second map while retaining all places.
-  const mapHtml=(id,only=tpOnly())=>only?(data.tpMaps?.[id]??(data.maps[id]||'').replace(/<g class="marker (?:stop|proposal) (?:non-tp|unknown-tp)">[\s\S]*?<\/g>/g,'')):(data.maps[id]||'');
+  const mapHtml=(id,only=tpOnly())=>{
+    const html=only?(data.tpMaps?.[id]??(data.maps[id]||'').replace(/<g class="marker (?:stop|proposal) (?:non-tp|unknown-tp)"[^>]*>[\s\S]*?<\/g>/g,'')):(data.maps[id]||'');
+    const settings=presentation.layers[id]||{};if(!Object.values(settings).includes(false))return html;
+    const template=document.createElement('template');template.innerHTML=html;
+    const hide=(selector)=>template.content.querySelectorAll(selector).forEach(node=>node.setAttribute('style',(node.getAttribute('style')||'')+';display:none!important'));
+    for(const [key,selector] of Object.entries({tp:'.marker.tp',other:'.marker.non-tp,.marker.unknown-tp',proposal:'.marker.proposal',references:'.reference-relation',distances:'.review-distance'}))if(settings[key]===false)hide(selector);
+    template.content.querySelectorAll('[data-owner],.reference-relation,.review-distance').forEach(node=>{
+      const codes=[node.getAttribute('data-owner'),node.getAttribute('data-place'),node.getAttribute('data-reference'),node.getAttribute('data-from'),node.getAttribute('data-to')].filter(Boolean);
+      if(codes.some(code=>settings['place:'+code]===false))node.setAttribute('style',(node.getAttribute('style')||'')+';display:none!important');
+    });
+    return template.innerHTML;
+  };
   const normalize=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function loadMap(details){const host=details.querySelector('.map-host');if(details.open&&host&&!host.childNodes.length)host.innerHTML=mapHtml(details.dataset.caseId);}
+  function caseTools(c){
+    const settings=presentation.layers[c.id]||{},layers=[['tp','TP'],['other',tr('Autres stops','Other stops')],['proposal',tr('Propositions','Proposals')],['references',tr('Liens de référence','Reference links')],['distances',tr('Distances','Distances')],...(c.mapCodes||[]).map(code=>['place:'+code,code])];
+    return `<div class="case-presentation"><label class="inline-check"><input type="checkbox" data-client-select="${esc(c.id)}"${selected(c.id)?' checked':''}>${tr('Proposer au client','Include for client')}</label><details class="map-layer-options"><summary>${tr('Éléments de la carte','Map elements')}</summary><p>${tr('Affichage uniquement : les données et validations ne changent pas.','Display only: data and approvals are unchanged.')}</p><div class="map-layer-list">${layers.map(([key,label])=>`<label class="inline-check"><input type="checkbox" data-map-layer="${esc(key)}" data-layer-case="${esc(c.id)}"${settings[key]!==false?' checked':''}>${esc(label)}</label>`).join('')}</div></details></div>`;
+  }
+  function loadMap(details){
+    if(!details.open)return;
+    const c=filtered.find(c=>c.id===details.dataset.caseId),body=details.querySelector('.case-body');
+    if(c&&!body.dataset.loaded){body.innerHTML=`${caseTools(c)}${review?.controls(c)||''}<div class="map-host"></div>${c.html}<a href="#overview">↑ ${esc(t.back)}</a>`;body.dataset.loaded='true';}
+    const host=details.querySelector('.map-host');if(host&&!host.childNodes.length)host.innerHTML=mapHtml(details.dataset.caseId);
+  }
   function render(){
     const opened=new Set([...list.querySelectorAll('details[open]')].map(d=>d.dataset.caseId));
-    const query=normalize(search.value);filtered=currentView().cases.filter(c=>(kind.value==='all'||kind.value===c.kind)&&(type.value==='all'||(type.value==='review'?!c.tags.includes('none'):c.tags.includes(type.value)))&&normalize(c.search).includes(query));
-    page=Math.max(0,Math.min(page,Math.ceil(filtered.length/size)-1));const visible=filtered.slice(page*size,(page+1)*size);
-    summary.innerHTML=visible.map(c=>`<tr><td><a href="#${c.id}" data-case-link="${c.id}">${c.overviewCodesHtml||esc(c.code)}</a></td><td>${c.tags.map(tag=>esc(t.categories[tag])).join(' · ')}${esc(review?.badge(c.id)||'')}</td></tr>`).join('');
-    list.innerHTML=visible.map(c=>`<article id="${c.id}"><details data-case-id="${c.id}"><summary><span class="badge">${esc(t.categories[c.tags[0]])}${esc(review?.badge(c.id)||'')}</span><h2>${c.titleHtml||esc(c.title)}</h2></summary><div class="case-body">${review?.controls(c)||''}<div class="map-host"></div>${c.html}<a href="#overview">↑ ${esc(t.back)}</a></div></details></article>`).join('');
+    const query=normalize(search.value);filtered=currentView().cases.filter(c=>(!endpointScope.checked||!data.endpointKnown||c.allHaveEndpoint)&&(!deadheadScope.checked||!data.deadheadKnown||c.allHaveDeadhead)&&(kind.value==='all'||kind.value===c.kind)&&(type.value==='all'||(type.value==='review'?!c.tags.includes('none'):c.tags.includes(type.value)))&&normalize(c.search).includes(query));
+    const places=new Map();
+    for(const c of filtered){
+      const members=c.overviewPlaces?.length?c.overviewPlaces:[{code:c.code,html:c.overviewCodesHtml||esc(c.code),anchor:c.id,tags:c.tags,issue:true}];
+      for(const p of members){
+        const key=(p.issue?'stop:':'place:')+p.code;
+        if(!places.has(key))places.set(key,{...p,cases:[],types:new Map()});
+        const item=places.get(key);item.cases.push(c);
+        for(const tag of p.tags){if(!item.types.has(tag))item.types.set(tag,[]);item.types.get(tag).push(c);}
+      }
+    }
+    summary.innerHTML=[...places.values()].sort((a,b)=>a.code.localeCompare(b.code,document.documentElement.lang,{numeric:true,sensitivity:'base'})).map(p=>{
+      const target=p.cases.find(c=>c.id===p.anchor)||p.cases[0];
+      const types=[...p.types].filter(([tag])=>tag!=='none'||p.types.size===1).map(([tag,cases])=>cases.map((c,i)=>`<a href="#${c.id}" data-case-link="${c.id}">${i===0?esc(t.categories[tag]):'['+(i+1)+']'}${esc(review?.badge(c.id)||'')}</a>`).join(' ')).join(' · ');
+      return `<tr data-overview-place="${esc(p.code)}"><td><a href="#${target.id}" data-case-link="${target.id}">${p.html}</a></td><td>${types}</td></tr>`;
+    }).join('');
+    if(grouped?.checked===false)summary.innerHTML=filtered.map(c=>`<tr><td><a href="#${c.id}" data-case-link="${c.id}">${c.overviewCodesHtml||esc(c.code)}</a></td><td>${c.tags.map(tag=>esc(t.categories[tag])).join(' · ')}${esc(review?.badge(c.id)||'')}</td></tr>`).join('');
+    list.innerHTML=filtered.map(c=>`<article id="${c.id}"><details data-case-id="${c.id}"><summary><span class="badge">${esc(t.categories[c.tags[0]])}${esc(review?.badge(c.id)||'')}</span><h2>${c.titleHtml||esc(c.title)}</h2></summary><div class="case-body"></div></details></article>`).join('');
     list.querySelectorAll('details[data-case-id]').forEach(d=>{d.addEventListener('toggle',()=>loadMap(d));if(opened.has(d.dataset.caseId)){d.open=true;loadMap(d);}});
     const first=list.querySelector('details');if(first){first.open=true;loadMap(first);}
-    document.getElementById('page-status').textContent=`${filtered.length} ${t.cases} · ${t.page} ${page+1} / ${Math.max(1,Math.ceil(filtered.length/size))}`;
-    document.getElementById('empty').hidden=filtered.length>0;document.getElementById('previous').disabled=page===0;document.getElementById('next').disabled=(page+1)*size>=filtered.length;
+    document.getElementById('page-status').textContent=`${places.size} ${t.places} · ${filtered.length} ${t.cases}`;
+    document.getElementById('empty').hidden=filtered.length>0;
+    const exportButton=document.getElementById('export-client-selection');
+    if(exportButton){exportButton.disabled=!presentation.selected.length;document.getElementById('client-selection-status').textContent=presentation.selected.length+' '+tr('fiche(s) sélectionnée(s), y compris hors filtres. Les places de contexte des fiches choisies restent incluses.','case(s) selected, including outside filters. Context places in selected cases remain included.');}
   }
+  if(grouped)grouped.onchange=()=>{presentation.grouped=grouped.checked;savePresentation();render();};
+  if(overview)overview.addEventListener('toggle',()=>{if(presentation.overviewOpen!==overview.open){presentation.overviewOpen=overview.open;savePresentation();}});
+  document.addEventListener('change',event=>{
+    const input=event.target,id=input.dataset?.clientSelect;
+    if(id){
+      presentation.selected=input.checked?[...new Set([...presentation.selected,id])]:presentation.selected.filter(v=>v!==id);
+      document.querySelectorAll('[data-client-select]').forEach(el=>{if(el.dataset.clientSelect===id)el.checked=input.checked;});
+      savePresentation();const button=document.getElementById('export-client-selection');button.disabled=!presentation.selected.length;
+      document.getElementById('client-selection-status').textContent=presentation.selected.length+' '+tr('fiche(s) sélectionnée(s), y compris hors filtres.','case(s) selected, including outside filters.');
+    }
+    if(input.dataset?.mapLayer){
+      const caseId=input.dataset.layerCase;
+      presentation.layers[caseId]={...presentation.layers[caseId],[input.dataset.mapLayer]:input.checked};savePresentation();
+      const details=document.querySelector(`details[data-case-id="${caseId}"]`),host=details?.querySelector('.map-host');if(host)host.innerHTML=mapHtml(caseId);
+      document.querySelectorAll('[data-map-layer]').forEach(el=>{if(el.dataset.layerCase===caseId&&el.dataset.mapLayer===input.dataset.mapLayer)el.checked=input.checked;});
+      review?.refresh();
+    }
+  });
+  const clientExport=document.getElementById('export-client-selection');
+  if(clientExport)clientExport.onclick=()=>{if(presentation.selected.length)review?.exportSelected(presentation.selected);};
   function navigate(id){
     if(!currentView().cases.some(c=>c.id===id))return;
     let index=filtered.findIndex(c=>c.id===id);
-    if(index<0){kind.value='all';type.value='all';search.value='';render();index=filtered.findIndex(c=>c.id===id);}
-    page=Math.floor(index/size);render();const article=document.getElementById(id),details=article.querySelector('details');details.open=true;loadMap(details);article.scrollIntoView({block:'start'});
+    if(index<0){kind.value='all';type.value='all';search.value='';endpointScope.checked=false;deadheadScope.checked=false;render();index=filtered.findIndex(c=>c.id===id);}
+    render();const article=document.getElementById(id),details=article.querySelector('details');details.open=true;loadMap(details);article.scrollIntoView({block:'start'});
   }
-  for(const control of [kind,type,stopScope])control.addEventListener('change',()=>{page=0;render();});
-  search.addEventListener('input',()=>{page=0;render();});
-  document.getElementById('previous').addEventListener('click',()=>{page--;render();document.getElementById('overview').scrollIntoView();});
-  document.getElementById('next').addEventListener('click',()=>{page++;render();document.getElementById('overview').scrollIntoView();});
+  for(const control of [kind,type,stopScope,endpointScope,deadheadScope])control.addEventListener('change',render);
+  search.addEventListener('input',render);
   document.addEventListener('click',event=>{const a=event.target.closest('[data-case-link]');if(!a)return;event.preventDefault();const id=a.dataset.caseLink;if(review?.navigate(id))return;history.replaceState(null,'','#'+id);navigate(id);});
   window.addEventListener('hashchange',()=>navigate(location.hash.slice(1)));
   const guide=document.getElementById('assessment-guide');
   document.getElementById('open-assessment-guide').onclick=()=>guide.showModal();
   document.getElementById('close-assessment-guide').onclick=()=>guide.close();
   document.getElementById('export-assessment-csv').onclick=()=>{
-    const csv=csvFile(filtered.flatMap(c=>currentView().csvRows[c.id]||[])),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const csv=csvFile(filtered.flatMap(c=>(currentView().csvRows[c.id]||[]).map(row=>({...row,csched_recommendation:review?.value(c.id).csched||'',decision_note:review?.value(c.id).note||'',validated:review?.value(c.id).validated?1:0})))),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download=data.filename+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   };
   document.getElementById('print-assessment').onclick=async()=>{
@@ -674,13 +872,13 @@ function existingClientReportRuntime(csvFile,reviewMount,reviewModel,saverFactor
       if(review){const log=preview.document.createElement('section');log.innerHTML=review.print();target.append(log);}
       for(let i=0;i<selected.length;i++){
         if(preview.closed)break;const c=selected[i],article=preview.document.createElement('article');
-        article.innerHTML='<h2>'+(c.titleHtml||esc(c.title))+'</h2><p>'+c.tags.map(tag=>esc(t.categories[tag])).join(' · ')+'</p><div class="case-body">'+mapHtml(c.id,only).replace(/loading="lazy"/g,'loading="eager"')+c.html+'</div>';target.append(article);
+        article.innerHTML='<h2>'+(c.titleHtml||esc(c.title))+'</h2><p>'+c.tags.map(tag=>esc(t.categories[tag])).join(' · ')+'</p><div class="case-body">'+mapHtml(c.id,only).replace(/loading="lazy"/g,'loading="eager"')+c.html+(review?.annotation(c.id)||'')+'</div>';target.append(article);
         if(i%10===0)await new Promise(resolve=>setTimeout(resolve,0));
       }
       status.textContent=t.printReady;
     }catch(error){status.textContent=t.printFailed+' '+error.message;}finally{button.disabled=false;}
   };
-  review=reviewMount?.(data,{esc,render,tpOnly,map:mapHtml,view:currentView,filtered:()=>filtered},reviewModel,saverFactory);
+  review=reviewMount?.(data,{esc,render,tpOnly,map:mapHtml,view:currentView,filtered:()=>filtered,caseTools,subset:subsetBuilder},reviewModel,saverFactory);
   render();if(location.hash)navigate(location.hash.slice(1));
 }
 
@@ -691,10 +889,12 @@ function assessmentReviewMarkup(language){
   const distanceControl=id=>`<label class="review-layout-label">${tr('Distances','Distances')}<select id="${id}"><option value="off">${tr('Masquées','Hidden')}</option><option value="small">${tr('Petites','Small')}</option><option value="large" selected>${tr('Grandes','Large')}</option></select></label>`;
   const tutorial=`<dialog id="assessment-review-tutorial" aria-labelledby="review-tutorial-title"><small id="review-tutorial-progress"></small><h2 id="review-tutorial-title"></h2><p id="review-tutorial-text"></p><div class="tutorial-actions"><button type="button" id="review-tutorial-close">${tr('Fermer le tutoriel','Close tutorial')}</button><button type="button" id="review-tutorial-prev">${tr('← Précédent','← Previous')}</button><button type="button" id="review-tutorial-next">${tr('Suivant →','Next →')}</button></div></dialog>`;
   return `<section class="assessment-review-tools"><div class="report-tools">${distanceControl('assessment-distance-choice')}${labelControls('assessment')}<button id="start-assessment-review" type="button">⛶ ${tr('Revue plein écran','Full-screen review')}</button><button id="open-review-tutorial" type="button">${tr('Tutoriel guidé','Guided tutorial')}</button><button id="assessment-comfort" type="button">${tr('Confort visuel','Visual comfort')}</button><button id="autosave-assessment" type="button">${tr('Activer l’auto save…','Enable autosave…')}</button><button id="save-assessment-review" type="button">${tr('Enregistrer le HTML avec la revue','Save HTML with review')}</button><button id="download-assessment-copy" type="button">${tr('Télécharger une copie HTML','Download HTML copy')}</button><button id="export-assessment-log" type="button">${tr('Exporter le journal CSV','Export review log CSV')}</button></div><p id="assessment-file-status" role="status"></p><small id="assessment-save-help"></small><p id="assessment-review-status" role="status"></p><details id="assessment-change-log"><summary>${tr('Compte rendu des validations et modifications','Review and change log')}</summary><p>${tr('Ce journal suit les décisions de revue et les notes, pas des corrections appliquées aux données. Valider un cas ne valide pas automatiquement les autres fiches liées.','This log tracks review decisions and notes, not applied data corrections. Validating a case does not automatically validate related records.')}</p><div class="table-wrap"><table><thead><tr><th>${tr('Date et heure','Date and time')}</th><th>${tr('Groupement / cas','Grouping / case')}</th><th>${tr('Avant','Before')}</th><th>${tr('Après','After')}</th></tr></thead><tbody id="assessment-log-body"></tbody></table></div></details></section>
-  <dialog id="assessment-review" data-review="true" aria-labelledby="review-title"><div class="review-top"><h2 id="review-title"></h2><button type="button" id="review-close" title="${tr('Quitter la revue (Échap)','Exit review (Escape)')}" aria-label="${tr('Quitter la revue','Exit review')}">✕</button></div><div class="review-layout"><div id="review-map"></div><aside id="review-details-panel"><div class="review-decision"><button type="button" id="review-validate">${tr('Valider','Validate')}</button><details><summary>${tr('Note de décision','Decision note')}</summary><textarea id="review-note" maxlength="2000" aria-label="${tr('Note de décision','Decision note')}"></textarea><small>${tr('Modifier une note remet le cas à valider.','Editing a note returns the case to pending.')}</small></details></div><div id="review-detail"></div></aside></div><nav class="review-bottom" aria-label="${tr('Navigation de revue','Review navigation')}"><button type="button" id="review-return" hidden>↩ ${tr('Retour','Return')}</button><button type="button" id="review-prev" title="${tr('Cas précédent (←)','Previous case (←)')}" aria-label="${tr('Cas précédent','Previous case')}">←</button><span id="review-progress" role="status"></span><button type="button" id="review-next" title="${tr('Cas suivant (→)','Next case (→)')}" aria-label="${tr('Cas suivant','Next case')}">→</button><button type="button" id="review-map-validate" hidden>${tr('Valider','Validate')}</button><button type="button" id="review-toggle-details" aria-controls="review-details-panel">${tr('Afficher les détails','Show details')}</button><button type="button" id="review-save" title="${tr('Enregistrer maintenant','Save now')}" aria-label="${tr('Enregistrer maintenant','Save now')}">↓</button><small id="review-save-state" role="status"></small><label class="review-layout-label">${tr('Disposition','Layout')}<select id="review-layout-choice"><option value="max">${tr('Carte maximale','Maximum map')}</option><option value="map">${tr('Carte','Map')}</option><option value="compare">${tr('Comparaison','Comparison')}</option></select></label>${distanceControl('review-distance-choice')}${labelControls('review')}<button id="review-comfort" type="button">${tr('Confort visuel','Visual comfort')}</button><button type="button" id="review-show-all">${tr('Tous les cas','All cases')}</button></nav></dialog>${tutorial}${mapStops}`;
+  <dialog id="assessment-review" data-review="true" aria-labelledby="review-title"><div class="review-top"><h2 id="review-title"></h2><button type="button" id="review-close" title="${tr('Quitter la revue (Échap)','Exit review (Escape)')}" aria-label="${tr('Quitter la revue','Exit review')}">✕</button></div><div class="review-layout"><div id="review-map"></div><aside id="review-details-panel"><div class="review-decision"><button type="button" id="review-validate">${tr('Valider','Validate')}</button><details><summary>${tr('Note de décision','Decision note')}</summary><textarea id="review-note" maxlength="2000" aria-label="${tr('Note de décision','Decision note')}"></textarea><small>${tr('Modifier une note ou une préconisation remet le cas à valider.','Editing a note or recommendation returns the case to pending.')}</small></details><details><summary>${tr('Préconisation CSched','CSched recommendation')}</summary><textarea id="review-csched" maxlength="2000" aria-label="${tr('Préconisation CSched','CSched recommendation')}"></textarea></details></div><div id="review-detail"></div></aside></div><nav class="review-bottom" aria-label="${tr('Navigation de revue','Review navigation')}"><button type="button" id="review-return" hidden>↩ ${tr('Retour','Return')}</button><button type="button" id="review-prev" title="${tr('Cas précédent (←)','Previous case (←)')}" aria-label="${tr('Cas précédent','Previous case')}">←</button><span id="review-progress" role="status"></span><button type="button" id="review-next" title="${tr('Cas suivant (→)','Next case (→)')}" aria-label="${tr('Cas suivant','Next case')}">→</button><button type="button" id="review-map-validate" hidden>${tr('Valider','Validate')}</button><button type="button" id="review-toggle-details" aria-controls="review-details-panel">${tr('Afficher les détails','Show details')}</button><button type="button" id="review-save" title="${tr('Enregistrer maintenant','Save now')}" aria-label="${tr('Enregistrer maintenant','Save now')}">↓</button><small id="review-save-state" role="status"></small><label class="review-layout-label">${tr('Disposition','Layout')}<select id="review-layout-choice"><option value="max">${tr('Carte maximale','Maximum map')}</option><option value="map">${tr('Carte','Map')}</option><option value="compare">${tr('Comparaison','Comparison')}</option></select></label>${distanceControl('review-distance-choice')}${labelControls('review')}<button id="review-comfort" type="button">${tr('Confort visuel','Visual comfort')}</button><button type="button" id="review-show-all">${tr('Tous les cas','All cases')}</button></nav></dialog>${tutorial}${mapStops}`;
 }
 
 function assessmentReviewStyles(){return `
+.filters{display:grid;grid-template-columns:1fr 1.15fr 1.05fr 1.2fr 1.1fr 1.3fr;gap:10px;align-items:end;font-size:12px}.filters label{min-width:0}.filters input,.filters select{width:100%;min-width:0;height:38px;padding:7px;font-size:12px}.filters .filter-check{display:flex;align-items:center;gap:6px;min-height:38px;line-height:1.25}.filter-check input{order:-1;flex-shrink:0}.inline-check{display:inline-flex;align-items:center;gap:6px;font-size:12px}.inline-check input{min-width:0;width:17px;height:17px;padding:0;accent-color:var(--accent)}#overview>summary{padding:12px 0;font-weight:bold}.overview-mode{margin:0 0 12px}.case-presentation{display:flex;align-items:start;gap:14px;flex-wrap:wrap;padding:10px 0}.map-layer-options{flex:1;min-width:180px}.map-layer-options summary{padding:0;font-size:12px}.map-layer-options p{font-size:11px;margin:6px 0}.map-layer-list{display:flex;flex-wrap:wrap;gap:8px 14px}.case-presentation input{cursor:pointer}@media(max-width:800px){.filters{display:flex;flex-wrap:nowrap;overflow-x:auto;align-items:center;padding-bottom:12px}.filters>label{flex:0 0 150px;width:150px}}@media print{.case-presentation,.overview-mode{display:none!important}}
+.stop-detail{display:block;margin-top:5px;font-size:11px;line-height:1.4;color:inherit;opacity:.85}.assessment-stop-table th:nth-child(3){width:26%}.assessment-stop-table th,.assessment-stop-table td{padding:8px}
 .place-code.with-description{max-width:min(340px,100%)}.code-description{display:block;font:12px/1.35 Arial,sans-serif;font-weight:400;white-space:normal;overflow-wrap:anywhere;color:inherit;opacity:.9}
 .place-map-label{pointer-events:all;cursor:pointer;transform-box:view-box}.place-map-label:hover>rect:first-of-type,.place-map-label:focus-visible>rect:first-of-type{stroke:#513479;stroke-width:3}.place-map-label:focus{outline:none}body[data-map-label-size="small"] .place-map-label{transform:scale(.8)}body[data-map-label-size="large"] .place-map-label{transform:scale(1.2)}body[data-map-label-style="compact"] .place-map-label>.map-code-detail{display:none}body[data-map-label-style="compact"] .place-map-label>rect:first-of-type{height:30px;width:var(--compact-width)}#map-place-stops{width:min(820px,94vw);max-height:85dvh;padding:20px;border-radius:16px 0}#map-place-stops table{table-layout:fixed}#map-place-stops th:nth-child(3){width:45%}#map-place-stops th,#map-place-stops td{font-size:13px;padding:8px}.map-stops-header{display:flex;align-items:start;gap:12px}.map-stops-header h2{flex:1;margin:0;font-size:20px}.map-stops-header button{min-height:44px}.map-stops-scope{display:flex;align-items:center;gap:8px;margin:12px 0}.map-stops-scope input{min-width:0;width:20px;height:20px}.review-bottom{flex-wrap:wrap}@media print{#map-place-stops{display:none!important}.place-map-label{pointer-events:none}}
 .review-distance,.review-distance-note{display:none}body[data-review-distances="small"] .review-distance,body[data-review-distances="large"] .review-distance,body[data-review-distances="small"] .review-distance-note,body[data-review-distances="large"] .review-distance-note{display:initial}body[data-review-distances="small"] .review-distance-badge{transform-box:fill-box;transform-origin:center;transform:scale(.72)}.review-distance rect{fill:#fffef5;stroke:#756138;stroke-width:2}.review-distance text{fill:#302a1e;stroke:none;font-family:Arial,sans-serif}.review-distance-codes{font-size:13px}.review-distance-value{font-size:20px;font-weight:700}.review-distance-link{stroke:#92753e;stroke-width:2;opacity:.65}.review-distance-leader{stroke:#756138;stroke-width:1}.assessment-comfort .review-distance rect{fill:#f5f4ef;stroke:#686d60}.assessment-comfort .review-distance-link{stroke:#686d60}
@@ -708,17 +908,17 @@ function assessmentReviewStyles(){return `
 
 function existingClientReportHtml(model,cases,maps,options){
   const {language,theme,logo,brand,date,offline}=options,t=EXISTING_REPORT_TEXT[language],e=escapeHtml;
-  const compactStyles=`#overview table{width:100%;table-layout:fixed}#overview th,#overview td{padding:5px 9px;white-space:normal;vertical-align:middle;overflow-wrap:anywhere;font-size:13px}#overview th:first-child,#overview td:first-child{width:74%;min-width:0}#overview th:last-child,#overview td:last-child{width:26%;min-width:0}#overview .place-code{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;padding:2px 6px;white-space:normal;max-width:min(340px,100%);min-width:0}#overview .code-heading{display:inline-flex;flex-wrap:wrap;gap:3px 7px;min-width:0;max-width:100%}#overview .code-main{font-size:13px}#overview .code-role,#overview .code-relation,#overview .code-detail{font-size:11px}#overview .code-detail{display:inline;overflow-wrap:anywhere;border-left:1px solid #b8a2d2;padding-left:7px;min-width:0;max-width:100%}#overview .reference-chip{padding:0 4px;min-width:0;max-width:100%;overflow-wrap:anywhere}#overview .code-relation{padding-left:7px;flex-wrap:wrap;min-width:0;max-width:100%}#overview a{white-space:normal;overflow-wrap:anywhere}#overview .code-main,#overview .code-role,#overview .code-stops{min-width:0;max-width:100%;overflow-wrap:anywhere}.place-code{display:inline-flex;flex-direction:column;gap:4px;padding:5px 8px;vertical-align:middle;text-align:left;font-size:13px;print-color-adjust:exact;-webkit-print-color-adjust:exact}.code-heading{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}.code-main{font-family:ui-monospace,Consolas,monospace;font-size:14px;font-weight:600}.code-role,.code-relation,.code-detail{font:12px/1.4 Arial,sans-serif}.code-role{color:#513479}.code-relation{display:inline-flex;align-items:center;gap:5px;border-left:1px solid #aab6a4;padding-left:10px}.reference-chip{background:#e9e2f4;color:#513479;border:1px solid #b8a2d2;border-radius:3px;padding:1px 5px;font-family:ui-monospace,Consolas,monospace}.code-detail{display:block;overflow-wrap:anywhere}.code-children{font-family:ui-monospace,Consolas,monospace}.code-review{color:#854719}.marker.place .map-code-main{font-size:14px;font-weight:600}.marker.place .map-code-role{font:12px Arial}.marker.place .map-code-detail{font:12px Arial}.marker.place rect.map-reference-chip{fill:#e9e2f4;stroke:#b8a2d2;stroke-width:1}.marker.place text.map-reference-code{fill:#513479;font-size:13px;font-weight:500}`;
+  const compactStyles=`#endpoint-scope,#deadhead-scope{min-width:0;width:20px;height:20px;accent-color:var(--accent)}.assessment-case-tools textarea,#review-csched{width:100%;min-height:80px;resize:vertical}.assessment-case-tools .assessment-note{flex:1;min-width:220px}#overview table{width:100%;table-layout:fixed}#overview th,#overview td{padding:5px 9px;white-space:normal;vertical-align:middle;overflow-wrap:anywhere;font-size:13px}#overview th:first-child,#overview td:first-child{width:74%;min-width:0}#overview th:last-child,#overview td:last-child{width:26%;min-width:0}#overview .place-code{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px;padding:2px 6px;white-space:normal;max-width:min(340px,100%);min-width:0}#overview .code-heading{display:inline-flex;flex-wrap:wrap;gap:3px 7px;min-width:0;max-width:100%}#overview .code-main{font-size:13px}#overview .code-role,#overview .code-relation,#overview .code-detail{font-size:11px}#overview .code-detail{display:inline;overflow-wrap:anywhere;border-left:1px solid #b8a2d2;padding-left:7px;min-width:0;max-width:100%}#overview .reference-chip{padding:0 4px;min-width:0;max-width:100%;overflow-wrap:anywhere}#overview .code-relation{padding-left:7px;flex-wrap:wrap;min-width:0;max-width:100%}#overview a{white-space:normal;overflow-wrap:anywhere}#overview .code-main,#overview .code-role,#overview .code-stops{min-width:0;max-width:100%;overflow-wrap:anywhere}.place-code{display:inline-flex;flex-direction:column;gap:4px;padding:5px 8px;vertical-align:middle;text-align:left;font-size:13px;print-color-adjust:exact;-webkit-print-color-adjust:exact}.code-heading{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px}.code-main{font-family:ui-monospace,Consolas,monospace;font-size:14px;font-weight:600}.code-role,.code-relation,.code-detail{font:12px/1.4 Arial,sans-serif}.code-role{color:#513479}.code-relation{display:inline-flex;align-items:center;gap:5px;border-left:1px solid #aab6a4;padding-left:10px}.reference-chip{background:#e9e2f4;color:#513479;border:1px solid #b8a2d2;border-radius:3px;padding:1px 5px;font-family:ui-monospace,Consolas,monospace}.code-detail{display:block;overflow-wrap:anywhere}.code-children{font-family:ui-monospace,Consolas,monospace}.code-review{color:#854719}.marker.place .map-code-main{font-size:14px;font-weight:600}.marker.place .map-code-role{font:12px Arial}.marker.place .map-code-detail{font:12px Arial}.marker.place rect.map-reference-chip{fill:#e9e2f4;stroke:#b8a2d2;stroke-width:1}.marker.place text.map-reference-code{fill:#513479;font-size:13px;font-weight:500}`;
   const noAction=model.places.filter(p=>p.primary==='none').length;
-  const data={reportId:globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2),text:t,cases:cases.map(({points,...c})=>c),maps,tpMaps:options.tpMaps||{},tpView:model.timingKnown?existingReportTimingPointView(model,language):null,csvRows:existingReportCsvRows(model,cases,t),filename:String(options.client||'Client').replace(/[^A-Za-z0-9_-]+/g,'_')+'_HASTUS_assessment'};
+  const data={reportId:globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2),text:t,deadheadKnown:model.deadheadKnown,endpointKnown:model.endpointKnown,cases:cases.map(({points,...c})=>c),maps,tpMaps:options.tpMaps||{},tpView:model.timingKnown?existingReportTimingPointView(model,language):null,csvRows:existingReportCsvRows(model,cases,t),filename:String(options.client||'Client').replace(/[^A-Za-z0-9_-]+/g,'_')+'_HASTUS_assessment'};
   data.mapPlaces=model.places.map(p=>({code:p.code,description:p.description,isReference:p.isReference,attachedCodes:p.attachedCodes,stops:p.stops.map(s=>({id:s.id,description:s.description,timing:s.timing}))}));
   const source=model.timingKnown?(model.timingSource==='variants'?t.variants:t.gtfs)+(model.timingInferred?' · '+t.inferred:''):t.unknownSource;
-  const toolbar=`<div class="report-tools"><button id="open-assessment-guide" type="button">${e(t.guide)}</button><button id="export-assessment-csv" type="button">${e(t.csv)}</button><button id="print-assessment" type="button">${e(t.print)}</button></div><p>${e(t.exportScope)}</p><p id="export-status" role="status"></p><p class="notice">${e(t.timingSource)} : ${e(source)}</p>`;
+  const toolbar=`<div class="report-tools"><button id="open-assessment-guide" type="button">${e(t.guide)}</button><button id="export-assessment-csv" type="button">${e(t.csv)}</button><button id="print-assessment" type="button">${e(t.print)}</button><button id="export-client-selection" type="button" disabled>${e(language==='en'?'Export selected cases · HTML':'Exporter la sélection client · HTML')}</button></div><p id="client-selection-status" role="status"></p><p>${e(t.exportScope)}</p><p id="export-status" role="status"></p><p class="notice">${e(t.timingSource)} : ${e(source)}</p>`;
   const guide=`<dialog id="assessment-guide" aria-labelledby="assessment-guide-title"><h2 id="assessment-guide-title">${e(t.guideTitle)}</h2><ol>${t.guideSteps.map(step=>`<li>${e(step)}</li>`).join('')}</ol><button id="close-assessment-guide" type="button">${e(t.close)}</button></dialog>`;
   const extraStyles=`.place-code{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:.86em;font-weight:500;line-height:1.35;padding:2px 7px;border:1px solid #aab6a4;border-radius:4px;background:var(--tint);color:var(--ink);vertical-align:baseline;white-space:normal;overflow-wrap:anywhere;max-width:100%}.place-code.reference-code{background:#e9e2f4;color:#513479;border-color:#b8a2d2;print-color-adjust:exact;-webkit-print-color-adjust:exact}.marker.place rect.place-label{fill:#edf3e7;stroke:#aab6a4;stroke-width:1}.marker.place text{fill:#23322a;stroke:none;font-family:ui-monospace,Consolas,monospace;font-size:13px;font-weight:600}.marker.place rect.reference-label{fill:#e9e2f4;stroke:#b8a2d2;stroke-width:1}.marker.reference-marker text{fill:#513479;stroke:none;font-family:ui-monospace,Consolas,monospace;font-weight:500}.overview-line{min-height:30px;padding:3px 0}#overview td:first-child{width:26%;min-width:160px}#overview td:last-child{width:26%}.place-description{font-family:inherit;font-weight:700;overflow-wrap:anywhere}h2:has(.place-code){font-weight:400}a:has(.place-code){text-decoration:none}a:hover .place-description{text-decoration:underline}.report-tools{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.report-tools button{background:var(--accent);color:white}dialog{max-width:min(680px,92vw);max-height:85vh;overflow:auto;border:1px solid #b5c3a9;padding:24px}dialog::backdrop{background:#0008}dialog li{margin:10px 0}dialog h2{display:block;margin:0}.reference-field{padding:12px;background:var(--tint)}.marker.place rect{fill:var(--accent);stroke:white;stroke-width:3}.marker.tp circle{fill:#176a8a}.marker.non-tp circle{fill:#c46b12}.marker.unknown-tp circle{fill:#737b80}.marker.proposal circle{stroke:#994583;stroke-width:3;stroke-dasharray:3 2}h2{overflow-wrap:anywhere}@media print{.report-tools,.filters,.pager,#overview,dialog,#export-status,article .case-body>a{display:none!important}.case-body{display:block}article{break-before:page}.map-stage{break-inside:avoid}.table-wrap{overflow:visible}thead{display:table-header-group}}`;
   return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${e(options.client)} · ${e(t.title)}</title><style>
   *{box-sizing:border-box}body{margin:0;background:#f3f5ef;color:#23322a;font:15px/1.55 Arial,sans-serif;--accent:${theme==='classic'?'#006d67':'#54742e'};--tint:#edf3e7}header,main{max-width:1240px;margin:auto;padding:24px}header{display:flex;align-items:center;gap:24px;border-bottom:3px solid var(--accent)}header img{max-width:150px;max-height:52px}.client-brand{margin-left:auto;display:flex;align-items:center;gap:14px}.client-brand small{display:block}h1{font-size:29px;line-height:1.2}h2{font-size:20px;display:inline;margin:0 0 0 12px}h3{font-size:16px;margin-top:24px}a{color:var(--accent);overflow-wrap:anywhere}p{overflow-wrap:anywhere}.intro{max-width:920px}.notice{background:var(--tint);border-left:3px solid var(--accent);padding:12px}.metrics{display:flex;gap:12px;flex-wrap:wrap}.metrics div{flex:1;min-width:150px;background:white;padding:16px;border:1px solid #d8dfd0}.metrics strong{display:block;font-size:25px;color:var(--accent)}.filters{display:flex;gap:12px;flex-wrap:wrap;padding:20px 0}label{display:grid;gap:5px}input,select,button{font:inherit;padding:10px;border:1px solid #b5c3a9;background:white;color:inherit;border-radius:14px 0}input{min-width:280px}button{cursor:pointer}button:disabled{opacity:.4;cursor:default}.pager{display:flex;align-items:center;gap:16px;padding:14px 0}#page-status{flex:1}article{background:white;border:1px solid #d8dfd0;margin:18px 0;scroll-margin-top:20px}summary{cursor:pointer;padding:20px}.case-body{padding:0 20px 24px}.badge{display:inline-block;padding:4px 9px;background:var(--tint);font-size:12px;font-weight:bold}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;background:white}th,td{padding:10px;border:1px solid #d8dfd0;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:var(--tint)}.map-stage{position:relative;aspect-ratio:1000/430;overflow:hidden;background:#e9ede4}.map-stage iframe,.map-stage svg{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;user-select:none}.map-stage svg{z-index:1}.marker circle{fill:#176a8a;stroke:white;stroke-width:2}.marker.place circle{fill:var(--accent);stroke:#fff;stroke-width:3}.marker.proposal circle{fill:#994583}.marker text{font:12px Arial;paint-order:stroke;stroke:white;stroke-width:4px;fill:#20312d}.marker.place text{font-weight:bold}.credit{font:12px Arial;paint-order:stroke;stroke:white;stroke-width:4px}.legend{font-size:12px;color:#596657}.osm-land{fill:#dfe9d7;stroke:#cad9c0}.osm-water{fill:#cde6ef;stroke:#8cbfd0;stroke-width:2}.osm-building{fill:#ddd9d1;stroke:#c0bbb2}.osm-rail{fill:none;stroke:#8e8178;stroke-width:3;stroke-dasharray:7 5}.osm-road{fill:none;stroke-linecap:round;stroke-linejoin:round}.osm-road.major{stroke:#f2b879;stroke-width:9}.osm-road.minor{stroke:white;stroke-width:6}.osm-road.path{stroke:white;stroke-width:3}footer{padding:24px;text-align:center;color:#65715f}[hidden]{display:none!important}@media(max-width:600px){header,main{padding:14px}.filters>*{width:100%}h2{display:block;margin:8px 0}header{flex-wrap:wrap}}
-  ${extraStyles}${compactStyles}${assessmentReviewStyles()}</style></head><body><header>${logo?`<img src="${e(logo)}" alt="CSched">`:'<strong>CSched</strong>'}${brand}<small>${e(date)}</small></header><main><h1>${e(t.title)}</h1><p class="intro">${e(t.intro)}</p><p class="notice">${e(t.note)}</p><p>${e(t.origin)} · ${e(t.radius)} : ${model.radius} m · ${e(t.threshold)} : ${model.threshold} m</p><p>${e(offline?t.offline:t.online)}</p><div class="metrics"><div>${e(t.refs)}<strong>${model.anomalies.length}</strong></div><div>${e(t.places)}<strong>${model.places.length}</strong></div><div>${e(t.review)}<strong>${model.places.length-noAction}</strong></div><div>${e(t.categories.none)}<strong>${noAction}</strong></div></div>${toolbar}${assessmentReviewMarkup(language)}<div class="filters"><label>${e(t.stopScope)}<select id="stop-scope"${model.timingKnown?'':' disabled'} title="${e(model.timingKnown?t.tpScope:t.unknownSource)}"><option value="all">${e(t.allStops)}</option><option value="tp">${e(t.tpOnly)}</option></select></label><label>${e(t.allCases)}<select id="kind"><option value="all">${e(t.allCases)}</option><option value="reference">${e(t.refs)}</option><option value="place">${e(t.places)}</option><option value="issue">${e(t.issues)} (${model.unresolved.length})</option></select></label><label>${e(t.type)}<select id="type"><option value="all">${e(t.all)}</option><option value="review">${e(t.review)}</option>${model.priority.map(key=>`<option value="${key}">${e(t.categories[key])}</option>`).join('')}</select></label><label>${e(t.search)}<input id="search" type="search"></label></div><section id="overview"><h3>${e(t.summary)}</h3><div class="table-wrap"><table><thead><tr><th>${e(t.code)}</th><th>${e(t.type)}</th></tr></thead><tbody id="overview-body"></tbody></table></div></section><div class="pager"><span id="page-status" role="status" aria-live="polite"></span><button id="previous">${e(t.previous)}</button><button id="next">${e(t.next)}</button></div><p id="empty" hidden>${e(t.noMatches)}</p><div id="cases"></div><noscript>${e(language==='en'?'Enable JavaScript to browse this report.':'Activez JavaScript pour consulter ce rapport.')}</noscript></main><footer>CSched · ${e(options.client)} · HASTUS</footer>${guide}<script id="assessment-data" type="application/json">${inlineJson(data)}</script><script>(${existingClientReportRuntime.toString()})(${existingReportCsv.toString()},${mountAssessmentReview.toString()},${assessmentReviewModel.toString()},${typeof reportFileSaver==='function'?reportFileSaver.toString():'null'});<\/script></body></html>`;
+  ${extraStyles}${compactStyles}${assessmentReviewStyles()}</style></head><body><header>${logo?`<img src="${e(logo)}" alt="CSched">`:'<strong>CSched</strong>'}${brand}<small>${e(date)}</small></header><main><h1>${e(t.title)}</h1><p class="intro">${e(t.intro)}</p><p class="notice">${e(t.note)}</p><p>${e(t.origin)} · ${e(t.radius)} : ${model.radius} m · ${e(t.threshold)} : ${model.threshold} m · ${e(t.stopThreshold)} : ${model.stopPlaceThreshold} m</p><p>${e(model.endpointKnown?t.endpointHelp:t.endpointUnavailable)}</p><p>${e(offline?t.offline:t.online)}</p><div class="metrics"><div>${e(t.refs)}<strong>${model.anomalies.length}</strong></div><div>${e(t.places)}<strong>${model.places.length}</strong></div><div>${e(t.review)}<strong>${model.places.length-noAction}</strong></div><div>${e(t.categories.none)}<strong>${noAction}</strong></div></div>${toolbar}${assessmentReviewMarkup(language)}<div class="filters"><label class="filter-check" title="${e(t.deadheadFilter)}">${e(language==='en'?'Direct deadhead':'Lien deadhead')}<input id="deadhead-scope" type="checkbox"${model.deadheadOnly&&model.deadheadKnown?' checked':''}${model.deadheadKnown?'':' disabled'} title="${e(model.deadheadKnown?t.deadheadHelp:t.deadheadUnknown)}"></label><label class="filter-check" title="${e(t.endpointFilter)}">${e(language==='en'?'Trip start/end':'Début/fin de voyage')}<input id="endpoint-scope" type="checkbox"${model.endpointsOnly&&model.endpointKnown?' checked':''}${model.endpointKnown?'':' disabled'} title="${e(model.endpointKnown?t.endpointHelp:t.endpointUnavailable)}"></label><label>${e(t.stopScope)}<select id="stop-scope"${model.timingKnown?'':' disabled'} title="${e(model.timingKnown?t.tpScope:t.unknownSource)}"><option value="all">${e(t.allStops)}</option><option value="tp">${e(t.tpOnly)}</option></select></label><label>${e(t.allCases)}<select id="kind"><option value="all">${e(t.allCases)}</option><option value="reference">${e(t.refs)}</option><option value="place">${e(t.places)}</option><option value="issue">${e(t.issues)} (${model.unresolved.length})</option></select></label><label>${e(t.type)}<select id="type"><option value="all">${e(t.all)}</option><option value="review">${e(t.review)}</option>${model.priority.map(key=>`<option value="${key}">${e(t.categories[key])}</option>`).join('')}</select></label><label title="${e(t.search)}">${e(language==='en'?'Search':'Recherche')}<input id="search" type="search"></label></div><details id="overview" open><summary>${e(t.summary)}</summary><label class="inline-check overview-mode"><input id="overview-grouped" type="checkbox" checked>${e(language==='en'?'Group by place':'Regrouper par place')}</label><div class="table-wrap"><table><thead><tr><th>${e(t.code)}</th><th>${e(t.type)}</th></tr></thead><tbody id="overview-body"></tbody></table></div></details><div class="pager"><span id="page-status" role="status" aria-live="polite"></span></div><p id="empty" hidden>${e(t.noMatches)}</p><div id="cases"></div><noscript>${e(language==='en'?'Enable JavaScript to browse this report.':'Activez JavaScript pour consulter ce rapport.')}</noscript></main><footer>CSched · ${e(options.client)} · HASTUS</footer>${guide}<script id="assessment-data" type="application/json">${inlineJson(data)}</script><script>(${existingClientReportRuntime.toString()})(${existingReportCsv.toString()},${mountAssessmentReview.toString()},${assessmentReviewModel.toString()},${typeof reportFileSaver==='function'?reportFileSaver.toString():'null'},${assessmentSubsetData.toString()});<\/script></body></html>`;
 }
 
 async function downloadExistingClientReport(){
@@ -727,7 +927,7 @@ async function downloadExistingClientReport(){
   try{
     button.textContent=language==='en'?'Preparing assessment…':'Préparation du diagnostic…';
     await new Promise(resolve=>setTimeout(resolve,20));
-    const model=existingClientReportModel({...state,radius:Number($("radius").value),threshold:Number($("reference-distance").value)}),cases=existingClientReportCases(model,language);
+    const model=existingClientReportModel({...state,radius:Number($("radius").value),threshold:Number($("reference-distance").value),stopPlaceThreshold:Number($("stop-place-distance")?.value??500),deadheadOnly:Boolean($("diagnostic-deadhead-only")?.checked),endpointsOnly:Boolean($("diagnostic-endpoints-only")?.checked)}),cases=existingClientReportCases(model,language);
     if(!cases.length)throw new Error(language==='en'?'No assessment results to export.':'Aucun résultat de diagnostic à exporter.');
     const coverage=cases.filter(c=>c.points.length).map(c=>{
       const g=existingReportMapGeometry(c.points),center=osmUnproject(g.center.x,g.center.y,g.zoom);

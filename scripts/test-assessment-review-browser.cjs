@@ -111,7 +111,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       assert.equal(await page.locator('#review-map .review-distance-note').first().isVisible(),false);
       await page.locator('#review-distance-choice').selectOption('large');
     }
-    await page.locator('.review-decision summary').click();
+    await page.locator('.review-decision summary').filter({hasText:'Note de décision'}).click();
     await page.locator('#review-note').fill('Vérifier le retournement <script>unsafe</script>');await page.locator('#review-note').press('Tab');
     await page.locator('#review-validate').click();
     await page.locator('#review-comfort').click();await page.locator('#review-layout-choice').selectOption('compare');

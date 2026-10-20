@@ -220,7 +220,8 @@ async function testPrint(){
   const printCtx=vm.createContext({console,setTimeout,window:{open:()=>preview,addEventListener(){}},location:{hash:''},document:{getElementById:get,documentElement:{lang:'en'},querySelectorAll:()=>[],querySelector:()=>({outerHTML:'<header>CSched test</header>'}),addEventListener(){}}});
   vm.runInContext(fs.readFileSync(path.join(root,'report-existing.js'),'utf8'),printCtx);
   printCtx.existingClientReportRuntime(printCtx.existingReportCsv);
-  assert.ok(get('page-status').textContent.includes('Page 1 / 3'));
+  assert.ok(get('page-status').textContent.includes('30'));
+  assert.equal((get('cases').innerHTML.match(/<article /g)||[]).length,30,'All cases are on one page');
   get('open-assessment-guide').onclick();assert.equal(get('assessment-guide').open,true);
   await get('print-assessment').onclick();assert.equal(printed.length,cases.length,'print includes all pages');
   assert.ok(preview.document.html.includes('Save as PDF'));assert.ok(printed.some(node=>node.innerHTML.includes('QUIET17')));

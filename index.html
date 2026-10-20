@@ -2,15 +2,15 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="application-version" content="13.01">
+  <meta name="application-version" content="13.02">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The GTFS Missing Link</title>
-  <link rel="stylesheet" href="styles.css?v=13.01">
-  <link rel="stylesheet" href="clean-theme.css?v=13.01">
-  <link rel="stylesheet" href="place-code-layout.css?v=13.01">
-  <link rel="stylesheet" href="service-import-plan.css?v=13.01">
-  <link rel="stylesheet" href="tutorial.css?v=13.01">
-  <link rel="stylesheet" href="assignment-diagnostics.css?v=13.01">
+  <link rel="stylesheet" href="styles.css?v=13.02">
+  <link rel="stylesheet" href="clean-theme.css?v=13.02">
+  <link rel="stylesheet" href="place-code-layout.css?v=13.02">
+  <link rel="stylesheet" href="service-import-plan.css?v=13.02">
+  <link rel="stylesheet" href="tutorial.css?v=13.02">
+  <link rel="stylesheet" href="assignment-diagnostics.css?v=13.02">
 </head>
 <body>
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
@@ -122,6 +122,7 @@
         <label class="dropzone gtfs-part hidden"><span class="file-no">02</span><strong>GTFS · stop_times.txt</strong><small>Passages et indicateur timepoint</small><input id="times-file" type="file" accept=".txt,.csv"></label>
         <label id="hastus-upload" class="dropzone"><span class="file-no">03</span><strong>Export HASTUS · CSV ou Excel</strong><small>Stops, places et coordonnées</small><input id="hastus-file" type="file" accept=".txt,.csv,.xlsx"></label>
         <label id="variants-upload" class="dropzone"><span class="file-no">04</span><strong>Versions de routes HASTUS · Excel ou CSV</strong><small>Stop, TP, Position, route et variante</small><input id="variants-file" type="file" accept=".txt,.csv,.xlsx"></label>
+        <div id="deadhead-upload" class="dropzone"><span class="file-no">05</span><label for="deadhead-file"><strong>Matrice deadhead / HLP · facultative</strong><small>Export texte HASTUS linkdt · origines et destinations</small></label><input id="deadhead-file" type="file" accept=".txt,.csv"><small id="deadhead-status" role="status" data-no-translate></small><button id="deadhead-remove" type="button" hidden>Retirer la matrice</button></div>
         <label id="routes-upload" class="dropzone gtfs-part hidden"><span class="file-no">03</span><strong>GTFS · routes.txt</strong><small>Identifiants, noms et couleurs des routes</small><input id="routes-file" type="file" accept=".txt,.csv"></label>
         <label id="trips-upload" class="dropzone gtfs-part hidden"><span class="file-no">04</span><strong>GTFS · trips.txt</strong><small>Lien entre routes, voyages et shapes</small><input id="trips-file" type="file" accept=".txt,.csv"></label>
         <label id="shapes-upload" class="dropzone gtfs-part hidden"><span class="file-no">05</span><strong>GTFS · shapes.txt</strong><small>Géométrie des tracés de routes</small><input id="shapes-file" type="file" accept=".txt,.csv"></label>
@@ -152,6 +153,9 @@
         <label id="geographic-client-setting" class="select-label hidden"><span>Type de regroupement</span><select id="geographic-client-type"><option value="new">Nouveau client · partir de zéro</option><option value="existing">Client existant dans HASTUS</option></select></label>
         <label id="timing-source-setting" class="select-label hidden"><span>Source des timing points</span><select id="timing-point-source"><option value="gtfs">GTFS · stop_times.txt</option><option value="variants">HASTUS · versions de routes</option></select><small id="timing-source-detail">Chargez l’export de versions pour activer cette source.</small></label>
         <div id="radius-setting" class="range-label"><label for="radius">Rayon de recherche</label><output id="radius-output">200 m</output><input id="radius" type="range" min="0" max="1000" step="1" value="200"><label for="radius-number">Saisie en mètres (0–1000)</label><input id="radius-number" type="number" min="0" max="1000" step="1" value="200" inputmode="numeric"></div>
+        <div id="stop-place-distance-setting" class="range-label hidden"><label for="stop-place-distance">Seuil d’alerte stop–place</label><output id="stop-place-distance-output">500 m</output><input id="stop-place-distance" type="range" min="0" max="1000" step="1" value="500"><label for="stop-place-distance-number">Saisie en mètres (0–1000)</label><input id="stop-place-distance-number" type="number" min="0" max="1000" step="1" value="500" inputmode="numeric"></div>
+        <label id="diagnostic-endpoints-setting" class="check-label hidden"><input id="diagnostic-endpoints-only" type="checkbox">Places utilisées en début/fin de voyage uniquement</label>
+        <label id="diagnostic-deadhead-setting" class="check-label hidden"><input id="diagnostic-deadhead-only" type="checkbox" disabled>Places avec un lien deadhead direct uniquement</label>
         <div id="reference-distance-setting" class="range-label hidden"><label for="reference-distance">Seuil d’alerte des références</label><output id="reference-distance-output">500 m</output><input id="reference-distance" type="range" min="0" max="1000" step="1" value="500"><label for="reference-distance-number">Saisie en mètres (0–1000)</label><input id="reference-distance-number" type="number" min="0" max="1000" step="1" value="500" inputmode="numeric"></div>
         <label id="association-setting" class="select-label"><span>Clé d'association GTFS → HASTUS</span><select id="association-key"><option value="stop_id">stop_id</option><option value="stop_code">stop_code</option></select></label>
         <label id="map-display-setting" class="select-label hidden"><span>Affichage des routes</span><select id="map-display"><option value="individual">Une carte par route</option><option value="combined" selected>Toutes les routes sur une carte</option><option value="both">Carte réseau et cartes séparées</option></select></label>
@@ -209,25 +213,25 @@
       <div class="place-report-actions"><button id="scu-save" type="button" class="secondary" disabled>Enregistrer dans un dossier GTFS…</button><button id="scu-download" type="button" class="primary" disabled>Télécharger le ZIP avec les imports</button></div>
     </section>
   </main>
-  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v13.01</span></footer>
-  <script src="report-package.js?v=13.01"></script>
-  <script src="report-payload.js?v=13.01"></script>
-  <script src="report-network.js?v=13.01"></script>
-  <script src="report-timetable-export.js?v=13.01"></script>
-  <script src="report-network-document.js?v=13.01"></script>
-  <script src="report-editor.js?v=13.01-r4"></script>
-  <script src="app-translations.js?v=13.01"></script>
-  <script src="app-shell.js?v=13.01"></script>
-  <script src="workspace-storage.js?v=13.01"></script>
-  <script src="report-existing.js?v=13.01"></script>
-  <script src="assignment-diagnostics.js?v=13.01"></script>
-  <script src="scheduling-units.js?v=13.01"></script>
-  <script src="service-import-plan.js?v=13.01"></script>
-  <script src="working-timetable.js?v=13.01"></script>
-  <script src="day-route-summary.js?v=13.01"></script>
-  <script src="app.js?v=13.01-r4"></script>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v13.02</span></footer>
+  <script src="report-package.js?v=13.02"></script>
+  <script src="report-payload.js?v=13.02"></script>
+  <script src="report-network.js?v=13.02"></script>
+  <script src="report-timetable-export.js?v=13.02"></script>
+  <script src="report-network-document.js?v=13.02"></script>
+  <script src="report-editor.js?v=13.02"></script>
+  <script src="app-translations.js?v=13.02"></script>
+  <script src="app-shell.js?v=13.02"></script>
+  <script src="workspace-storage.js?v=13.02"></script>
+  <script src="report-existing.js?v=13.02"></script>
+  <script src="assignment-diagnostics.js?v=13.02"></script>
+  <script src="scheduling-units.js?v=13.02"></script>
+  <script src="service-import-plan.js?v=13.02"></script>
+  <script src="working-timetable.js?v=13.02"></script>
+  <script src="day-route-summary.js?v=13.02"></script>
+  <script src="app.js?v=13.02"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
-  <script src="tutorial.js?v=13.01"></script>
+  <script src="tutorial.js?v=13.02"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>
 </body>
 </html>

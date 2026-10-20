@@ -1,5 +1,11 @@
 /* UI copy only: never translate source data or independently generated reports. */
 const APP_ENGLISH = {
+  'Matrice deadhead / HLP · facultative':'Deadhead matrix · optional',
+  'Export texte HASTUS linkdt · origines et destinations':'HASTUS linkdt text export · origins and destinations',
+  'Retirer la matrice':'Remove matrix',
+  'Places avec un lien deadhead direct uniquement':'Places with a direct deadhead link only',
+  'Seuil d’alerte stop–place':'Stop-to-place alert threshold',
+  'Places utilisées en début/fin de voyage uniquement':'Places used at trip start/end only',
   'Cartes et horaires du GTFS ou du dossier working, deux directions et exports.':'GTFS or working-folder route maps and timetables, both directions and exports.',
   'Préparer les unités et le script d’import HASTUS à partir des routes.':'Prepare scheduling units and the HASTUS import script from routes.',
   'Rapports et exports':'Reports and exports','Diagnostic HASTUS, validation client, PDF, HTML et fichiers de sortie.':'HASTUS assessment, client validation, PDF, HTML and output files.',

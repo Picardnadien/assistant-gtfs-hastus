@@ -14,7 +14,10 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     const origin=`http://127.0.0.1:${server.address().port}`;await page.goto(origin);
     if(await page.locator('html').getAttribute('lang')!=='fr')await page.locator('#language').click();
     assert.equal(await page.locator('#private-open').isVisible(),false);
-    assert.match(await page.locator('.current h2').innerText(),/v13\.01/);
+    assert.match(await page.locator('.current h2').innerText(),/v13\.02/);
+    assert.ok(await page.locator('#release-13-02').isVisible());
+    assert.match(await page.locator('#release-13-02').innerText(),/Sélection client/);
+    assert.doesNotMatch(await page.locator('body').innerText(),/oc[\s_-]*transpo/i);
     assert.ok(await page.locator('#release-13-01').isVisible());
     assert.match(await page.locator('#release-13-01').innerText(),/Recherche stable/);
     const notes=page.locator('#release-notes');
@@ -28,6 +31,8 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     assert.match(await notes.locator('summary').innerText(),/since v12/);
     assert.equal(await notes.locator('h3').first().innerText(),'A better organized interface');
     assert.match(await page.locator('#release-13-01').innerText(),/Stable search/);
+    assert.match(await page.locator('#release-13-02').innerText(),/Client selection/);
+    assert.doesNotMatch(await page.locator('body').innerText(),/oc[\s_-]*transpo/i);
     assert.ok(await notes.locator('[data-en]').evaluateAll(nodes=>nodes.every(node=>node.textContent===node.dataset.en)));
     await page.locator('#language').click();await notes.locator('summary').click();
     for(const size of [{width:820,height:1180},{width:1180,height:820}]){await page.setViewportSize(size);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}

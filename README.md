@@ -1,6 +1,6 @@
 # The GTFS Missing Link
 
-**Version 13.01** — voir les [notes de version](CHANGELOG.md).
+**Version 13.02** — voir les [notes de version](CHANGELOG.md).
 
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
@@ -92,6 +92,94 @@ Internet. Le CSV distingue affectations actuelles et propositions non appliquée
 il s’agit d’un diagnostic, pas d’un fichier d’import HASTUS.
 
 ### Revue client du diagnostic HTML
+
+L’import facultatif **Matrice deadhead / HLP** se trouve à côté des exports de
+stops et de versions de routes. Il accepte le format texte HASTUS fourni :
+`linkdt;ORIGINE;DESTINATION;…`, séparé par des points-virgules, sans en-tête.
+Les colonnes suivantes ne sont pas interprétées : la présence d’un lien ne
+prouve pas sa disponibilité à une date ou dans une plage horaire donnée.
+Les codes sont comparés sans distinction de casse et sans supprimer les zéros
+initiaux. Les doublons origine/destination sont comptés une seule fois ; un
+lien inverse est distinct. Les liens vers soi-même présents dans l’export sont
+conservés. Les lignes mal formées sont refusées avec leur numéro.
+
+Chaque fiche indique si ses places ont des liens directs, avec les nombres
+**sortants / entrants**, repris dans le CSV et le PDF. Le filtre **Places avec
+un lien deadhead direct uniquement**, dans l’application et le rapport, se combine
+avec le filtre début/fin. Pour une comparaison, toutes les places doivent avoir
+un lien direct ; un cas mixte est exclu entièrement. Les liens d’une place de
+référence ne sont pas hérités par les places rattachées.
+
+Sans matrice, le statut est **non renseigné**, pas « aucun lien » ; le filtre
+est désactivé. Avec une matrice, l’absence concerne uniquement l’export fourni.
+Charger, remplacer ou retirer la matrice ne régénère pas les places et n’efface
+pas les décisions. Un fichier invalide conserve l’index précédent. La sauvegarde
+de travail contient le nom du fichier et un index compact des liens par place,
+pas les temps ni le fichier d’import complet. Régénérer le rapport après mise à
+jour de la matrice. Aucun fichier client n’est ajouté au dépôt public.
+
+Le **seuil d’alerte stop–place** se règle dans l’analyse de l’application par
+curseur ou saisie numérique, de **0 à 1 000 m** (500 m par défaut).
+Il est indépendant du seuil des références et conservé dans la sauvegarde.
+Les stops dépassant strictement ce seuil sont signalés sous
+**Stops éloignés de leur place** ; leur distance figure dans les tableaux,
+les étiquettes cartographiques et le CSV.
+La distance est à vol d’oiseau vers le centre de place utilisé par l’analyse.
+Ce centre peut être calculé à partir des stops associés : ce n’est ni un trajet
+routier ni une garantie de position officielle HASTUS. Les coordonnées absentes
+restent « Non disponible », jamais une distance nulle.
+
+Le filtre **Places utilisées en début/fin de voyage uniquement** est disponible
+dans l’application et dans le rapport. Les extrémités GTFS sont déterminées par
+les plus petites/grandes `stop_sequence` de chaque voyage, indépendamment du
+statut TP ; en mode versions de routes, les extrémités proviennent des versions.
+Il couvre les voyages du jeu de données, sans restriction à un jour calendaire.
+Une fiche comparative reste visible uniquement si chacune de ses places est
+utilisée comme début ou fin de voyage. Avec les deux filtres actifs, chaque place
+doit satisfaire les deux critères. Les filtres masquent les cas non admissibles,
+sans modifier les associations ni les propositions enregistrées.
+Sans extrémités identifiées, le rapport désactive le filtre et le signale.
+
+Le sommaire HTML présente une seule ligne par place, triée par code, avec ses
+différents types de validation réunis et cliquables. Si un motif concerne
+plusieurs fiches, les liens numérotés donnent accès à chacune. Les validations,
+notes et préconisations restent propres à chaque cas, sans fusion des décisions.
+Toutes les fiches filtrées sont sur la même page, sans pagination. Les corps de
+fiche et les cartes ne sont chargés qu’à l’ouverture pour limiter le poids du DOM.
+Les références présentes dans les données restent des informations de contexte,
+pas de nouvelles propositions d’association.
+
+Le sommaire se replie par clic sur son titre. Décocher **Regrouper par place**
+permet de retrouver une ligne par cas. Les filtres sont alignés sur une rangée ;
+sur les petits écrans, cette barre défile horizontalement.
+
+Cocher **Proposer au client** sur les fiches à présenter, puis **Exporter la
+sélection client · HTML**. Cette sélection est indépendante de la validation et
+des filtres : une fiche cochée reste incluse même si un filtre la masque ensuite.
+Le fichier autonome n’embarque que les cas sélectionnés, leurs cartes, leurs
+données de CSV et leurs événements de revue. Les places de contexte nécessaires
+aux comparaisons choisies restent incluses. Les notes et préconisations des cas
+retenus sont aussi transmises : les relire avant l’envoi.
+
+**Éléments de la carte** propose des cases par couche (TP, autres stops,
+propositions, liens de référence, distances) et par place avec ses stops.
+Ces choix allègent uniquement la carte, y compris en revue et en impression :
+les données, tableaux et validations restent intacts et ne sont pas anonymisés.
+La sélection client, les éléments masqués et les réglages du sommaire sont
+conservés dans le brouillon navigateur et le HTML sauvegardé. L’export client
+possède son propre identifiant de brouillon, distinct du rapport complet.
+
+Chaque fiche dispose d’une **Préconisation CSched** éditable, séparée de la
+**Note de décision**, également accessible dans les détails du mode plein écran.
+Les champs sont enregistrés à la sortie de la saisie. Leur modification remet
+la fiche à valider. La préconisation est conservée dans le journal avant/après,
+le brouillon navigateur, le fichier HTML sauvegardé, les CSV et l’impression PDF.
+Les données sources et les affectations ne sont pas modifiées. Régénérer les
+anciens rapports pour disposer de ces nouveautés FR/EN.
+
+Recette automatisée spécifique : `node tests/assessment-stop-distance.test.cjs`,
+puis `node scripts/test-assessment-stop-distance-browser.cjs CHEMIN_VERS_PLAYWRIGHT`.
+Les fixtures sont fictives et les sorties restent dans `tmp/`.
 
 Dans l’application, **Décisions d’affectation** présente aussi un diagnostic
 détaillé : références éloignées ou introuvables en premier, places proches sans

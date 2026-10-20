@@ -2,19 +2,21 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),asse
 const {buildPages}=require('../scripts/build-pages.cjs');
 const root=path.resolve(__dirname,'..'),destination=fs.mkdtempSync(path.join(os.tmpdir(),'gtfs-pages-test-'));
 const {version,files}=buildPages(root,destination);
-assert.equal(version,'13.01');
+assert.equal(version,'13.02');
 for(const file of ['index.html','tutorial.js','tutorial.css','app.js','report-editor.js','working-timetable.js','assets/csched-logo.svg','assets/scheduling units.oir','.nojekyll'])assert.ok(files.includes(file),file);
 for(const file of files)assert.ok(fs.statSync(path.join(destination,file)).isFile());
 for(const file of ['.git','tests','tmp','output','README.md','serve.py','supabase'])assert.ok(!fs.existsSync(path.join(destination,file)),file+' must not be deployed');
 for(const file of ['portal.html','portal.css','portal.js','portal-config.js'])assert.ok(files.includes(file));
 for(const file of ['assignment-diagnostics.js','assignment-diagnostics.css'])assert.ok(files.includes(file));
 const html=fs.readFileSync(path.join(destination,'index.html'),'utf8');
-assert.match(html,/v13\.01/);assert.match(html,/The GTFS Missing Link/);assert.match(html,/href="app.html"/);
+assert.match(html,/v13\.02/);assert.match(html,/The GTFS Missing Link/);assert.match(html,/href="app.html"/);
+assert.match(html,/id="release-13-02"/);assert.match(html,/Sélection client/);assert.match(html,/Client selection/);
+assert.ok(!/oc[\s_-]*transpo/i.test(html),'Public version menu must not mention the client');
 assert.match(html,/id="release-13-01"/);assert.match(html,/hastus_import\/places/);
 assert.match(html,/Navigation depuis les validations/);assert.match(html,/Clickable status/);
 assert.match(html,/Carte en plein écran/);assert.match(html,/Full-screen map shortcut/);
 assert.match(html,/id="release-notes"/);assert.match(html,/Les nouveautés depuis la v12/);assert.match(html,/What’s new since v12/);
-assert.match(fs.readFileSync(path.join(destination,'app.html'),'utf8'),/content="13\.01"/);
+assert.match(fs.readFileSync(path.join(destination,'app.html'),'utf8'),/content="13\.02"/);
 for(const release of ['12.0','11.0','10.0']){
   const prefix=`versions/v${release}/`;
   assert.ok(html.includes(prefix));

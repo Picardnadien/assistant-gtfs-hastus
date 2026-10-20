@@ -1,5 +1,22 @@
 # Notes de version
 
+## 13.02 — 2026-10-20
+
+- Sommaire HTML repliable, choix regroupé/non regroupé et filtres compacts sur une rangée.
+- Sélection indépendante des fiches à proposer au client et export HTML réellement limité à ces fiches et leur contexte, avec journal limité et brouillon distinct.
+- Cases d’affichage par couche et par place sur chaque carte ; réglages conservés dans le navigateur, les copies HTML, la revue plein écran et l’impression, sans modifier les données ni les validations.
+
+- Filtres deadhead et début/fin devenus stricts : toutes les places d’un cas doivent satisfaire chaque filtre actif. Les rapprochements mixtes sont exclus, notamment les places sans lien HLP.
+- Sommaire HTML regroupé par place, motifs de validation cliquables, tri par code et suppression de la pagination. Chargement différé du contenu des fiches et des cartes ; notes et validations restent distinctes par cas.
+
+- Import facultatif de la matrice deadhead/HLP HASTUS (`linkdt`) à côté des stops et versions de routes. Liens directs entrants/sortants sur les fiches, filtre dédié combinable avec début/fin, CSV/PDF et sauvegarde de l’index. Distinction entre matrice absente et absence de lien dans l’export ; aucun héritage implicite par référence. Import et retrait sans effacer les décisions.
+
+- Diagnostic des places et références : nouvelle alerte « Stops éloignés de leur place », distances affichées dans les fiches et sur les étiquettes des stops concernés. Seuil indépendant de 0 à 1 000 m, réglable par curseur ou saisie dans l’application (500 m par défaut), conservé dans les sauvegardes.
+- Filtre début/fin de voyage dans l’application et le rapport HTML. Identification par la séquence complète des voyages GTFS ou par les extrémités des versions de routes HASTUS ; toutes les places du cas doivent satisfaire chaque filtre actif.
+- Champ « Préconisation CSched » distinct de la note de décision, en mode normal et en revue plein écran. Conservé dans le brouillon, la sauvegarde HTML, le journal et les exports CSV/PDF. Modifier la préconisation remet la fiche à valider.
+- Fonctionnalités bilingues FR/EN. Régénérer les rapports pour en bénéficier. Les distances sont à vol d’oiseau vers le centre de place utilisé par l’analyse, éventuellement calculé à partir des stops, et non des distances routières.
+- Accueil public : présentation générique de la démonstration et de la revue privée, sans mention de client.
+
 ## 13.01 — 2026-10-15
 
 - Carte des fiches HTML : clic pour afficher uniquement la carte sur tout l’écran, cadrée autour des stops avec identifiants et descriptions lisibles. Second clic pour revenir à la vue précédente. Recherche, défilement et tableaux ouverts/fermés conservés ; mode revue séparé. Accessible au clavier, cartes en ligne et hors ligne, FR/EN.
