@@ -2,23 +2,23 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="application-version" content="13.02">
+  <meta name="application-version" content="13.12">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The GTFS Missing Link</title>
-  <link rel="stylesheet" href="styles.css?v=13.02">
-  <link rel="stylesheet" href="clean-theme.css?v=13.02">
-  <link rel="stylesheet" href="place-code-layout.css?v=13.02">
-  <link rel="stylesheet" href="service-import-plan.css?v=13.02">
-  <link rel="stylesheet" href="tutorial.css?v=13.02">
-  <link rel="stylesheet" href="assignment-diagnostics.css?v=13.02">
+  <link rel="stylesheet" href="styles.css?v=13.12">
+  <link rel="stylesheet" href="clean-theme.css?v=13.12">
+  <link rel="stylesheet" href="place-code-layout.css?v=13.12">
+  <link rel="stylesheet" href="service-import-plan.css?v=13.12">
+  <link rel="stylesheet" href="tutorial.css?v=13.12">
+  <link rel="stylesheet" href="assignment-diagnostics.css?v=13.12">
 </head>
-<body>
+<body class="clean-theme">
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
     <strong>Ouverture directe détectée : les cartes OpenStreetMap peuvent être refusées.</strong>
     <span>Sous Windows, fermez cette page puis lancez <code>launch_windows.bat</code>. L’application doit s’ouvrir sur une adresse commençant par <code>http://127.0.0.1:</code>, et non par <code>file:///</code>.</span>
   </aside>
   <header class="hero">
-    <div class="hero-top"><div class="brand"><img class="brand-logo" src="assets/csched-logo.svg" alt="CSched"><span data-no-translate>The GTFS Missing Link</span></div><div class="app-preferences"><button id="open-tutorial" type="button" data-no-translate aria-haspopup="dialog" aria-controls="tutorial-dialog">Tutoriel</button><label>Langue de l’interface<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="classic">Classique</option><option value="genz">Gen Z</option><option value="clean">Épuré compact</option><option value="clean-dark">Épuré sombre</option></select></label></div><label class="legacy-theme-toggle" hidden><input id="genz-theme" type="checkbox">Gen Z</label></div>
+    <div class="hero-top"><div class="brand"><img class="brand-logo" src="assets/csched-logo.svg" alt="CSched"><span data-no-translate>The GTFS Missing Link</span></div><div class="app-preferences"><button id="open-tutorial" type="button" data-no-translate aria-haspopup="dialog" aria-controls="tutorial-dialog">Tutoriel</button><label>Langue de l’interface<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="clean">Épuré compact</option><option value="clean-dark">Épuré sombre</option></select></label></div></div>
     <div class="clean-copy"><h1>Votre réseau, plus simplement.</h1><p>Rassemblez vos données. Préparez la suite dans HASTUS.</p></div>
     <div class="hero-copy">
       <p class="eyebrow">PASSERELLE DE DONNÉES</p>
@@ -103,7 +103,7 @@
       <div class="place-report-options">
         <label><span>Données des arrêts</span><select id="network-stop-source"><option value="gtfs">GTFS chargé</option><option value="working" id="network-working-option" disabled>working/stops.txt · places affectées</option></select><small id="working-timetable-detail">Disponible dès qu’un parent_station est enregistré dans working/stops.txt.</small></label>
         <label><span>Langue du rapport</span><select id="network-language"><option value="auto" selected>Langue de l’interface</option><option value="fr">Français</option><option value="en">English</option></select></label>
-        <label><span>Thème</span><select id="network-theme"><option value="clean">Épuré compact</option><option value="classic">Classique</option></select></label>
+        <label><span>Thème</span><select id="network-theme"><option value="clean">Épuré compact</option></select></label>
         <label><span>Cartes</span><select id="network-map-mode"><option value="offline">Fixes et disponibles hors ligne</option><option value="online" selected>Connexion Internet</option></select></label>
       </div>
       <p>Requis : stops.txt, stop_times.txt, routes.txt et trips.txt. Un calendrier est nécessaire pour les horaires ; shapes.txt est facultatif pour les cartes. Aucune génération de places n’est requise.</p>
@@ -184,7 +184,7 @@
         <div class="place-report-copy"><p class="eyebrow">RAPPORT DE VALIDATION</p><h3 id="place-report-title">Une place par page, prête à valider avec le client</h3><small>Une synthèse classe d’abord les places par besoin de décision. Chaque fiche présente ensuite le nom, le code, les stops associés, les stops en dehors du périmètre et une carte OpenStreetMap.</small></div>
         <div class="place-report-options">
           <label><span>Langue du rapport</span><select id="place-report-language"><option value="auto" selected>Langue de l’interface</option><option value="fr">Français</option><option value="en">English</option></select></label>
-          <label><span>Thème du rapport HTML</span><select id="place-report-html-theme"><option value="clean" selected>Épuré compact</option><option value="classic">Classique</option></select><small>Le thème choisi est intégré au fichier HTML et conservé dans le rapport corrigé.</small></label>
+          <label><span>Thème du rapport HTML</span><select id="place-report-html-theme"><option value="clean" selected>Épuré compact</option></select><small>Le thème choisi est intégré au fichier HTML et conservé dans le rapport corrigé.</small></label>
           <label><span>Disposition</span><select id="place-report-orientation"><option value="portrait">Portrait</option><option value="landscape" selected>Paysage</option></select></label>
           <label><span>Cartes du rapport HTML</span><select id="place-report-html-map-mode"><option value="offline">Fixes et disponibles hors ligne</option><option value="online" selected>Cadrage fixe avec connexion Internet</option></select><small>Zoom et déplacement désactivés dans les deux modes. Le mode hors ligne intègre un fond vectoriel OSM dans le fichier lors de sa génération.</small></label>
           <label class="place-report-nearby"><input id="place-report-nearby" type="checkbox" checked><span>Inclure les stops proches hors périmètre</span></label>
@@ -213,25 +213,25 @@
       <div class="place-report-actions"><button id="scu-save" type="button" class="secondary" disabled>Enregistrer dans un dossier GTFS…</button><button id="scu-download" type="button" class="primary" disabled>Télécharger le ZIP avec les imports</button></div>
     </section>
   </main>
-  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v13.02</span></footer>
-  <script src="report-package.js?v=13.02"></script>
-  <script src="report-payload.js?v=13.02"></script>
-  <script src="report-network.js?v=13.02"></script>
-  <script src="report-timetable-export.js?v=13.02"></script>
-  <script src="report-network-document.js?v=13.02"></script>
-  <script src="report-editor.js?v=13.02"></script>
-  <script src="app-translations.js?v=13.02"></script>
-  <script src="app-shell.js?v=13.02"></script>
-  <script src="workspace-storage.js?v=13.02"></script>
-  <script src="report-existing.js?v=13.02"></script>
-  <script src="assignment-diagnostics.js?v=13.02"></script>
-  <script src="scheduling-units.js?v=13.02"></script>
-  <script src="service-import-plan.js?v=13.02"></script>
-  <script src="working-timetable.js?v=13.02"></script>
-  <script src="day-route-summary.js?v=13.02"></script>
-  <script src="app.js?v=13.02"></script>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v13.12</span></footer>
+  <script src="report-package.js?v=13.12"></script>
+  <script src="report-payload.js?v=13.12"></script>
+  <script src="report-network.js?v=13.12"></script>
+  <script src="report-timetable-export.js?v=13.12"></script>
+  <script src="report-network-document.js?v=13.12"></script>
+  <script src="report-editor.js?v=13.12"></script>
+  <script src="app-translations.js?v=13.12"></script>
+  <script src="app-shell.js?v=13.12"></script>
+  <script src="workspace-storage.js?v=13.12"></script>
+  <script src="report-existing.js?v=13.12"></script>
+  <script src="assignment-diagnostics.js?v=13.12"></script>
+  <script src="scheduling-units.js?v=13.12"></script>
+  <script src="service-import-plan.js?v=13.12"></script>
+  <script src="working-timetable.js?v=13.12"></script>
+  <script src="day-route-summary.js?v=13.12"></script>
+  <script src="app.js?v=13.12"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
-  <script src="tutorial.js?v=13.02"></script>
+  <script src="tutorial.js?v=13.12"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 # The GTFS Missing Link
 
-**Version 13.02** — voir les [notes de version](CHANGELOG.md).
+**Version 13.12** — voir les [notes de version](CHANGELOG.md).
 
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
@@ -30,7 +30,7 @@ Révoquer un accès n'efface pas les copies déjà téléchargées.
 ### Accueil en ligne v13 et scénarios iPad
 
 GitHub Pages ouvre un menu FR/EN : application actuelle, démonstration fictive
-de revue, ouverture locale d’un rapport HTML privé et archives v12/v11/v10.
+de revue, ouverture locale d’un rapport HTML privé et archives v13.02/v12/v11/v10.
 Les archives ont leur propre base navigateur ; utiliser une copie des dossiers
 de travail avec une ancienne version. Le lancement local reste `index.html`.
 Le paquet public est construit par `node scripts/build-pages.cjs` à partir d’une
@@ -51,7 +51,7 @@ les fonctions de lecture de l’application, vérifie les originaux par SHA-256,
 produit les rapports privés FR/EN et le résultat de recette sous
 `output/oc-transpo-review/` (exclu de Git). Les contrôles tactiles et résolutions
 iPad sont simulés dans Edge ; ils ne remplacent pas un essai Safari sur iPad réel.
-`scripts/test-launcher-browser.cjs` vérifie le menu, les quatre versions,
+`scripts/test-launcher-browser.cjs` vérifie le menu, les cinq versions,
 la démonstration et la réouverture locale d’une copie HTML téléchargée.
 
 ### Workflows
@@ -92,6 +92,30 @@ Internet. Le CSV distingue affectations actuelles et propositions non appliquée
 il s’agit d’un diagnostic, pas d’un fichier d’import HASTUS.
 
 ### Revue client du diagnostic HTML
+
+Depuis la v13.12, la liste **Validations principales** est affichée par défaut.
+Les stops sans coordonnées exploitables ont une fiche dédiée dans **Liste à part**.
+Ils ne figurent pas dans les tableaux de validation géographique ; les données
+originales et le détail contextuel des places restent conservés.
+Les cas impliquant une place avec uniquement des stops non TP, sans coordonnées
+de place exploitables ou sans lien direct dans la matrice deadhead fournie passent
+aussi dans cette liste secondaire. Une comparaison mixte reste entière, à part.
+Sans source TP ou matrice, un statut inconnu n'est jamais traité comme une absence.
+Les deux listes restent consultables ensemble, et leurs compteurs sont distincts.
+
+**Validation par lot** regroupe les fiches visibles selon le type, les motifs
+de mise à part et les catégories de validation. **Appliquer à tous · Valider**
+demande confirmation du nombre concerné. Les filtres et le périmètre TP sont
+respectés ; les cas masqués et les autres groupes ne sont pas validés. Le retour
+en attente est également confirmé. Chaque fiche garde son événement dans le
+journal, sa note et sa préconisation CSched ; aucune affectation n'est modifiée.
+CSV et impression suivent la liste et les filtres actifs. L'export client garde
+toutes les fiches cochées, même dans l'autre liste. La copie HTML et le brouillon
+conservent les validations et le choix de liste. Régénérer les rapports existants.
+
+Seuls **Épuré compact** et **Épuré sombre** sont proposés dans l'application.
+Les sauvegardes utilisant Classique ou Gen Z s'ouvrent en Épuré compact.
+Les anciennes versions archivées gardent leur présentation d'origine.
 
 L’import facultatif **Matrice deadhead / HLP** se trouve à côté des exports de
 stops et de versions de routes. Il accepte le format texte HASTUS fourni :
@@ -192,7 +216,7 @@ une recommandation et les stops associés avec statut TP et coordonnées.
 Les stops sans coordonnées restent dans les listes. Les débuts/fins identifiés
 sont signalés sans déduire que les autres stops ne servent jamais d’extrémité.
 Les cartes se chargent à l’ouverture des fiches ; aucune fusion ou modification
-des références n’est appliquée par ce diagnostic. FR/EN et les quatre thèmes
+des références n’est appliquée par ce diagnostic. FR/EN et les thèmes épuré clair et sombre
 sont pris en charge.
 
 Dans le rapport HTML, les étiquettes de place sur la carte sont cliquables (également au clavier ou

@@ -43,7 +43,7 @@ function initAppShell(){
     if(element.closest('option')&&!staticSelects.has(element.closest('select')?.id))return true;
     return false;
   }
-  let language='fr',theme='classic',observer;
+  let language='fr',theme='clean',observer;
   function translate(roots=areas){
     observer?.disconnect();
     for(const area of roots){const walker=document.createTreeWalker(area,NodeFilter.SHOW_TEXT);while(walker.nextNode()){const node=walker.currentNode;if(isData(node.parentElement))continue;let value=node.nodeValue,prior=originals.get(node);if(!prior||value!==prior.rendered){prior={original:value,rendered:value};originals.set(node,prior);}const key=prior.original.trim();let translated=language==='en'?(english[key]||(typeof appDynamicEnglish==='function'?appDynamicEnglish(key):null)):null;if(language==='en'&&!translated&&/^GTFS chargé · \d+ fichiers? reconnu/.test(key))translated='GTFS loaded · '+key.match(/\d+/)[0]+' recognized files';if(language==='en'&&!translated){if(/^\d+ fichiers? sur \d+ chargés?$/.test(key))translated=key.replace(/(\d+) fichiers? sur (\d+) chargés?/,'$1 of $2 files loaded');else if(/^Regrouper avec un rayon de \d+ m$/.test(key))translated=key.replace('Regrouper avec un rayon de','Regroup with a radius of');else if(/^(Calcul intelligent initial|Rayon général initial) : \d+ m$/.test(key))translated=key.replace('Calcul intelligent initial','Initial smart radius').replace('Rayon général initial','Initial general radius');}const next=translated?prior.original.replace(key,translated):prior.original;if(node.nodeValue!==next)node.nodeValue=next;prior.rendered=node.nodeValue;}
@@ -56,12 +56,12 @@ function initAppShell(){
     for(const area of areas)observer?.observe(area,{subtree:true,childList:true,characterData:true});
   }
   window.applyAppPreferences=function(nextTheme,nextLanguage,persist=true){
-    theme=['classic','genz','clean','clean-dark'].includes(nextTheme)?nextTheme:'classic';language=nextLanguage==='en'?'en':'fr';
+    theme=nextTheme==='clean-dark'?'clean-dark':'clean';language=nextLanguage==='en'?'en':'fr';
     document.body.classList.toggle('genz-theme',theme==='genz');document.body.classList.toggle('clean-theme',theme==='clean'||theme==='clean-dark');document.body.classList.toggle('clean-dark-theme',theme==='clean-dark');
-    document.getElementById('genz-theme').checked=theme==='genz';document.getElementById('app-theme').value=theme;document.getElementById('app-language').value=language;
+    document.getElementById('app-theme').value=theme;document.getElementById('app-language').value=language;
     document.documentElement.lang=language;
     for(const area of areas)area.lang=language;
-    if(persist){localStorage.setItem('hastus-ui-theme',theme);localStorage.setItem('hastus-ui-language',language);localStorage.setItem('hastus-genz-theme',theme==='genz'?'1':'0');}
+    if(persist){localStorage.setItem('hastus-ui-theme',theme);localStorage.setItem('hastus-ui-language',language);localStorage.removeItem('hastus-genz-theme');}
     if(typeof refreshSchedulingUnits==='function')refreshSchedulingUnits();
     if(typeof refreshServiceImportPlan==='function')refreshServiceImportPlan();
     if(typeof refreshAssignmentDiagnostics==='function')refreshAssignmentDiagnostics();
@@ -73,6 +73,6 @@ function initAppShell(){
     for(const record of records){const element=record.target.nodeType===3?record.target.parentElement:record.target;if(!isData(element))roots.add(element);else if(element?.closest('#decision-list'))for(const node of record.addedNodes||[])if(node.nodeType===1){if(node.matches(decisionControls))roots.add(node);for(const control of node.querySelectorAll(decisionControls))roots.add(control);}}
     if(roots.size)translate([...roots].filter(element=>![...roots].some(other=>other!==element&&other.contains(element))));
   });
-  applyAppPreferences(localStorage.getItem('hastus-ui-theme')||(localStorage.getItem('hastus-genz-theme')==='1'?'genz':'clean'),localStorage.getItem('hastus-ui-language')||'fr',false);
+  applyAppPreferences(localStorage.getItem('hastus-ui-theme')||'clean',localStorage.getItem('hastus-ui-language')||'fr',false);
   for(const id of ['app-theme','app-language'])document.getElementById(id).addEventListener('change',()=>{applyAppPreferences(document.getElementById('app-theme').value,document.getElementById('app-language').value);queueQuickSave();});
 }

@@ -12,6 +12,7 @@ const {chromium}=require(process.argv[2]||'playwright');
       await page.goto('https://assessment.test/'+language);
       await page.locator('#assessment-review-tutorial').waitFor({state:'visible'});
       for(let i=0;i<7;i++)await page.locator('#review-tutorial-next').click();
+      await page.locator('#assessment-queue').selectOption('all');
       assert.equal(await page.locator('#cases article').count(),5);
       assert.equal(await page.locator('#overview-body tr').count(),4,'One row per place despite overlapping reference and place cases');
       assert.ok(await page.locator('#overview-body tr[data-overview-place="C"] td:last-child [data-case-link]').count()>=2,'All overlapping cases remain reachable');

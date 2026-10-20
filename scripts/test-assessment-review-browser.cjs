@@ -19,6 +19,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.goto(`http://127.0.0.1:${server.address().port}/fr`);
     await page.locator('#assessment-review-tutorial').waitFor({state:'visible'});
     for(let i=0;i<7;i++)await page.locator('#review-tutorial-next').click();
+    await page.locator('#assessment-queue').selectOption('all');
     assert.equal(await page.locator('#assessment-review-tutorial').isVisible(),false);
     async function assertOverviewFits(){
       const original=await page.locator('#overview-body').innerHTML();
@@ -194,7 +195,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     assert.equal(await reopened.locator('#assessment-review-tutorial').isVisible(),false);
     await other.close();
     await page.goto(`http://127.0.0.1:${server.address().port}/en`);await page.locator('#assessment-review-tutorial').waitFor({state:'visible'});
-    assert.ok((await page.locator('#review-tutorial-title').textContent()).includes('Welcome'));await page.locator('#review-tutorial-close').click();
+    assert.ok((await page.locator('#review-tutorial-title').textContent()).includes('Welcome'));await page.locator('#review-tutorial-close').click();await page.locator('#assessment-queue').selectOption('all');
     await assertOverviewFits();
     await page.locator('#start-assessment-review').click();await page.locator('#review-show-all').click();
     await page.locator('#review-toggle-details').click();
@@ -203,7 +204,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.keyboard.press('Escape');assert.equal(await page.locator('#assessment-review').isVisible(),false);
     // No external network needed: check online iframe/overlay sizing with a stub background.
     await page.route('https://www.openstreetmap.org/**',route=>route.fulfill({contentType:'text/html',body:'<body style="background:#dbe2d4">Synthetic OSM background</body>'}));
-    await page.goto(`http://127.0.0.1:${server.address().port}/en-online`);await page.locator('#review-tutorial-close').click();
+    await page.goto(`http://127.0.0.1:${server.address().port}/en-online`);await page.locator('#review-tutorial-close').click();await page.locator('#assessment-queue').selectOption('all');
     await page.locator('#start-assessment-review').click();await page.setViewportSize({width:1366,height:480});await assertMapFits();
     const aligned=await page.evaluate(()=>{const stage=document.querySelector('#review-map .map-stage'),a=stage.querySelector('svg').getBoundingClientRect(),b=stage.querySelector('iframe').getBoundingClientRect();return ['x','y','width','height'].every(key=>Math.abs(a[key]-b[key])<1);});
     assert.ok(aligned,'Online background and SVG keep identical dimensions and position');
@@ -211,7 +212,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     assert.equal(await page.locator('#map-stops-body tr').count(),2,'Online fixed maps allow label interaction without enabling map pan or zoom');
     await page.locator('#map-stops-close').click();
     const tablet=await browser.newContext({viewport:{width:820,height:1180},hasTouch:true}),touchPage=await tablet.newPage();
-    await touchPage.goto(`http://127.0.0.1:${server.address().port}/en`);await touchPage.locator('#review-tutorial-close').click();
+    await touchPage.goto(`http://127.0.0.1:${server.address().port}/en`);await touchPage.locator('#review-tutorial-close').click();await touchPage.locator('#assessment-queue').selectOption('all');
     await touchPage.locator('.map-host [data-map-place="AAA"]').first().tap();
     assert.equal(await touchPage.locator('#map-stops-body tr').count(),2,'Label popup works on touch screens');
     await touchPage.screenshot({path:path.join(root,'tmp/assessment-label-stops-tablet.png')});

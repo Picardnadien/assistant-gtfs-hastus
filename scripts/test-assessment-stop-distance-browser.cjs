@@ -21,6 +21,7 @@ const {chromium}=require(process.argv[2]||'playwright');
       await page.goto('https://assessment.test/'+language);
       await page.locator('#assessment-review-tutorial').waitFor({state:'visible'});
       for(let i=0;i<7;i++)await page.locator('#review-tutorial-next').click();
+      await page.locator('#assessment-queue').selectOption('all');
       await page.locator('#type').selectOption('distantStop');
       assert.equal(await page.locator('#cases article').count(),2);
       await page.locator('#endpoint-scope').check();

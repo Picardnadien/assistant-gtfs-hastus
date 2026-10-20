@@ -19,7 +19,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     await page.locator('[data-ad-search]').fill('');await page.locator('[data-ad-filter]').selectOption('reference');
     await page.locator('[data-ad-case]').nth(1).locator(':scope > summary').click();assert.ok((await page.locator('[data-ad-case]').nth(1).textContent()).includes('004'));assert.equal(await page.locator('[data-ad-case]').nth(1).locator('iframe').count(),0);
     await page.locator('#app-language').selectOption('en');assert.ok((await page.locator('#assignment-diagnostics').textContent()).includes('Distant or suspect references'));
-    for(const theme of ['clean','clean-dark','classic','genz']){
+    for(const theme of ['clean','clean-dark']){
       await page.locator('#app-theme').selectOption(theme);await page.locator('#assignment-diagnostics').scrollIntoViewIfNeeded();
       const palette=await page.locator('#assignment-diagnostics').evaluate(root=>{
         const ordinary=root.querySelector('.place-code:not(.reference-code)'),ref=root.querySelector('.reference-code');

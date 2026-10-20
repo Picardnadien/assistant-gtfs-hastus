@@ -76,7 +76,7 @@ assert.equal(settingsContext.placeCodeMaxLength(),8);
 assert.equal(settingsContext.workspaceSnapshot().settings.placeCodeMaxLength,8);
 assert.equal(settingsContext.workspaceSnapshot().settings.placeCodeCase,'lower');
 settingsFields['place-report-html-theme'].value='classic';
-assert.equal(settingsContext.workspaceSnapshot().settings.placeReportHtmlTheme,'classic');
+assert.equal(settingsContext.workspaceSnapshot().settings.placeReportHtmlTheme,'clean');
 settingsContext.restoreWorkspaceSnapshot({...savedWorkspace,settings:{...savedWorkspace.settings,placeReportHtmlTheme:'clean'}});
 assert.equal(settingsFields['place-report-html-theme'].value,'clean');
 assert.equal(settingsContext.groupValidationIssues().length,0);
@@ -210,7 +210,7 @@ for(const limit of [6,8])for(const lang of ['fr','en']){
   assert.equal(payload.language,lang); assert.equal(payload.places.length,3);
   assert.equal(payload.placeCodeMaxLength,limit);
   assert.equal(payload.hideFileExports,lang==='fr');
-  assert.equal(payload.reportTheme,lang==='fr'?'classic':'clean');
+  assert.equal(payload.reportTheme,'clean');
   assert.ok(html.includes('<body class="'+payload.reportTheme+'-report">'));
   assert.ok(html.includes('function reportTimetableExportTools'));
   assert.equal(payload.networkMaps,undefined);

@@ -10,6 +10,7 @@ const {chromium}=require(process.argv[2]||'playwright');
       await page.route('https://presentation.test/**',r=>r.fulfill({contentType:'text/html',body:fs.readFileSync(`tmp/assessment-deadhead-${lang}.html`,'utf8')}));
       await page.goto('https://presentation.test/report');
       for(let i=0;i<7;i++)await page.locator('#review-tutorial-next').click();
+      await page.locator('#assessment-queue').selectOption('all');
       assert.equal(await page.locator('#export-client-selection').isDisabled(),true);
       await page.locator('#overview > summary').click();
       assert.equal(await page.locator('#overview-body').isVisible(),false);

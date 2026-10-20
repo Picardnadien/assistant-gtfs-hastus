@@ -1,6 +1,6 @@
 // Deliberately package only application resources, never the repository root.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
-const ARCHIVES=['12.0','11.0','10.0'];
+const ARCHIVES=['13.02','12.0','11.0','10.0'];
 function buildPages(root,destination){
   const version=fs.readFileSync(path.join(root,'VERSION'),'utf8').trim();
   if(!/^\d+\.\d+(?:\.\d+)?$/.test(version))throw new Error('Invalid VERSION');

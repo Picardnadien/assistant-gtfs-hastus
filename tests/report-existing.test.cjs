@@ -143,7 +143,7 @@ for(const language of ['fr','en']){
   assert.ok(joined.overviewCodesHtml.includes('JOIN')&&joined.overviewCodesHtml.includes('TARGET'));
   assert.ok(joined.overviewCodesHtml.includes('<small class="code-description">Place JOIN</small>')&&joined.overviewCodesHtml.includes('<small class="code-description">Place TARGET</small>'),'Overview descriptions belong to the corresponding badges');
   assert.ok(aaa.html.includes('<small class="code-description">Place AAA</small>'),'Table place badges include descriptions too');
-  assert.ok(cases.find(c=>c.kind==='issue').overviewCodesHtml.includes('Missing stop'),'Unresolved stop descriptions are not lost when removing the column');
+  assert.ok(cases.find(c=>c.kind==='unlocated'&&c.code==='missing-stop').overviewCodesHtml.includes('Missing stop'),'Unresolved stop descriptions are not lost when removing the column');
   for(const c of cases){
     assert.ok(!/<div|<br/.test(c.overviewCodesHtml),'Overview entries contain no forced line breaks');
   }
@@ -215,13 +215,13 @@ async function testPrint(){
   const get=id=>{if(!nodes.has(id))nodes.set(id,{value:['kind','type','stop-scope'].includes(id)?'all':'',innerHTML:'',textContent:'',hidden:false,addEventListener(event,handler){this[event]=handler;},querySelectorAll:()=>[],querySelector:()=>null,showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);};
   const maps=Object.fromEntries(cases.map(c=>[c.id,ctx.existingReportMap(c.points,features,t)]));
   const tpMaps=Object.fromEntries(cases.map(c=>[c.id,ctx.existingReportMap(c.points.filter(p=>p.kind==='place'||p.timing===true),features,t)]));
-  get('assessment-data').textContent=JSON.stringify({cases:cases.map(({points,...c})=>c),maps,tpMaps,text:t,csvRows:ctx.existingReportCsvRows(model,cases,t),tpView:ctx.existingReportTimingPointView(model,'en'),filename:'Synthetic'});
+  get('assessment-data').textContent=JSON.stringify({presentation:{queue:'all'},cases:cases.map(({points,...c})=>c),maps,tpMaps,text:t,csvRows:ctx.existingReportCsvRows(model,cases,t),tpView:ctx.existingReportTimingPointView(model,'en'),filename:'Synthetic'});
   const printed=[],preview={closed:false,document:{open(){},write(html){this.html=html;},close(){},createElement:()=>({}),getElementById:id=>id==='print-cases'?{append:node=>printed.push(node)}:{}},print(){}};
   const printCtx=vm.createContext({console,setTimeout,window:{open:()=>preview,addEventListener(){}},location:{hash:''},document:{getElementById:get,documentElement:{lang:'en'},querySelectorAll:()=>[],querySelector:()=>({outerHTML:'<header>CSched test</header>'}),addEventListener(){}}});
   vm.runInContext(fs.readFileSync(path.join(root,'report-existing.js'),'utf8'),printCtx);
   printCtx.existingClientReportRuntime(printCtx.existingReportCsv);
-  assert.ok(get('page-status').textContent.includes('30'));
-  assert.equal((get('cases').innerHTML.match(/<article /g)||[]).length,30,'All cases are on one page');
+  assert.ok(get('page-status').textContent.includes(String(cases.length)));
+  assert.equal((get('cases').innerHTML.match(/<article /g)||[]).length,cases.length,'All cases are on one page');
   get('open-assessment-guide').onclick();assert.equal(get('assessment-guide').open,true);
   await get('print-assessment').onclick();assert.equal(printed.length,cases.length,'print includes all pages');
   assert.ok(preview.document.html.includes('Save as PDF'));assert.ok(printed.some(node=>node.innerHTML.includes('QUIET17')));
@@ -231,13 +231,13 @@ async function testPrint(){
   get('stop-scope').value='tp';get('stop-scope').change();
   assert.ok(get('cases').innerHTML.includes('stop-AAA')&&!get('cases').innerHTML.includes('other-AAA'));
   printed.length=0;await get('print-assessment').onclick();
-  assert.equal(printed.length,cases.length-1,'Filtered print omits unresolved non-TP case');
+  assert.equal(printed.length,ctx.existingReportTimingPointView(model,'en').cases.length,'Filtered print follows TP cases');
   assert.ok(!printed.some(node=>node.innerHTML.includes('other-AAA')),'Filtered print removes non-TP map markers as well as table rows');
   assert.ok(printed.some(node=>node.innerHTML.includes('Attached places : AAA · ZZZ')),'Compact place/reference map labels are preserved');
   assert.ok(printed.some(node=>node.innerHTML.includes(tpMaps[cases[0].id])),'Print uses the reframed TP map');
   get('stop-scope').value='all';get('stop-scope').change();
   assert.ok(get('cases').innerHTML.includes('other-AAA'),'All-stops option restores original content');
-  console.log('PASS: live guide and print preview of all 30 filtered records, not only the first page.');
+  console.log('PASS: live guide and print preview of all filtered records, not only the first page.');
 }
 testPrint().catch(error=>{console.error(error);process.exitCode=1;});
 

@@ -1,5 +1,14 @@
 # Notes de version
 
+## 13.12 — 2026-10-20
+
+- Diagnostic HTML : deux listes, validations principales et liste secondaire. Stops sans coordonnées dans des fiches dédiées, sans position inventée ni validation géographique.
+- Les cas impliquant une place composée uniquement de stops non TP ou sans lien direct dans la matrice deadhead fournie sont classés à part, y compris les comparaisons mixtes. Les statuts inconnus restent distincts d'une absence ; sans matrice, aucune exclusion pour deadhead.
+- Validation par lot des cas visibles similaires (même type de fiche, mêmes motifs et catégories), avec confirmation, retour en attente et journal individuel. Les notes et préconisations CSched sont conservées. Aucune correction GTFS/HASTUS n'est appliquée.
+- Listes intégrées à la recherche, la revue plein écran, l'autosauvegarde, la sélection client et aux exports CSV/PDF. Les sources restent intactes ; régénérer les anciens rapports.
+- Retrait des thèmes Classique et Gen Z de la version courante. Les anciennes préférences migrent vers Épuré compact ; Épuré sombre reste disponible.
+- Accueil : ajout de la v13.02 aux versions antérieures, isolée des sauvegardes navigateur de la version courante.
+
 ## 13.02 — 2026-10-20
 
 - Sommaire HTML repliable, choix regroupé/non regroupé et filtres compacts sur une rangée.
