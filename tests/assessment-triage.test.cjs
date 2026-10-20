@@ -8,26 +8,35 @@ const source={timingPointIds:['a','d','missing1','missing2'],timingPointSource:'
     {id:'B',description:'Non TP only',points:[stop('b')]},
     {id:'C',description:'Non TP and no link',points:[stop('c')]},
     {id:'D',description:'TP without deadhead',points:[stop('d')]},
-    {id:'E',description:'Empty but located garage',lat:45,lon:-75,points:[]}],
+    {id:'E',description:'Empty but located garage',lat:45,lon:-75,points:[]},
+    {id:'F',description:'Place without coordinates',points:[]}],
   parsed:{deadhead:ctx.parseDeadheadMatrix('linkdt;A;B;0\nlinkdt;E;A;0')},
   groupingCandidates:[{entity_type:'PLACES_PROCHES',place_a_id:'A',place_b_id:'B',distance_m:10}],
+  unusedPlaceStops:[{place_id:'B',stop_id:'b',stop_description:'Description b',status:'ABSENT_DES_VERSIONS'},{place_id:'C',stop_id:'c',stop_description:'Description c',status:'ABSENT_DES_VERSIONS'}],
   decisions:[{id:'missing1',description:'Description missing1',originalPlaceId:'A',status:'error',lat:null,lon:null}]};
 const before=JSON.stringify(source),model=ctx.existingClientReportModel(source),cases=ctx.existingClientReportCases(model,'en');
 assert.equal(model.unlocated.length,2,'No duplicate stop from the failed decision');
 assert.equal(ctx.existingClientReportModel({...source,decisions:[...source.decisions,{id:':a',originalPlaceId:'A',choice:'A',status:'assigned'}]}).unlocated.length,2,'Decision without duplicated coordinates does not invalidate a located physical stop');
 const place=code=>cases.find(c=>c.kind==='place'&&c.code===code);
-assert.ok(place('A').secondaryReasons.includes('nonTimingPoints'),'Mixed grouping moved intact');
-assert.ok(place('B').secondaryReasons.includes('nonTimingPoints'));
-assert.deepEqual(Array.from(place('C').secondaryReasons),['noDeadhead','nonTimingPoints']);
-assert.deepEqual(Array.from(place('D').secondaryReasons),['noDeadhead']);
+assert.equal(place('A').secondaryReasons.length,0,'Grouping with non-TP participants stays main');
+assert.equal(place('B').secondaryReasons.length,0,'Grouping + unused stays main; do not hide the grouping');
+assert.deepEqual(Array.from(place('C').secondaryReasons),['nonTimingPoints'],'Only the unused category goes secondary');
+assert.equal(place('D').secondaryReasons.length,0,'No direct deadhead is not a triage criterion');
+assert.equal(place('F').secondaryReasons.length,0,'Missing place coordinates are not missing stop coordinates');
 assert.equal(place('E').secondaryReasons.length,0,'Empty garage is not inferred non-TP');
 assert.equal(cases.filter(c=>c.kind==='unlocated').length,2);
 assert.equal(cases.filter(c=>c.kind==='issue').length,0,'Missing-coordinate decision goes only to dedicated list');
 assert.ok(!place('A').html.includes('Stop ID: missing1'),'Unlocated stop is not a geographic validation row');
 const withoutMatrix=ctx.existingClientReportModel({...source,parsed:{}});
 assert.ok(!ctx.existingClientReportCases(withoutMatrix,'en').some(c=>c.secondaryReasons.includes('noDeadhead')));
-const unknown=ctx.existingClientReportModel({...source,timingPointIds:undefined,parsed:{}});
+const unknown=ctx.existingClientReportModel({...source,timingPointIds:undefined,parsed:{},unusedPlaceStops:[]});
 assert.ok(!ctx.existingClientReportCases(unknown,'en').some(c=>c.secondaryReasons.includes('nonTimingPoints')));
+const withoutUnused=ctx.existingClientReportCases(ctx.existingClientReportModel({...source,unusedPlaceStops:[]}), 'en');
+assert.equal(withoutUnused.find(c=>c.code==='C').secondaryReasons.length,0,'Known non-TP place without the review category stays main');
+const withReference=ctx.existingClientReportCases(ctx.existingClientReportModel({...source,referenceAnomalies:[{place_a_id:'B',place_b_id:'C',reference_place_id:'B',anomaly:'REFERENCE_ELOIGNEE',distance_m:800}]}),'en');
+assert.equal(withReference.find(c=>c.kind==='reference').secondaryReasons.length,0,'Reference alert without deadhead stays main');
+assert.equal(withReference.find(c=>c.kind==='place'&&c.code==='C').secondaryReasons.length,0,'Reference + unused stays main');
+assert.ok(cases.filter(c=>c.secondaryReasons.length).every(c=>c.kind==='unlocated'||c.tags.length===1&&c.tags[0]==='unused'));
 const plain=ctx.existingClientReportCases(ctx.existingClientReportModel({...source,groupingCandidates:[]}), 'en');
 assert.equal(plain.find(c=>c.code==='A').secondaryReasons.length,0,'Missing stop does not exclude a located TP place');
 const tp=ctx.existingReportTimingPointView(model,'en');
@@ -54,4 +63,4 @@ for(const language of ['fr','en']){
   const html=ctx.existingClientReportHtml(model,list,maps,{language,theme:'clean',logo:'',brand:'',client:'Synthetic-triage',date:'2026-10-20',offline:true});
   fs.writeFileSync(`tmp/assessment-triage-${language}.html`,html);
 }
-console.log('PASS: separate missing stops, no duplicates, strict triage, unknown vs absent, mixed comparisons, stable TP classification, batch audit/notes/scopes and export metadata.');
+console.log('PASS: secondary list limited to missing-stop coordinates and unused-only cases; deadhead, place coordinates and mixed alerts stay main; stable TP classification, batch audit and exports.');
