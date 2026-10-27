@@ -25,7 +25,7 @@ context.initAppShell();assert.ok(classes.has('clean-theme'));assert.ok(classes.h
 assert.equal(context.placeReportLanguage(),'en');assert.equal(context.reportLanguage('network-language'),'en');
 context.applyAppPreferences('clean','fr');assert.ok(!classes.has('clean-dark-theme'));assert.equal(context.placeReportLanguage(),'fr');
 field('place-report-language').value='en';context.applyAppPreferences('clean-dark','fr');assert.equal(context.placeReportLanguage(),'en');
-context.applyAppPreferences('genz','en');assert.ok(classes.has('clean-theme'));assert.ok(!classes.has('clean-dark-theme'));assert.ok(!classes.has('genz-theme'));assert.equal(field('app-theme').value,'clean');assert.ok(!select('app-theme').includes('classic')&&!select('app-theme').includes('genz'));
+context.applyAppPreferences('genz','en');assert.ok(classes.has('clean-theme'));assert.ok(!classes.has('clean-dark-theme'));assert.ok(!classes.has('genz-theme'));assert.equal(field('app-theme').value,'clean');assert.match(html,/id="app-theme" type="checkbox" role="switch"/);assert.equal(field('app-theme').checked,false);
 assert.equal(context.placeCodeMaxLength(),8);assert.equal(context.distanceValue(null),200);assert.equal(context.placeReportHtmlMapMode(),'online');
 vm.runInContext('updateLoadedGtfsUi=()=>{};refreshWorkingTimetableAccess=()=>{};setMode=()=>{};',context);
 const saved={parsed:{stops:{headers:[],rows:[]},times:{headers:[],rows:[]}},settings:{radius:0,placeCodeMaxLength:6,placeReportOrientation:'portrait',placeReportHtmlMapMode:'offline',placeReportLanguage:'fr',networkLanguage:'en',networkMapMode:'offline',uiTheme:'clean-dark',uiLanguage:'en'}};

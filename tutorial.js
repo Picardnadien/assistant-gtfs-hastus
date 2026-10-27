@@ -7,21 +7,21 @@ const TutorialGuide={
         'Sans GTFS : choisissez « Versions de routes + liste de stops HASTUS ». Les versions identifient les timing points ; la liste apporte les coordonnées et les associations aux places.',
         'Choisissez un espace de travail local pour conserver les originaux et reprendre votre projet. Le navigateur vous demandera l’autorisation d’accéder au dossier.'
       ],note:'Lancez l’outil avec launch_windows.bat (Windows) ou launch.command (Mac), plutôt qu’en ouvrant index.html directement.'},
-      {title:'Regrouper les arrêts proches',lead:'Contexte 01 · Regroupement géographique, pour un nouveau client.',items:[
+      {title:'Regrouper les arrêts proches',lead:'Module 01 · Préparation GTFS, pour un nouveau client ou un client existant.',items:[
         'Vérifiez les colonnes reconnues et la source des timing points. Réglez le rayon avec le curseur ou la saisie manuelle, de 0 à 1 000 m (200 m par défaut).',
         'Choisissez des codes de place de 6 ou 8 caractères et leur casse. La renumérotation des stop_id reste facultative : conservez les identifiants existants si nécessaire.',
         'Lancez le regroupement, puis vérifiez chaque carte, le code, la description et les stops associés. Vous pouvez modifier le rayon individuellement.',
         'Si un stop sort du rayon, utilisez son menu d’affectation. Si aucune autre place ne peut l’inclure, le bouton de création permet de générer une place pour ce stop uniquement.',
         'Annuler / Rétablir concerne le code et la description de chaque place, pas le rayon ni les affectations. Cet historique est limité à la session.'
       ],note:'La proximité géographique ne suffit pas à valider un regroupement : vérifiez le sens de circulation et les manœuvres aux débuts et fins de voyages.'},
-      {title:'Analyser un client existant',lead:'Contexte 01 · Utilisez les associations HASTUS déjà en place.',items:[
+      {title:'Analyser un client existant',lead:'Module 02 · Diagnostic du réseau et préparation des corrections HASTUS.',items:[
         'Choisissez le parcours client existant et chargez la liste des stops et places, avec les places de référence si disponibles. Vérifiez la correspondance des colonnes.',
         'Examinez les rattachements suggérés et les références suspectes. Le rayon de proximité et le seuil d’alerte des références ont des rôles différents.',
         'Contrôlez les stops qui possèdent une place sans être utilisés comme timing points dans la source retenue.',
-        'Le rapport HTML « Diagnostic HASTUS » classe les places par type de validation et présente les références suspectes. Il est en consultation seule.'
+        'Le rapport HTML « Diagnostic HASTUS » classe les places par type de validation et présente les références suspectes. Les corrections sont séparées des sources ; exportez le CSV proposé et le journal avant/après, puis confirmez le format avec votre import HASTUS.'
       ],note:'Un stop absent de la liste des timing points n’est pas nécessairement inutilisé. Confirmez son rôle avant de supprimer une association.'},
-      {title:'Consulter les cartes et timetables',lead:'Contexte 02 · Explorer le réseau et ses horaires.',items:[
-        'Choisissez le workflow 02 Cartes des routes et timetables. Utilisez le GTFS chargé ou working/stops.txt quand des places y sont affectées. Les shapes donnent les tracés ; sans shapes, les stops restent visibles.',
+      {title:'Consulter les cartes et timetables',lead:'Outils complémentaires · Explorer le réseau et ses horaires.',items:[
+        'Ouvrez Outils complémentaires puis Cartes des routes et timetables. Utilisez le GTFS chargé ou working/stops.txt quand des places y sont affectées. Les shapes donnent les tracés ; sans shapes, les stops restent visibles.',
         'Le rapport réseau est séparé de la validation des places. Sélectionnez une date de service, une route et une direction, ou les deux directions.',
         'Ouvrez la section Timetable d’une route pour charger sa grille. Les variantes sont réunies, avec les codes de place, les headways et le choix AM/PM ou Military (24 h).',
         'Les boutons Excel et PDF exportent les horaires selon les filtres choisis. Vérifiez la date et les timing points avant de transmettre le document.'
@@ -54,21 +54,21 @@ const TutorialGuide={
         'Without GTFS: choose “Route versions + HASTUS stop list”. Route versions identify timing points; the stop list supplies coordinates and place assignments.',
         'Choose a local workspace to preserve originals and resume your project. Your browser will ask for permission to access the folder.'
       ],note:'Start the tool with launch_windows.bat (Windows) or launch.command (Mac), instead of opening index.html directly.'},
-      {title:'Group nearby stops',lead:'Context 01 · Geographic grouping for a new client.',items:[
+      {title:'Group nearby stops',lead:'Module 01 · GTFS preparation, for a new or existing client.',items:[
         'Check the mapped columns and timing-point source. Set a radius with the slider or numeric field, from 0 to 1,000 m (200 m by default).',
         'Choose 6- or 8-character place codes and their letter case. Renumbering stop_id values is optional: keep the original IDs when required.',
         'Run grouping, then review each map, place code, description and assigned stops. You can adjust each place’s radius individually.',
         'If a stop falls outside the radius, use its assignment menu. If no other place can include it, create a new place for that stop only.',
         'Undo / Redo applies to each place’s code and description, not its radius or stop assignments. This history lasts for the current session.'
       ],note:'Proximity alone does not justify grouping: check vehicle orientation and manoeuvres at trip starts and ends.'},
-      {title:'Review an existing client',lead:'Context 01 · Work with existing HASTUS assignments.',items:[
+      {title:'Review an existing client',lead:'Module 02 · Network diagnosis and HASTUS correction preparation.',items:[
         'Choose the existing-client workflow and load the stop and place list, including reference places when available. Check the column mapping.',
         'Review suggested assignments and suspicious references. The proximity radius and reference warning threshold serve different purposes.',
         'Check stops that have a place but are not used as timing points in the selected source.',
-        'The “HASTUS diagnostic” HTML report groups places by validation type and shows suspicious references. It is read-only.'
+        'The “HASTUS diagnostic” HTML report groups places by validation type and shows suspicious references. Corrections remain separate from sources; export the proposed CSV and before/after log, then confirm the HASTUS import format.'
       ],note:'A stop missing from the timing-point list is not necessarily unused. Confirm its role before removing an assignment.'},
-      {title:'Explore maps and timetables',lead:'Context 02 · Explore the network and its schedules.',items:[
-        'Choose workflow 02 Route maps and timetables. Use the loaded GTFS or working/stops.txt once places have been assigned. Shapes provide route geometry; without shapes, stops can still be displayed.',
+      {title:'Explore maps and timetables',lead:'Additional tools · Explore the network and its schedules.',items:[
+        'Open Additional tools, then Route maps and timetables. Use the loaded GTFS or working/stops.txt once places have been assigned. Shapes provide route geometry; without shapes, stops can still be displayed.',
         'The network report is separate from place validation. Select a service date, route and direction, or both directions.',
         'Open a route’s Timetable section to load its grid. Patterns are combined, with place codes, headways and an AM/PM or Military (24-hour) switch.',
         'Excel and PDF exports follow the selected filters. Check the date and timing points before sharing the document.'

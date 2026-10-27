@@ -2,7 +2,7 @@
 function initAppShell(){
   const english={
     'Annuler':'Undo','Rétablir':'Redo','Code et description':'Code and description',
-    'Apparence':'Appearance','Classique':'Classic','Épuré compact':'Clean compact','Épuré sombre':'Clean dark','Langue de l’accueil':'Home language',
+    'Préparation GTFS':'GTFS preparation','Diagnostic du réseau':'Network diagnosis','Client GTFS':'GTFS client','Nouveau client · créer les places':'New client · create places','Client existant · réutiliser le mapping HASTUS':'Existing client · reuse HASTUS mapping','Nouveau client ou réseau existant : conserver les affectations et réutiliser les places proches.':'New or existing network: preserve assignments and reuse nearby places.','Diagnostiquer le réseau et préparer les corrections HASTUS sans altérer les sources.':'Diagnose the network and prepare HASTUS corrections without altering sources.','Outils complémentaires · cartes, horaires et exports':'Additional tools · maps, schedules and exports','Les affectations existantes sont conservées. Un TP sans place est proposé à une place proche avant toute création.':'Existing assignments are preserved. An unassigned timing point is proposed to a nearby place before creating one.','Clair':'Light','Foncé':'Dark','Mode sombre':'Dark mode','Apparence':'Appearance','Classique':'Classic','Épuré compact':'Clean compact','Épuré sombre':'Clean dark','Langue de l’accueil':'Home language',
     'Assistant GTFS → HASTUS':'GTFS → HASTUS Assistant','Votre réseau, plus simplement.':'Your network, simplified.',
     'Rassemblez vos données. Préparez la suite dans HASTUS.':'Bring your data together. Get ready for HASTUS.',
     'Sources':'Sources','Contextes':'Tools','Analyse':'Analysis','Conflits':'Conflicts','Places / stops':'Places / stops','Export':'Export','↑ Haut':'↑ Top','Bas ↓':'Bottom ↓','Rechercher':'Search','Effacer':'Clear',
@@ -50,7 +50,7 @@ function initAppShell(){
       for(const element of area.querySelectorAll('[title],[placeholder],[aria-label]')){if(isData(element))continue;const saved=attributes.get(element)||{};for(const attr of ['title','placeholder','aria-label']){const value=element.getAttribute(attr);if(value===null)continue;let prior=saved[attr];if(!prior||value!==prior.rendered)prior={original:value};const next=language==='en'?(english[prior.original]||prior.original):prior.original;if(value!==next)element.setAttribute(attr,next);prior.rendered=next;saved[attr]=prior;}attributes.set(element,saved);}
     }
     const search=document.getElementById('global-search-input');if(search)search.placeholder=language==='en'?'Stop, place, route, code…':'Stop, place, route, code…';
-    document.getElementById('app-theme').setAttribute('aria-label',language==='en'?'Appearance':'Apparence');
+    document.getElementById('app-theme').setAttribute('aria-label',language==='en'?'Dark mode':'Mode sombre');
     document.getElementById('app-language').setAttribute('aria-label',language==='en'?'Interface language':'Langue de l’interface');
     for(const [selector,fr,en] of [['.steps','Étapes','Steps'],['#navigation-dock','Navigation rapide et recherche','Quick navigation and search'],['#global-search-scope','Filtrer le type de données','Filter data type'],['#global-search-clear','Effacer la recherche','Clear search']])document.querySelector(selector)?.setAttribute('aria-label',language==='en'?en:fr);
     for(const area of areas)observer?.observe(area,{subtree:true,childList:true,characterData:true});
@@ -58,13 +58,14 @@ function initAppShell(){
   window.applyAppPreferences=function(nextTheme,nextLanguage,persist=true){
     theme=nextTheme==='clean-dark'?'clean-dark':'clean';language=nextLanguage==='en'?'en':'fr';
     document.body.classList.toggle('genz-theme',theme==='genz');document.body.classList.toggle('clean-theme',theme==='clean'||theme==='clean-dark');document.body.classList.toggle('clean-dark-theme',theme==='clean-dark');
-    document.getElementById('app-theme').value=theme;document.getElementById('app-language').value=language;
+    document.getElementById('app-theme').value=theme;document.getElementById('app-theme').checked=theme==='clean-dark';document.getElementById('app-language').value=language;
     document.documentElement.lang=language;
     for(const area of areas)area.lang=language;
     if(persist){localStorage.setItem('hastus-ui-theme',theme);localStorage.setItem('hastus-ui-language',language);localStorage.removeItem('hastus-genz-theme');}
     if(typeof refreshSchedulingUnits==='function')refreshSchedulingUnits();
     if(typeof refreshServiceImportPlan==='function')refreshServiceImportPlan();
     if(typeof refreshAssignmentDiagnostics==='function')refreshAssignmentDiagnostics();
+    if(typeof refreshHastusCorrections==='function')refreshHastusCorrections();
     translate();
   };
   // Translate only changed controls, not every map and table on every keystroke.
@@ -74,5 +75,5 @@ function initAppShell(){
     if(roots.size)translate([...roots].filter(element=>![...roots].some(other=>other!==element&&other.contains(element))));
   });
   applyAppPreferences(localStorage.getItem('hastus-ui-theme')||'clean',localStorage.getItem('hastus-ui-language')||'fr',false);
-  for(const id of ['app-theme','app-language'])document.getElementById(id).addEventListener('change',()=>{applyAppPreferences(document.getElementById('app-theme').value,document.getElementById('app-language').value);queueQuickSave();});
+  for(const id of ['app-theme','app-language'])document.getElementById(id).addEventListener('change',()=>{applyAppPreferences(document.getElementById('app-theme').checked?'clean-dark':'clean',document.getElementById('app-language').value);queueQuickSave();});
 }

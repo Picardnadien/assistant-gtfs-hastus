@@ -1,6 +1,8 @@
 // Deliberately package only application resources, never the repository root.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
-const ARCHIVES=['13.02','12.0','11.0','10.0'];
+const ARCHIVES=['13.12','13.02','12.0','11.0','10.0'];
+// Keep the final published 13.12 fix, which followed its original release tag.
+const ARCHIVE_REFS={'13.12':'9690e9e28ff8b88f2599914780bb8be9f90e1cb6'};
 function buildPages(root,destination){
   const version=fs.readFileSync(path.join(root,'VERSION'),'utf8').trim();
   if(!/^\d+\.\d+(?:\.\d+)?$/.test(version))throw new Error('Invalid VERSION');
@@ -24,7 +26,7 @@ function buildPages(root,destination){
   write(prefix+entry,html);write(prefix+'VERSION',release+'\n');
   }
   bundle(version,file=>fs.readFileSync(path.join(root,file)),'','app.html');
-  for(const release of ARCHIVES)bundle(release,file=>cp.execFileSync('git',['show',`v${release}:${file}`],{cwd:root,maxBuffer:30*1024*1024}),`versions/v${release}/`);
+  for(const release of ARCHIVES)bundle(release,file=>cp.execFileSync('git',['show',`${ARCHIVE_REFS[release]||'v'+release}:${file}`],{cwd:root,maxBuffer:30*1024*1024}),`versions/v${release}/`);
   write('index.html',fs.readFileSync(path.join(root,'version-menu.html'),'utf8').replaceAll('__CURRENT_VERSION__',version));
   for(const file of ['portal.html','portal.css','portal-config.js','portal.js'])write(file,fs.readFileSync(path.join(root,file)));
   const {buildDemo}=require('./build-review-demo.cjs');

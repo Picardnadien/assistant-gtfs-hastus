@@ -180,14 +180,19 @@ function mountReportMapViewer({cards,currentPlace,assigned,points,distance,langu
     const zoom=Math.max(.01,Math.min(Math.max(80,W-2*reserve)/Math.max(100,maxX-minX),Math.max(80,H-180)/Math.max(100,maxY-minY),8));
     const vw=W/zoom,vh=H/zoom,vx=(minX+maxX-vw)/2,vy=(minY+maxY-vh)/2;
     const mapPoint=p=>({x:(p.x-vx)*zoom,y:(p.y-vy)*zoom});
-    const children=[],originalFrame=cards.get(current).querySelector('.place-map iframe');
+    const children=[],originalFrame=cards.get(current).querySelector('.place-map .browser-osm-frame');
     if(originalFrame){
       const unproject=(x,y)=>({lon:(g.center.x-g.width/2+x)/scaleWorld*360-180,lat:Math.atan(Math.sinh(Math.PI-2*Math.PI*(g.center.y-g.height/2+y)/scaleWorld))*180/Math.PI});
       const a=unproject(vx,vy),b=unproject(vx+vw,vy+vh),url=new URL(originalFrame.src);url.searchParams.set('bbox',[a.lon,b.lat,b.lon,a.lat].join(','));
       const iframe=originalFrame.cloneNode();iframe.removeAttribute('loading');iframe.src=url.href;iframe.setAttribute('inert','');children.push(iframe);
     }
     const background=source.cloneNode(true);background.removeAttribute('data-review-map-toggle');background.removeAttribute('tabindex');background.removeAttribute('role');background.removeAttribute('aria-label');background.setAttribute('aria-hidden','true');background.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vh}`);background.setAttribute('preserveAspectRatio','none');
-    background.querySelectorAll('.report-stop,.report-place,.osm-credit').forEach(node=>node.remove());background.classList.add('map-only-background');children.push(background);
+    background.querySelectorAll('.report-stop,.report-place,.osm-credit').forEach(node=>node.remove());background.classList.add('map-only-background');
+    background.querySelectorAll('.map-context-layer').forEach(n=>n.remove());
+    if(typeof mapTools==='function'&&background.querySelector('.osm-fixed-background')){background.querySelector('.osm-fixed-background').remove();background.insertAdjacentHTML('afterbegin',mapTools().background(g,{x:vx,y:vy,width:vw,height:vh}));}
+    for(const p of selected)background.append(el('circle',{cx:p.x,cy:p.y,r:0,fill:'none'}));
+    if(typeof mapTools==='function'&&background.querySelector('image[href*="tile.openstreetmap.org"]')){background.querySelectorAll('image[href*="tile.openstreetmap.org"]').forEach(n=>n.remove());background.insertAdjacentHTML('afterbegin',mapTools().tiles(g,{x:vx,y:vy,width:vw,height:vh}));}
+    children.push(background);
     const overlay=el('svg',{viewBox:`0 0 ${W} ${H}`,'aria-label':t('Stops et descriptions','Stops and descriptions'),role:'img',class:'map-only-labels'}),center=mapPoint({x:g.width/2,y:g.height/2});
     overlay.append(el('rect',{x:center.x-6,y:center.y-6,width:12,height:12,fill:'#54742e',stroke:'#fff','stroke-width':2}));
     const measure=document.createElement('canvas').getContext('2d');measure.font='16px Arial';
@@ -211,7 +216,7 @@ function mountReportMapViewer({cards,currentPlace,assigned,points,distance,langu
     for(const p of dots)overlay.append(el('circle',{'data-map-point-id':p.id,cx:p.x,cy:p.y,r:6,fill:p.own?'#006d67':distance(place,p)<=place.radius?'#b75a0d':'#256d96',stroke:'#fff','stroke-width':2}));
     children.push(overlay);canvas.replaceChildren(...children);
     dialog.querySelector('.map-only-title').textContent=place.code+' · '+place.description;
-    const outside=!originalFrame&&(vx<0||vy<0||vx+vw>g.width||vy+vh>g.height);
+    const outside=!originalFrame&&!source.querySelector('.osm-fixed-background')&&(vx<0||vy<0||vx+vw>g.width||vy+vh>g.height);
     dialog.querySelector('.map-only-note').textContent=t('Vert : associés · Orange/bleu : voisins · Clic pour revenir','Green: assigned · Orange/blue: nearby · Click to return')+(missing?' · '+missing+t(' stop(s) sans coordonnées',' stop(s) without coordinates'):'')+(outside?t(' · Fond hors ligne limité au cadrage enregistré',' · Offline background limited to the saved extent'):'');
   }
   function fit(){if(dialog.open&&!frame)frame=requestAnimationFrame(render);}
@@ -227,6 +232,7 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
   let active=false,key=null,trail=[],all=false,ownsFullscreen=false,scrollBefore=0;
   let returnView=null,fullscreenRequest=0;
   const mapSurfaces=new Map();
+  if(typeof mapTools==='function')mapTools().mount(()=>data.mapStops||points,()=>data.language);
   const mapViewer=mountReportMapViewer({cards,currentPlace,assigned,points,distance:controls.distance,language:data.language});
   const runtime=node=>{node.dataset.reviewRuntime='';return node;};
   const style=runtime(document.createElement('style'));

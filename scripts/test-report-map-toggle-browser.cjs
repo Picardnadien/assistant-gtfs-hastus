@@ -19,7 +19,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       const snapshot=()=>page.evaluate(()=>({y:scrollY,details:[...document.querySelectorAll('[data-report-place] details')].map(n=>n.open),count:document.getElementById('result-count').textContent,source:document.getElementById('report-data').textContent}));
       const before=await snapshot();await map.click({position:{x:50,y:50}});
       assert.ok(await viewer.isVisible());assert.equal(await page.locator('body').evaluate(e=>e.classList.contains('review-mode')),false,'Map opens without entering the review sheet');
-      assert.equal(await viewer.locator('input,select,table,.client-editor,.review-toolbar').count(),0,'Only the map, labels and minimal close control');
+      assert.equal(await viewer.locator('input:not(.map-context-controls input),select,table,.client-editor,.review-toolbar').count(),0,'Only the map, labels and minimal close control');
       assert.equal(await viewer.locator('.map-stop-label').count(),2);
       assert.match(await viewer.locator('[data-map-stop-id="001"]').textContent(),/001[\s\S]*Stop one/);
       assert.match(await viewer.locator('[data-map-stop-id="002"]').textContent(),/002[\s\S]*Stop two/);
@@ -30,7 +30,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       }
       await page.setViewportSize({width:1366,height:900});await page.waitForTimeout(80);
       if(lang==='en'&&mode==='online')await page.screenshot({path:path.join(root,'tmp/report-map-only-fullscreen.png')});
-      await canvas.click({position:{x:50,y:80}});await page.waitForTimeout(100);
+      await canvas.click({position:{x:50,y:150}});await page.waitForTimeout(100);
       assert.equal(await viewer.isVisible(),false);assert.equal(await page.locator('#place-search').inputValue(),code);
       const after=await snapshot();assert.ok(Math.abs(after.y-before.y)<4,`Previous scroll restored (${before.y} → ${after.y})`);assert.deepEqual(after.details,before.details);assert.equal(after.count,before.count);assert.equal(after.source,before.source);
       assert.equal(await map.evaluate(e=>e===document.activeElement),true);
@@ -40,9 +40,9 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       await page.locator('.review-active [data-review-map-toggle]').click({position:{x:50,y:50}});await viewer.locator('.map-only-close').click();
       assert.ok(await page.locator('body').evaluate(e=>e.classList.contains('review-mode')));await page.locator('[data-exit]').click();
       await page.evaluate(()=>{let element=null;window.nativeExits=0;Object.defineProperty(document,'fullscreenElement',{configurable:true,get:()=>element});document.documentElement.requestFullscreen=()=>new Promise(resolve=>{window.finishFullscreen=()=>{element=document.documentElement;document.dispatchEvent(new Event('fullscreenchange'));resolve();};if(!window.deferFullscreen)window.finishFullscreen();});document.exitFullscreen=async()=>{window.nativeExits++;element=null;document.dispatchEvent(new Event('fullscreenchange'));};});
-      await map.click({position:{x:50,y:50}});await canvas.click({position:{x:50,y:80}});
+      await map.click({position:{x:50,y:50}});await canvas.click({position:{x:50,y:150}});
       assert.equal(await page.evaluate(()=>document.fullscreenElement),null);assert.equal(await page.evaluate(()=>window.nativeExits),1);
-      await page.evaluate(()=>window.deferFullscreen=true);await map.click({position:{x:50,y:50}});await canvas.click({position:{x:50,y:80}});await page.evaluate(()=>window.finishFullscreen());await page.waitForTimeout(50);assert.equal(await page.evaluate(()=>document.fullscreenElement),null);
+      await page.evaluate(()=>window.deferFullscreen=true);await map.click({position:{x:50,y:50}});await canvas.click({position:{x:50,y:150}});await page.evaluate(()=>window.finishFullscreen());await page.waitForTimeout(50);assert.equal(await page.evaluate(()=>document.fullscreenElement),null);
       if(mode==='offline')assert.equal(requests,0,'Offline map must not request network tiles');
       assert.deepEqual(errors,[]);await context.close();
     }

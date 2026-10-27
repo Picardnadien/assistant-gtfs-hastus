@@ -2,15 +2,15 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="application-version" content="13.12">
+  <meta name="application-version" content="14.0">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The GTFS Missing Link</title>
-  <link rel="stylesheet" href="styles.css?v=13.12">
-  <link rel="stylesheet" href="clean-theme.css?v=13.12">
-  <link rel="stylesheet" href="place-code-layout.css?v=13.12">
-  <link rel="stylesheet" href="service-import-plan.css?v=13.12">
-  <link rel="stylesheet" href="tutorial.css?v=13.12">
-  <link rel="stylesheet" href="assignment-diagnostics.css?v=13.12">
+  <link rel="stylesheet" href="styles.css?v=14.0">
+  <link rel="stylesheet" href="clean-theme.css?v=14.0">
+  <link rel="stylesheet" href="place-code-layout.css?v=14.0">
+  <link rel="stylesheet" href="service-import-plan.css?v=14.0">
+  <link rel="stylesheet" href="tutorial.css?v=14.0">
+  <link rel="stylesheet" href="assignment-diagnostics.css?v=14.0">
 </head>
 <body class="clean-theme">
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
@@ -18,7 +18,7 @@
     <span>Sous Windows, fermez cette page puis lancez <code>launch_windows.bat</code>. L’application doit s’ouvrir sur une adresse commençant par <code>http://127.0.0.1:</code>, et non par <code>file:///</code>.</span>
   </aside>
   <header class="hero">
-    <div class="hero-top"><div class="brand"><img class="brand-logo" src="assets/csched-logo.svg" alt="CSched"><span data-no-translate>The GTFS Missing Link</span></div><div class="app-preferences"><button id="open-tutorial" type="button" data-no-translate aria-haspopup="dialog" aria-controls="tutorial-dialog">Tutoriel</button><label>Langue de l’interface<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label>Apparence<select id="app-theme"><option value="clean">Épuré compact</option><option value="clean-dark">Épuré sombre</option></select></label></div></div>
+    <div class="hero-top"><div class="brand"><img class="brand-logo" src="assets/csched-logo.svg" alt="CSched"><span data-no-translate>The GTFS Missing Link</span></div><div class="app-preferences"><button id="open-tutorial" type="button" data-no-translate aria-haspopup="dialog" aria-controls="tutorial-dialog">Tutoriel</button><label>Langue de l’interface<select id="app-language"><option value="fr">Français</option><option value="en">English</option></select></label><label class="theme-switch"><span>Clair</span><input id="app-theme" type="checkbox" role="switch" value="clean" aria-label="Mode sombre"><span class="switch-track" aria-hidden="true"></span><span>Foncé</span></label></div></div>
     <div class="clean-copy"><h1>Votre réseau, plus simplement.</h1><p>Rassemblez vos données. Préparez la suite dans HASTUS.</p></div>
     <div class="hero-copy">
       <p class="eyebrow">PASSERELLE DE DONNÉES</p>
@@ -55,8 +55,10 @@
       </div>
       <div class="mode-grid">
         <button class="mode-card active" data-mode="geographic" aria-pressed="true">
-          <span class="mode-number">01</span><span><strong>Regroupement géographique</strong><small>Regrouper les points horaires proches, avec ou sans données HASTUS existantes.</small></span><span class="mode-check">✓</span>
+          <span class="mode-number">01</span><span><strong>Préparation GTFS</strong><small>Nouveau client ou réseau existant : conserver les affectations et réutiliser les places proches.</small></span><span class="mode-check">✓</span>
         </button>
+        <button class="mode-card" data-mode="diagnostic" aria-pressed="false"><span class="mode-number">02</span><span><strong>Diagnostic du réseau</strong><small>Diagnostiquer le réseau et préparer les corrections HASTUS sans altérer les sources.</small></span><span class="mode-check">✓</span></button>
+      </div><details class="workflow-tools"><summary>Outils complémentaires · cartes, horaires et exports</summary><div class="mode-grid">
         <button class="mode-card" data-mode="network" aria-pressed="false">
           <span class="mode-number">02</span><span><strong>Cartes des routes et timetables</strong><small>Cartes et horaires du GTFS ou du dossier working, deux directions et exports.</small></span><span class="mode-check">✓</span>
         </button>
@@ -69,7 +71,9 @@
         <button class="mode-card" data-mode="reports" aria-pressed="false">
           <span class="mode-number">05</span><span><strong>Rapports et exports</strong><small>Diagnostic HASTUS, validation client, PDF, HTML et fichiers de sortie.</small></span><span class="mode-check">✓</span>
         </button>
-      </div>
+      </div></details>
+      <label id="journey-client-setting">Client GTFS<select id="journey-client"><option value="new">Nouveau client · créer les places</option><option value="existing">Client existant · réutiliser le mapping HASTUS</option></select></label>
+      <p id="journey-help">Les affectations existantes sont conservées. Un TP sans place est proposé à une place proche avant toute création.</p>
     </section>
     <section id="feed-section" class="panel feed-section">
       <div class="section-heading">
@@ -192,7 +196,7 @@
           <label><span>Marge hors rayon</span><select id="place-report-margin"><option value="100">100 m</option><option value="150" selected>150 m</option><option value="250">250 m</option><option value="500">500 m</option></select></label>
           <label class="client-logo-picker"><span>Logo du client (facultatif)</span><input id="client-logo-file" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 3 Mo maximum. Il remplace l’identité trouvée dans agency.txt.</small></label>
         </div>
-        <p id="existing-report-note" class="hidden">Client existant : le diagnostic HTML présente les références suspectes et toutes les places classées par type de validation, avec recherche et cartes. Il est en consultation seule ; le rapport HTML de validation des places reste disponible séparément. Les options de langue, de thème et de cartes ci-dessus s’appliquent aux deux rapports.</p>
+        <p id="existing-report-note" class="hidden">Client existant : le diagnostic HTML présente les références suspectes et toutes les places classées par type de validation, avec recherche et cartes. Les corrections HASTUS sont exportées séparément, avec un journal avant/après ; le rapport GTFS de validation des places reste disponible séparément. Les options de langue, de thème et de cartes ci-dessus s’appliquent aux deux rapports.</p>
         <div class="place-report-actions"><div id="client-brand-status" class="client-brand-status"></div><button id="clear-client-logo" type="button" class="secondary hidden">Utiliser agency.txt</button><button id="download-existing-html" type="button" class="primary hidden">Rapport HTML · Diagnostic HASTUS</button><button id="download-place-html" type="button" class="secondary">Télécharger le rapport HTML</button><button id="print-place-report" type="button" class="primary">Ouvrir le rapport PDF</button></div>
       </section>
       <div id="export-bar" class="export-bar">
@@ -213,25 +217,27 @@
       <div class="place-report-actions"><button id="scu-save" type="button" class="secondary" disabled>Enregistrer dans un dossier GTFS…</button><button id="scu-download" type="button" class="primary" disabled>Télécharger le ZIP avec les imports</button></div>
     </section>
   </main>
-  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v13.12</span></footer>
-  <script src="report-package.js?v=13.12"></script>
-  <script src="report-payload.js?v=13.12"></script>
-  <script src="report-network.js?v=13.12"></script>
-  <script src="report-timetable-export.js?v=13.12"></script>
-  <script src="report-network-document.js?v=13.12"></script>
-  <script src="report-editor.js?v=13.12"></script>
-  <script src="app-translations.js?v=13.12"></script>
-  <script src="app-shell.js?v=13.12"></script>
-  <script src="workspace-storage.js?v=13.12"></script>
-  <script src="report-existing.js?v=13.12-r1"></script>
-  <script src="assignment-diagnostics.js?v=13.12"></script>
-  <script src="scheduling-units.js?v=13.12"></script>
-  <script src="service-import-plan.js?v=13.12"></script>
-  <script src="working-timetable.js?v=13.12"></script>
-  <script src="day-route-summary.js?v=13.12"></script>
-  <script src="app.js?v=13.12"></script>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v14.0</span></footer>
+  <script src="report-package.js?v=14.0"></script>
+  <script src="report-payload.js?v=14.0"></script>
+  <script src="report-network.js?v=14.0"></script>
+  <script src="report-timetable-export.js?v=14.0"></script>
+  <script src="report-network-document.js?v=14.0"></script>
+  <script src="report-editor.js?v=14.0"></script>
+  <script src="app-translations.js?v=14.0"></script>
+  <script src="app-shell.js?v=14.0"></script>
+  <script src="workspace-storage.js?v=14.0"></script>
+  <script src="map-tools.js?v=14.0"></script>
+  <script src="hastus-corrections.js?v=14.0"></script>
+  <script src="report-existing.js?v=14.0"></script>
+  <script src="assignment-diagnostics.js?v=14.0"></script>
+  <script src="scheduling-units.js?v=14.0"></script>
+  <script src="service-import-plan.js?v=14.0"></script>
+  <script src="working-timetable.js?v=14.0"></script>
+  <script src="day-route-summary.js?v=14.0"></script>
+  <script src="app.js?v=14.0"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
-  <script src="tutorial.js?v=13.12"></script>
+  <script src="tutorial.js?v=14.0"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>
 </body>
 </html>

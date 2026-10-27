@@ -1,6 +1,54 @@
 # The GTFS Missing Link
 
-**Version 13.12** — voir les [notes de version](CHANGELOG.md).
+**Version 14.0** — voir les [notes de version](CHANGELOG.md).
+
+## Nouveaux parcours — 27 octobre 2026
+
+Deux modules : **01 Préparation GTFS** (nouveau client ou client existant avec
+mapping HASTUS) et **02 Diagnostic du réseau** (GTFS + HASTUS ou exports HASTUS).
+Les cartes de routes, horaires, scheduling units et rapports sont dans **Outils
+complémentaires**. Le thème Épuré possède un interrupteur **Clair / Foncé**.
+
+La préparation conserve les affectations existantes et propose un TP sans place
+à une place dont le centre est dans le rayon avant de créer une nouvelle place.
+La proximité reste à confirmer selon les contraintes de circulation.
+
+Le panneau **Corrections HASTUS** du diagnostic et de son rapport HTML complet
+permet d'éditer rattachements stop–place, références, descriptions et coordonnées.
+Les originaux et le GTFS ne sont jamais modifiés. Le projet, le brouillon du rapport
+et sa copie HTML sauvegardée conservent les corrections. Une correction dans le
+rapport remet les validations en attente. Les cartes et alertes restent l'état
+source avant correction : réanalyser les données finalisées après revue.
+
+Sorties proposées :
+
+- `hastus_corrections_format_a_confirmer.csv` : UTF-8 avec BOM, séparateur `;`,
+  champs entre guillemets. Colonnes `stop_id`, `stop_description`, `stop_latitude`,
+  `stop_longitude`, `place_code`, `place_description`, `place_latitude`,
+  `place_longitude`, `place_coordinate_source`, `is_reference_place`
+  (**Est une place de référence**, 1/0), `reference_place_code`.
+  Les places sans stops ont une ligne avec Stop ID vide. Les valeurs absentes
+  restent vides. Les coordonnées de place calculées sont marquées explicitement.
+- `hastus_modifications_avant_apres.csv` : changements nets par objet et champ.
+- `hastus_note_impact.html` : avant/après, stops rattachés, historique et conséquences
+  à vérifier (références, HLP, débuts/fins et horaires). Aucun temps ni voyage n'est
+  recalculé. Les effets opérationnels ne sont pas déterminés automatiquement.
+
+**Format d'import HASTUS à confirmer** : vérifier les colonnes, conventions de
+coordonnées et script OIR avant réimport, puis tester sur une copie. Les références
+inconnues, auto-références, chaînes de références et coordonnées invalides bloquent
+l'export. L'extrait client partiel n'inclut pas l'éditeur ni le référentiel complet
+de corrections pour éviter d'exposer des données non sélectionnées.
+
+Sur les cartes, **Stops aux alentours** montre les stops localisés des fichiers
+chargés, dans la fenêtre cartographique, sans changer le cadrage. Cliquer un stop
+affiche ID, description, latitude/longitude, routes connues et statut TP (inconnu
+si la source manque). Fond et marqueurs partagent le même repère au redimensionnement.
+Le mode en ligne nécessite Internet ; le fond vectoriel hors ligne reste limité
+à son emprise enregistrée. Régénérer les anciens rapports HTML.
+
+Recette : `node scripts/test.cjs`, puis
+`node scripts/test-map-context-browser.cjs CHEMIN_VERS_PLAYWRIGHT`.
 
 Prototype local proposant un contexte unifié de regroupement géographique des
 points horaires. Dans ce contexte, l'utilisateur choisit soit un nouveau client
@@ -27,10 +75,12 @@ Une inscription seule n'autorise aucun téléchargement. Tous les lecteurs
 autorisés partagent la même bibliothèque ; les jetons restent en mémoire.
 Révoquer un accès n'efface pas les copies déjà téléchargées.
 
-### Accueil en ligne v13 et scénarios iPad
+### Accueil en ligne v14 et scénarios iPad
 
 GitHub Pages ouvre un menu FR/EN : application actuelle, démonstration fictive
-de revue, ouverture locale d’un rapport HTML privé et archives v13.02/v12/v11/v10.
+de revue, ouverture locale d’un rapport HTML privé et archives v13.12/v13.02/v12/v11/v10.
+L'archive v13.12 inclut le dernier correctif publié de tri secondaire. Le lien
+ATP Data Cleanup ouvre son dépôt GitHub externe, sans transfert de fichiers.
 Les archives ont leur propre base navigateur ; utiliser une copie des dossiers
 de travail avec une ancienne version. Le lancement local reste `index.html`.
 Le paquet public est construit par `node scripts/build-pages.cjs` à partir d’une
@@ -56,13 +106,12 @@ la démonstration et la réouverture locale d’une copie HTML téléchargée.
 
 ### Workflows
 
-Le choix du workflow est placé avant les données sources. Seules les options du
-parcours sélectionné sont affichées : 01 Regroupement géographique, 02 Cartes des
-routes et timetables (GTFS ou working/stops.txt), 03 Comparaison des horaires,
-04 Scheduling units et 05 Rapports et exports. Les anciens modes cartes et
-timetables working rejoignent le workflow 02. Les décisions géographiques sont
-conservées lors du passage d’un workflow à l’autre ; les rapports utilisent la
-dernière analyse et ses réglages de langue, de cartes et de logos.
+Le choix du parcours est placé avant les données sources : **01 Préparation GTFS**
+et **02 Diagnostic du réseau**. Les cartes de routes et timetables, la comparaison
+des horaires, les scheduling units et les rapports sont accessibles dans
+**Outils complémentaires**. Les décisions sont conservées pendant la navigation
+avec les mêmes données sources ; les rapports utilisent la dernière analyse et
+ses réglages de langue, de cartes et de logos.
 
 Le diagnostic HTML HASTUS précise la place de référence de chaque place et le
 badge reprend les Stop IDs associés sous une forme compacte (six identifiants,

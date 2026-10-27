@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 function buildDemo(root){
   const ctx=vm.createContext({console,URL,window:{},document:{getElementById:()=>({value:'200'})}});
   vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8').split('const decisionList=')[0],ctx);
-  for(const file of ['report-editor.js','report-existing.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
+  for(const file of ['map-tools.js','report-editor.js','report-existing.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx);
   // Deliberately fictional Montreal positions, not transformed OC Transpo locations.
   const defs=[['DEMOHUB','Carrefour exemple / Example hub',45.501,-73.57],['DEMOEST','Pavillon Est / East pavilion',45.5015,-73.569],['DEMOLOIN','Secteur éloigné / Distant sector',45.51,-73.58],['DEMOPARC','Parc exemple / Example park',45.506,-73.563],['DEMOJARD','Jardin exemple / Example garden',45.5066,-73.5635],['DEMOCALM','Place autonome / Independent place',45.518,-73.555]];
   const places=defs.map(([id,description,lat,lon],i)=>({id,description,lat,lon,referenceIds:i===1||i===2?['DEMOHUB']:[],points:Array.from({length:3},(_,j)=>({id:`D${i+1}0${j+1}`,description:`Arrêt fictif / Fictional stop ${i+1}.${j+1}`,lat:lat+j*.00015,lon:lon+j*.0002}))}));

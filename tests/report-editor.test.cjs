@@ -9,6 +9,7 @@ const fields = {
   'place-code-max-length': {value:'6'}, 'place-code-case': {value:'upper'}
 };
 const context = vm.createContext({window:{}, document:{getElementById:id=>fields[id]||{value:''}}, console, URL});
+vm.runInContext(fs.readFileSync(path.join(root, 'map-tools.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'report-package.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'report-network.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.join(root, 'report-payload.js'), 'utf8'), context);
@@ -230,7 +231,7 @@ for(const limit of [6,8])for(const lang of ['fr','en']){
   assert.ok(html.includes(`data-place-code maxlength="${limit}"`));
   assert.equal(engine(payload,{}).errors.length,0);
   assert.ok(html.includes('id="save-client-report"'));
-  assert.ok(!html.replace(/<script\b[\s\S]*?<\/script>/g,'').includes('<iframe')); assert.ok(!html.includes('tile.openstreetmap.org/'));
+  assert.ok(!html.replace(/<script\b[\s\S]*?<\/script>/g,'').includes('<iframe')); assert.ok(!html.replace(/<script\b[\s\S]*?<\/script>/g,'').includes('tile.openstreetmap.org/'));
   const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
   assert.equal(scripts.length,1); new vm.Script(scripts[0][1]);
   fs.writeFileSync(path.join(out,`report-editor-${limit}-${lang}.html`),html);
@@ -246,7 +247,7 @@ for(const limit of [6,8])for(const lang of ['fr','en']){
   assert.equal(onlinePayload.networkMaps,undefined);
   const routeMaps=context.reportRouteMapPayload(onlinePayload,null,lang);
   assert.match(routeMaps[0].html,/<iframe[^>]*\binert\b/);
-  assert.match(routeMaps[0].html,/network-map-canvas/);
+  assert.match(routeMaps[0].html,/osm-fixed-background/);
   const frames=[...online.replace(/<script\b[\s\S]*?<\/script>/g,'').matchAll(/<iframe\b[^>]*>/g)].map(match=>match[0]);
   assert.equal(frames.length,3);
   for(const frame of frames){
@@ -257,7 +258,7 @@ for(const limit of [6,8])for(const lang of ['fr','en']){
   }
   assert.match(online,/\.browser-osm-frame\{[^}]*pointer-events:none/);
   assert.ok(online.includes(lang==='en'?'zooming and panning are disabled':'zoom et déplacement désactivés'));
-  assert.ok(online.includes('class="browser-map-overlay"'));
+  assert.ok(online.includes('class="osm-fixed-background"'));assert.ok(online.includes('data-map-geometry='));
   fs.writeFileSync(path.join(out,`report-editor-online-${limit}-${lang}.html`),online);
 }
 fields['place-code-max-length'].value='6';

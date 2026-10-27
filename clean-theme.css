@@ -62,3 +62,17 @@ body.clean-theme.clean-dark-theme :is(input,select,textarea,option){background:#
 .clean-theme.clean-dark-theme td{background:#1c2620;color:#e5ece6}
 body.clean-dark-theme.conflict-resolution-fullscreen #radius-conflict-summary{background:#121915;color:#e5ece6}
 @media(max-width:700px){.hero-top{align-items:flex-start;flex-wrap:wrap;gap:15px}.app-preferences{width:100%;gap:10px}.app-preferences label{flex:1;min-width:120px}.clean-theme .hero{padding:16px 16px 0}.clean-theme .clean-copy h1{font-size:23px}.clean-theme .panel{padding:18px}.clean-theme .steps{gap:18px}.clean-theme .workspace-controls{display:flex}.clean-theme .workspace-controls>*{min-width:0;flex:1 1 160px}.clean-theme .section-heading{flex-wrap:wrap}}
+/* One visual identity, with a light/dark switch. */
+.clean-theme .theme-switch{display:flex;flex-direction:row;align-items:center;gap:8px;position:relative;cursor:pointer}
+.clean-theme .theme-switch input{position:absolute;opacity:0;width:42px;height:24px;left:40px}
+.clean-theme .theme-switch .switch-track{display:block;width:42px;height:24px;border-radius:20px;background:#aebaa7;position:relative}
+.clean-theme .theme-switch .switch-track:after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:white;top:3px;left:3px}
+.clean-theme .theme-switch input:checked+.switch-track{background:#54742e}
+.clean-theme .theme-switch input:checked+.switch-track:after{left:21px}
+.clean-theme .theme-switch input:focus-visible+.switch-track{outline:3px solid #6e9440;outline-offset:3px}
+.workflow-tools{margin-top:14px}.workflow-tools summary{padding:10px;cursor:pointer}.workflow-tools .mode-number{display:none}
+#journey-client-setting{display:flex;gap:12px;align-items:center;margin-top:18px}#journey-client{max-width:440px}#journey-help{font-size:13px;color:var(--muted)}
+body[data-workflow=diagnostic] :is(#export-bar,#radius-conflict-summary,#place-naming-setting,#stop-id-renumber-setting,#geographic-client-setting,#source-back-row,#review-existing-setting,#go-to-reports){display:none!important}
+body[data-workflow=diagnostic] #reports-workflow>.section-heading,body[data-workflow=diagnostic] :is(#reports-back-analysis,#reports-workflow-empty,#download-place-html,#print-place-report){display:none!important}
+body[data-workflow=diagnostic] #place-report-panel .place-report-copy{display:none}
+body.clean-dark-theme .map-context-controls{background:#26332b;color:#e3eade}

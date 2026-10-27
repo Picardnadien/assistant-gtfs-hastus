@@ -1,11 +1,11 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8'),fields=new Map();
 const field=id=>{if(!fields.has(id))fields.set(id,{value:'',textContent:'',classList:{toggle(k,v){this[k]=v;},add(k){this[k]=true;},remove(k){this[k]=false;}}});return fields.get(id);};
-const document={getElementById:field,querySelectorAll:()=>[],body:{setAttribute(k,v){this[k]=v;},classList:{remove(){},toggle(){}}}};
+const document={getElementById:field,querySelectorAll:()=>[],querySelector:()=>null,body:{setAttribute(k,v){this[k]=v;},classList:{remove(){},toggle(){}}}};
 const ctx=vm.createContext({document,console,window:{}});
 vm.runInContext(fs.readFileSync('app.js','utf8').split('const decisionList=')[0],ctx);
 vm.runInContext('queueQuickSave=()=>{};setupMapping=()=>{};render=()=>{};',ctx);
-assert.deepEqual([...html.matchAll(/data-mode="([^"]+)"/g)].map(m=>m[1]),['geographic','network','timetables','scheduling','reports']);
+assert.deepEqual([...html.matchAll(/data-mode="([^"]+)"/g)].map(m=>m[1]),['geographic','diagnostic','network','timetables','scheduling','reports']);
 assert.ok(html.indexOf('id="mode-section"')<html.indexOf('id="feed-section"'));
 assert.ok(html.indexOf('id="reports-workflow"')<html.indexOf('id="place-report-panel"'));
 assert.ok(!html.includes('id="working-timetable-mode"'));

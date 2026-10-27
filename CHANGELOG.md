@@ -1,5 +1,16 @@
 # Notes de version
 
+## 14.0 — 2026-10-27
+
+- Thème Épuré avec interrupteur clair/foncé ; parcours Préparation GTFS et Diagnostic du réseau, outils complémentaires repliables.
+- Conservation du mapping HASTUS et priorité aux places existantes dans le rayon ; contrôle des coordonnées manquantes.
+- Repère cartographique commun en fenêtre/plein écran, stops voisins facultatifs et infobulles détaillées.
+- Corrections HASTUS séparées des sources : rattachements, références, descriptions et coordonnées. CSV proposé (format d'import à confirmer), journal avant/après et note d'impact HTML.
+- Coordonnées calculées signalées ; références incohérentes et coordonnées invalides bloquent l'export. Les cartes restent le diagnostic source avant correction.
+- Libellé « Est une place de référence », corrections conservées dans le projet et le rapport HTML ; toute correction dans le rapport remet les validations en attente.
+- Accueil bilingue : notes v14, accès à la v13.12 archivée et lien externe vers ATP Data Cleanup.
+- Régénérer les rapports HTML existants pour bénéficier de ces changements. Le CSV de corrections est un format proposé, à confirmer avant import HASTUS ; aucun script OIR de réaffectation n'est fourni.
+
 ## 13.12 — 2026-10-20
 
 - Diagnostic HTML : deux listes, validations principales et liste secondaire. Stops sans coordonnées dans des fiches dédiées, sans position inventée ni validation géographique.

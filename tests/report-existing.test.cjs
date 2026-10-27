@@ -1,5 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),ctx=vm.createContext({console,URL,window:{},document:{getElementById:()=>({value:'300'})}});
+vm.runInContext(fs.readFileSync(path.join(root,'map-tools.js'),'utf8'),ctx);
+vm.runInContext(fs.readFileSync(path.join(root,'hastus-corrections.js'),'utf8'),ctx);
 vm.runInContext(fs.readFileSync(path.join(root,'app.js'),'utf8').split('const decisionList=')[0],ctx);
 vm.runInContext(fs.readFileSync(path.join(root,'report-editor.js'),'utf8'),ctx);
 vm.runInContext(fs.readFileSync(path.join(root,'report-existing.js'),'utf8'),ctx);
@@ -183,9 +185,9 @@ for(const language of ['fr','en']){
     }
     assert.ok(html.includes('<th>'+t.code+'</th><th>'+t.type+'</th>'),'Overview has only identity and validation columns');
     assert.ok(html.includes('id="stop-scope"')&&html.includes(t.tpOnly),'FR/EN stop-scope control is embedded');
-    new vm.Script(html.match(/<script>\(([\s\S]*?)<\/script>/)[0].replace(/^<script>/,'').replace(/<\/script>$/,''));
-    if(offline){assert.ok(!html.includes('<iframe'));assert.ok(!html.includes('tile.openstreetmap'));assert.ok(html.includes('osm-road major'));}
-    else {assert.ok(html.includes('inert tabindex=\\"-1\\"'));assert.ok(html.includes('pointer-events:none'));}
+    new vm.Script(html.match(/<script>([\s\S]*?)<\/script>/)[0].replace(/^<script>/,'').replace(/<\/script>$/,''));
+    if(offline){assert.ok(!Object.values(maps).join('').includes('<iframe'));assert.ok(!Object.values(maps).join('').includes('tile.openstreetmap'));assert.ok(html.includes('osm-road major'));}
+    else {assert.ok(html.includes('inert=\\"\\" tabindex=\\"-1\\"'));assert.ok(html.includes('pointer-events:none'));}
     fs.writeFileSync(path.join(root,`tmp/report-editor-existing-${language}-${offline?'offline':'online'}.html`),html);
   }
 }
