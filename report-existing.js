@@ -684,7 +684,8 @@ function mountAssessmentReview(data,api,modelFactory,saverFactory){
   function htmlSnapshot(savedAt=new Date().toISOString(),selectedIds=null){
     const clone=document.documentElement.cloneNode(true),payload=selectedIds?api.subset(data,model.snapshot(),selectedIds):{...data,review:model.snapshot(),reviewSavedAt:savedAt};
     clone.querySelector('#assessment-data').textContent=JSON.stringify(payload).replace(/</g,'\\u003c');
-    clone.querySelectorAll('.hastus-corrections,.map-context-popup').forEach(node=>node.remove());
+    clone.querySelectorAll('.hastus-corrections,.map-context-popup,[data-map-runtime]').forEach(node=>node.remove());
+    clone.querySelector('body').classList.remove('map-fullscreen-open');
     clone.querySelectorAll('style[data-map-context-style]').forEach(node=>node.remove());
     clone.querySelectorAll('dialog').forEach(node=>node.removeAttribute('open'));
     clone.querySelector('#assessment-change-log').setAttribute('open','');

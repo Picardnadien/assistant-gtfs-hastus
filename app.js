@@ -438,7 +438,7 @@ function setupMapping() {
     $("mapping-eyebrow").textContent="CALENDRIER"; $("mapping-title").textContent="Comparer les volumes de service"; $("mapping-subtitle").textContent="calendar.txt et calendar_dates.txt seront combinés pour calculer les variations quotidiennes.";
   }
   $("mapping-section").classList.remove("hidden");
-  $("mapping-section").scrollIntoView({behavior:"smooth",block:"start"});
+  // Imports reveal the next step without moving away from the file selectors.
 }
 
 function captureGeographicState(){

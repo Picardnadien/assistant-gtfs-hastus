@@ -2,6 +2,10 @@
 
 ## 14.0 — 2026-10-27
 
+- Correctifs mobile : boutons d’espace de travail ramenés à une hauteur compacte avec cibles tactiles de 44 px, bandeau réorganisé et switch clair/foncé corrigé (suppression d’un double déplacement du curseur).
+- Cartes agrandies : bouton plein écran, commandes discrètes +/−, recentrage et flèches ; glissement, pincement et molette dans cette vue. Fond et marqueurs sont agrandis ensemble, sans modifier le cadrage de la fiche normale. Le zoom agrandit le fond disponible ; il ne télécharge pas de cartes hors ligne supplémentaires.
+- La sélection successive des fichiers ne déclenche plus de défilement vers les paramètres. Recliquez sur un même stop pour fermer son infobulle.
+- Recette tactile simulée aux largeurs 320, 390 et 430 px ; validation Safari sur un iPhone réel restant à effectuer. Régénérer les rapports HTML pour recevoir ces commandes.
 - Thème Épuré avec interrupteur clair/foncé ; parcours Préparation GTFS et Diagnostic du réseau, outils complémentaires repliables.
 - Conservation du mapping HASTUS et priorité aux places existantes dans le rayon ; contrôle des coordonnées manquantes.
 - Repère cartographique commun en fenêtre/plein écran, stops voisins facultatifs et infobulles détaillées.

@@ -63,12 +63,12 @@ body.clean-theme.clean-dark-theme :is(input,select,textarea,option){background:#
 body.clean-dark-theme.conflict-resolution-fullscreen #radius-conflict-summary{background:#121915;color:#e5ece6}
 @media(max-width:700px){.hero-top{align-items:flex-start;flex-wrap:wrap;gap:15px}.app-preferences{width:100%;gap:10px}.app-preferences label{flex:1;min-width:120px}.clean-theme .hero{padding:16px 16px 0}.clean-theme .clean-copy h1{font-size:23px}.clean-theme .panel{padding:18px}.clean-theme .steps{gap:18px}.clean-theme .workspace-controls{display:flex}.clean-theme .workspace-controls>*{min-width:0;flex:1 1 160px}.clean-theme .section-heading{flex-wrap:wrap}}
 /* One visual identity, with a light/dark switch. */
-.clean-theme .theme-switch{display:flex;flex-direction:row;align-items:center;gap:8px;position:relative;cursor:pointer}
-.clean-theme .theme-switch input{position:absolute;opacity:0;width:42px;height:24px;left:40px}
-.clean-theme .theme-switch .switch-track{display:block;width:42px;height:24px;border-radius:20px;background:#aebaa7;position:relative}
+.clean-theme .theme-switch{display:flex;flex-direction:row;align-items:center;gap:8px;position:relative;cursor:pointer;color:var(--ink)}
+.clean-theme .theme-switch input{position:absolute;opacity:0;width:1px;height:1px;left:0;top:0;margin:0;padding:0;clip-path:inset(50%);appearance:none;-webkit-appearance:none}
+.clean-theme .theme-switch .switch-track{display:block;flex:0 0 42px;width:42px;height:24px;border-radius:20px;background:#aebaa7;position:relative}
 .clean-theme .theme-switch .switch-track:after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:white;top:3px;left:3px}
 .clean-theme .theme-switch input:checked+.switch-track{background:#54742e}
-.clean-theme .theme-switch input:checked+.switch-track:after{left:21px}
+.clean-theme .theme-switch input:checked+.switch-track:after{left:21px;transform:none}
 .clean-theme .theme-switch input:focus-visible+.switch-track{outline:3px solid #6e9440;outline-offset:3px}
 .workflow-tools{margin-top:14px}.workflow-tools summary{padding:10px;cursor:pointer}.workflow-tools .mode-number{display:none}
 #journey-client-setting{display:flex;gap:12px;align-items:center;margin-top:18px}#journey-client{max-width:440px}#journey-help{font-size:13px;color:var(--muted)}
@@ -76,3 +76,20 @@ body[data-workflow=diagnostic] :is(#export-bar,#radius-conflict-summary,#place-n
 body[data-workflow=diagnostic] #reports-workflow>.section-heading,body[data-workflow=diagnostic] :is(#reports-back-analysis,#reports-workflow-empty,#download-place-html,#print-place-report){display:none!important}
 body[data-workflow=diagnostic] #place-report-panel .place-report-copy{display:none}
 body.clean-dark-theme .map-context-controls{background:#26332b;color:#e3eade}
+body.clean-dark-theme .theme-switch .switch-track{background:#617464}
+body.clean-dark-theme .theme-switch input:checked+.switch-track{background:#b3d985}
+body.clean-dark-theme .theme-switch input:checked+.switch-track:after{background:#162011}
+@media(max-width:700px){
+  body.clean-theme .hero{padding:16px 16px 0}
+  body.clean-theme .brand{min-width:0;font-size:14px}
+  body.clean-theme .brand-logo{width:94px;flex:0 0 94px}
+  .clean-theme .app-preferences{display:grid;grid-template-columns:minmax(0,1fr) auto;width:100%;min-width:0}
+  .clean-theme .app-preferences #open-tutorial{grid-column:1;grid-row:1;justify-self:start;min-height:44px}
+  .clean-theme .app-preferences label:not(.theme-switch){grid-column:1/-1;grid-row:2;display:flex;align-items:center;min-width:0;gap:10px}
+  .clean-theme .app-preferences select{min-width:0;flex:1;font-size:16px}
+  .clean-theme #feed-section .workspace-controls>*{flex:0 0 auto}
+  .clean-theme #feed-section .workspace-controls button{min-height:44px;padding:9px 12px;font-size:13px}
+  .clean-theme #feed-section .workspace-controls select{font-size:16px}
+  .clean-theme .app-preferences .theme-switch{grid-column:2;grid-row:1;flex:0 0 auto;min-width:0;min-height:44px;white-space:nowrap}
+  .clean-theme .theme-switch>span:last-child{display:inline}
+}

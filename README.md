@@ -47,6 +47,13 @@ si la source manque). Fond et marqueurs partagent le même repère au redimensio
 Le mode en ligne nécessite Internet ; le fond vectoriel hors ligne reste limité
 à son emprise enregistrée. Régénérer les anciens rapports HTML.
 
+Le bouton **⛶** ouvre la carte seule en plein écran, y compris avec le mode plein
+écran du navigateur indisponible sur mobile. Les commandes +/−, recentrage et
+flèches, le glissement et le pincement agrandissent le fond et les stops ensemble
+(jusqu’à 400 %), sans modifier la vue normale. Aucun fond hors ligne supplémentaire
+n’est téléchargé. Recliquez sur le même stop pour fermer son infobulle.
+Les imports successifs restent sur la zone de sélection des fichiers.
+
 Recette : `node scripts/test.cjs`, puis
 `node scripts/test-map-context-browser.cjs CHEMIN_VERS_PLAYWRIGHT`.
 
