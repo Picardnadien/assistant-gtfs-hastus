@@ -1,5 +1,10 @@
 /* UI copy only: never translate source data or independently generated reports. */
 const APP_ENGLISH = {
+  'Gestion des stops':'Stop management',
+  'Options appliquées aux exports ; les données sources restent intactes.':'Options apply to exports; source data stays intact.',
+  'Préfixer les Stop ID avec une lettre':'Prefix Stop IDs with a letter',
+  'Lettre du préfixe':'Prefix letter',
+  'Le préfixe s’applique à tous les Stop ID, numériques ou alphanumériques, après la renumérotation et les zéros en tête. Exemple : 12 → 0012 → A0012. Les références entre fichiers suivent ces changements.':'The prefix applies to all Stop IDs, numeric or alphanumeric, after renumbering and leading zeros. Example: 12 → 0012 → A0012. References between files are updated accordingly.',
   'Ajouter des zéros en tête aux Stop ID numériques':'Add leading zeros to numeric Stop IDs',
   'Longueur cible (vide = automatique)':'Target length (blank = automatic)',
   'Compléter les codes courts avec des zéros jusqu’à la longueur choisie':'Pad short codes with zeros to the selected length',

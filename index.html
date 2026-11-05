@@ -5,8 +5,8 @@
   <meta name="application-version" content="14.1">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The GTFS Missing Link</title>
-  <link rel="stylesheet" href="styles.css?v=14.1">
-  <link rel="stylesheet" href="clean-theme.css?v=14.1">
+  <link rel="stylesheet" href="styles.css?v=14.1-r2">
+  <link rel="stylesheet" href="clean-theme.css?v=14.1-r2">
   <link rel="stylesheet" href="place-code-layout.css?v=14.1">
   <link rel="stylesheet" href="service-import-plan.css?v=14.1">
   <link rel="stylesheet" href="tutorial.css?v=14.1">
@@ -141,21 +141,25 @@
       </div>
       <div id="mapping-grid" class="mapping-grid"></div>
       <label id="smart-radius-setting" class="smart-toggle hidden"><input id="smart-radius" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Rayon intelligent</strong><small id="smart-radius-detail">Adapte chaque rayon à la densité des timing points et aux voyages du GTFS.</small></span></label>
-      <section id="stop-id-renumber-setting" class="stop-id-renumber-setting hidden" aria-labelledby="stop-id-renumber-title">
+      <section id="stop-id-renumber-setting" class="stop-id-renumber-setting hidden" aria-labelledby="stop-management-title">
+        <div class="stop-management-heading"><strong id="stop-management-title">Gestion des stops</strong><small>Options appliquées aux exports ; les données sources restent intactes.</small></div>
         <label class="stop-id-renumber-toggle"><input id="renumber-stop-ids" type="checkbox"><span><strong id="stop-id-renumber-title">Renuméroter les stop_id techniques</strong><small id="stop-id-renumber-detail">Option désactivée par défaut : tous les stop_id sont conservés. Si elle est activée, seuls les UUID et remix_UUID sont remplacés.</small></span></label>
         <label class="stop-id-renumber-start"><span>Premier numéro</span><input id="renumber-stop-id-start" type="number" min="1" max="999999" step="1" value="100001" inputmode="numeric"></label>
-        <label><input id="pad-stop-ids" type="checkbox"><span>Ajouter des zéros en tête aux Stop ID numériques</span></label>
-        <label><span>Longueur cible (vide = automatique)</span><input id="pad-stop-id-width" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Auto"></label>
+        <label class="stop-id-option"><input id="pad-stop-ids" type="checkbox"><span>Ajouter des zéros en tête aux Stop ID numériques</span></label>
+        <label class="stop-id-value"><span>Longueur cible (vide = automatique)</span><input id="pad-stop-id-width" type="number" min="1" max="1000" step="1" inputmode="numeric" placeholder="Auto"></label>
         <small id="stop-id-padding-detail" data-no-translate></small>
+        <label class="stop-id-option"><input id="prefix-stop-ids" type="checkbox"><span>Préfixer les Stop ID avec une lettre</span></label>
+        <label class="stop-id-value"><span>Lettre du préfixe</span><input id="stop-id-prefix" type="text" maxlength="1" pattern="[A-Za-z]" placeholder="A" autocomplete="off" spellcheck="false" disabled></label>
+        <small class="stop-id-help">Le préfixe s’applique à tous les Stop ID, numériques ou alphanumériques, après la renumérotation et les zéros en tête. Exemple : 12 → 0012 → A0012. Les références entre fichiers suivent ces changements.</small>
       </section>
       <label id="review-existing-setting" class="smart-toggle hidden"><input id="review-existing-places" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Réévaluer les places déjà affectées</strong><small>Conserve la place HASTUS actuelle par défaut, mais propose les autres places dont le centre se trouve dans le rayon choisi.</small></span></label>
       <section id="place-naming-setting" class="place-naming-setting" aria-labelledby="place-naming-title">
         <div><strong id="place-naming-title">Création des codes de place</strong><small>Les codes générés utilisent jusqu’à 6 ou 8 caractères. Le complément par des zéros est facultatif ; désactivez-le pour conserver les codes courts. Les codes existants ne sont pas modifiés et la saisie manuelle peut rester plus courte. Les codes dépassant la longueur choisie doivent être corrigés avant l’export.</small></div>
         <div><small>« St » en début de nom est conservé pour Saint. Les lieux reconnus gardent leur type dans la description et un suffixe dans le code : station/gare STN, terminal/terminus TER, hub/pôle HUB, échangeur ECH, centre de transit CTR. Ces règles s’appliquent aux nouvelles propositions, sans renommer les places existantes.</small></div>
         <label><span>Longueur des codes générés</span><select id="place-code-max-length"><option value="6">6 caractères</option><option value="8" selected>8 caractères</option></select></label>
-        <label><input id="pad-place-codes" type="checkbox" checked><span>Compléter les codes courts avec des zéros jusqu’à la longueur choisie</span></label>
+        <label><input id="pad-place-codes" type="checkbox"><span>Compléter les codes courts avec des zéros jusqu’à la longueur choisie</span></label>
         <label><span>Casse des codes proposés</span><select id="place-code-case"><option value="upper" selected>Tout en majuscules</option><option value="lower">Tout en minuscules</option></select></label>
-        <label class="place-catalog-toggle"><input id="use-canada-post-abbreviations" type="checkbox"><span><strong>Utiliser les abréviations de Postes Canada</strong><small>Applique les abréviations officielles de types de rue et de points cardinaux avant de proposer un code. <a href="https://www.canadapost-postescanada.ca/scp/fr/soutien/sujet/directives-adressage/symboles-et-abreviations.page" target="_blank" rel="noopener">Consulter le catalogue</a></small></span></label>
+        <label class="place-catalog-toggle"><input id="use-canada-post-abbreviations" type="checkbox" checked><span><strong>Utiliser les abréviations de Postes Canada</strong><small>Applique les abréviations officielles de types de rue et de points cardinaux avant de proposer un code. <a href="https://www.canadapost-postescanada.ca/scp/fr/soutien/sujet/directives-adressage/symboles-et-abreviations.page" target="_blank" rel="noopener">Consulter le catalogue</a></small></span></label>
       </section>
       <div class="settings-row">
         <label id="geographic-client-setting" class="select-label hidden"><span>Type de regroupement</span><select id="geographic-client-type"><option value="new">Nouveau client · partir de zéro</option><option value="existing">Client existant dans HASTUS</option></select></label>
@@ -224,11 +228,11 @@
   <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v14.1</span></footer>
   <script src="report-package.js?v=14.1"></script>
   <script src="report-payload.js?v=14.1"></script>
-  <script src="report-network.js?v=14.1"></script>
+  <script src="report-network.js?v=14.1-r3"></script>
   <script src="report-timetable-export.js?v=14.1"></script>
   <script src="report-network-document.js?v=14.1"></script>
   <script src="report-editor.js?v=14.1"></script>
-  <script src="app-translations.js?v=14.1"></script>
+  <script src="app-translations.js?v=14.1-r1"></script>
   <script src="app-shell.js?v=14.1"></script>
   <script src="workspace-storage.js?v=14.1"></script>
   <script src="map-tools.js?v=14.1"></script>
@@ -237,9 +241,9 @@
   <script src="assignment-diagnostics.js?v=14.1"></script>
   <script src="scheduling-units.js?v=14.1"></script>
   <script src="service-import-plan.js?v=14.1"></script>
-  <script src="working-timetable.js?v=14.1"></script>
+  <script src="working-timetable.js?v=14.1-r4"></script>
   <script src="day-route-summary.js?v=14.1"></script>
-  <script src="app.js?v=14.1"></script>
+  <script src="app.js?v=14.1-r3"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
   <script src="tutorial.js?v=14.1"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>

@@ -2,8 +2,14 @@
 
 ## 14.1 — 2026-11-05
 
+- Gestion des stops : préfixe facultatif d’une lettre pour les Stop ID, après renumérotation et zéros en tête. Références GTFS et sauvegardes mises à jour ; pas de cumul des préfixes lors d’une nouvelle analyse.
+- Nommage : « Av » exclu des mots servant à former les codes. Un type de voie seul ne suffit plus à nommer une place. Pour les nouveaux projets, abréviations Postes Canada activées et complément par des zéros désactivé par défaut.
+- Timetables et PDF : grille compacte commune, en-têtes des TP toujours verticaux, codes de place complets, headway et choix AM/PM–24 h. Largeur et pagination adaptées au nombre de points et de voyages ; une direction seule occupe toute la largeur avec ses informations de voyage à gauche.
+- Pamphlets : deux directions réunies par route et service, aperçu chargé à l’ouverture, filtre de route repris dans le PDF et services conservés séparément. Boucles et variantes conservent leurs points horaires ; plages de fréquence distinguées des départs fixes.
+- Lisibilité : section des pamphlets adaptée aux thèmes clair et sombre, commandes et champs mieux alignés. Retrait des mentions du modèle de référence dans l’interface.
+
 - Conflits de rayon : une fiche et une carte communes pour les cas liés aux mêmes places. Validez le cas pour le déplacer dans la section Validés ; une modification du rayon ou de l’affectation le remet à examiner.
-- Stop ID numériques : option de zéros en tête, longueur automatique selon le plus long ID numérique, contrôle des collisions et des longueurs trop courtes. Les ID alphanumériques restent inchangés.
+- Stop ID numériques : option de zéros en tête, longueur automatique selon le plus long ID numérique, contrôle des collisions et des longueurs trop courtes. Le complément par des zéros ne modifie pas les ID alphanumériques ; le préfixe facultatif s’applique à tous les ID source.
 - Codes de place : possibilité de conserver les codes courts sans ajouter de zéros à la fin, dans la limite choisie de 6 ou 8 caractères.
 - GTFS prêt à importer : un ZIP complet remplace le téléchargement isolé des horaires enrichis. Il inclut les scheduling units, la liste des places et leurs scripts d’import OIR dans hastus_import/.
 - Places proposées devenues vides : exclues des exports GTFS et de la liste d’import des places lorsqu’aucun stop ni autre fichier ne les référence. Les stations du GTFS source sont préservées.
@@ -13,7 +19,7 @@
 - Scheduling units : routes du GTFS courant, avec route_id par défaut ou route_short_name selon le choix du module dédié. Références aux Stop ID mises à jour dans les tables annexes.
 - Archive v14.0 conservée à son dernier état publié, avec un espace de sauvegarde navigateur distinct.
 - Régénérer les rapports HTML pour bénéficier des correctifs. Sources conservées, aucune écriture directe dans HASTUS.
-- Validation : 36 suites de régression et tests navigateur des exports, conflits et rapports bilingues ; accueil testé sur formats mobile et tablette.
+- Validation : 38 suites de régression et tests navigateur des exports, conflits et rapports bilingues ; accueil testé sur formats mobile et tablette.
 
 ## 14.0 — 2026-10-27
 

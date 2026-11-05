@@ -17,7 +17,7 @@ assert.equal(model.blocks[0].rows[1].headway,1800);assert.equal(model.blocks[1].
 assert.match(model.blocks[0].stops[0],/CLEAN · Harbour & Central/);
 assert.ok(Object.values(model.workingStops).some(p=>p.code==='CLEAN'));
 const working=ctx.workingTimetableTools().report(model);
-assert.ok(working.includes('working-grid'));assert.ok(working.includes('>CLEAN</th>'));
+assert.ok(working.includes('working-grid'));assert.ok(working.includes('>CLEAN</span></th>'));
 assert.ok(working.includes('time-military'));assert.ok(!working.includes('class="block"'));
 const multi=tools.build(data,edits,{...data.networkView,route:''});
 const merged=ctx.workingTimetableTools().report(multi);

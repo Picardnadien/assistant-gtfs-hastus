@@ -18,6 +18,27 @@ let d=tools.direction(model.blocks.filter(b=>b.direction==='0'));assert.deepEqua
 const before=JSON.stringify(model),html=tools.html(model);assert.equal(JSON.stringify(model),before);assert.ok(html.includes('letter portrait'));assert.ok(html.includes('Working Timetable Report - Both Directions'));assert.ok(html.includes('LOUMET'));assert.ok(!html.includes('333-002'));assert.ok(!html.includes('class="block"'));assert.ok(!html.includes('vertical-stop'));assert.equal((html.match(/class="working-grid"/g)||[]).length,1);assert.ok(html.includes('........'));assert.ok(html.includes('Page 1 / 1'));
 assert.ok(html.includes('id="time-military"'));assert.ok(html.includes('class="military">06:15</span>'));
 assert.ok(html.includes('@media print{.print-controls,.time-choice{display:none}'));
+assert.ok(html.includes('data-layout="rte333wk"'));
+assert.ok(html.includes('8.25pt/1.2 Helvetica,Arial,sans-serif'));
+assert.ok(html.includes('height:12pt'));
+assert.ok(!html.includes('rte333WK layout'));assert.ok(!html.includes('Modèle rte333WK'));
+const compact={...model,workingRouteCode:'102',blocks:[block('1',1,Array.from({length:9},(_,i)=>'P'+i),Array.from({length:57},(_,i)=>({id:String(2000000+i),times:Array.from({length:9},(_,j)=>21600+i*900+j*60),headway:i?900:null})))],workingStops:Object.fromEntries(Array.from({length:9},(_,i)=>['P'+i,{code:'PLACE00'+i,name:'Timing point '+i}]))};
+const compactHtml=tools.html(compact);
+assert.equal((compactHtml.match(/class="working-grid"/g)||[]).length,1,'All 9 timing points and 57 trips in a single grid');
+assert.ok(compactHtml.includes('Trips 1-57'));assert.ok(compactHtml.includes('PLACE008'));assert.ok(compactHtml.includes('2000056'));
+assert.ok(compactHtml.includes('Direction 1 · Trips'));
+assert.ok(!compactHtml.includes('Report - Both Directions'));
+for(const direction of ['0','1','?']){
+  const single=tools.html({...compact,blocks:[{...compact.blocks[0],direction}]});
+  assert.match(single,/<thead><tr><th class="hw">HW<\/th><th class="trip">/,'Trip information starts at the left for every single direction');
+  assert.ok(single.includes('data-vertical="true"'));
+}
+assert.ok(html.includes('data-vertical="true"'),'Small routes also use vertical TP headers');
+assert.ok(!compactHtml.includes('Points 8-9'));
+const paired=tools.html({...compact,blocks:[...compact.blocks,{...compact.blocks[0],direction:'0'}].map(b=>({...b,rows:b.rows.slice(0,27)}))});
+assert.equal((paired.match(/class="working-grid"/g)||[]).length,1,'Nine points per direction stay on the same grid');
+assert.ok(paired.includes('data-vertical="true"'));
+fs.mkdirSync(path.join(root,'tmp'),{recursive:true});fs.writeFileSync(path.join(root,'tmp/report-editor-working-compact.html'),compactHtml);
 // All trips survive row pagination, point pagination, unequal directions and loops.
 const big={...model,blocks:[block('0',1,Array.from({length:17},(_,i)=>'S'+i),Array.from({length:65},(_,i)=>({id:'long'+i,headway:i?60:null,times:Array.from({length:17},(_,j)=>3600+i*60+j*10)}))),block('1',2,['Z'],[{id:'return',times:[7200],headway:null}]),block('?',3,['A','B','A'],[{id:'loop',times:[10,20,30],headway:null}])]};
 const large=tools.html(big);assert.ok(large.includes('letter landscape'));assert.ok(large.includes('long64'));assert.ok(large.includes('S16'));assert.ok(large.includes('no assigned place'));assert.ok(large.includes('Unspecified direction'));assert.ok(large.includes('loop'));

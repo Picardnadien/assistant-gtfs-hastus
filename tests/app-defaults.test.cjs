@@ -19,6 +19,10 @@ for(const [id,value] of [['place-code-max-length','8'],['place-report-orientatio
   assert.match(select(id),new RegExp(`value="${value}" selected`));field(id).value=value;
 }
 assert.match(html,/id="radius"[^>]*value="200"/);assert.match(html,/id="radius-number"[^>]*value="200"/);
+assert.doesNotMatch(html.match(/<input id="pad-place-codes"[^>]*>/)[0],/\bchecked\b/);
+assert.match(html.match(/<input id="use-canada-post-abbreviations"[^>]*>/)[0],/\bchecked\b/);
+assert.doesNotMatch(html.match(/<input id="prefix-stop-ids"[^>]*>/)[0],/\bchecked\b/);
+assert.match(html,/id="stop-management-title">Gestion des stops/);
 assert.equal((html.match(/id="scheduling-unit-module"/g)||[]).length,1);
 assert.ok(html.indexOf('id="scheduling-unit-module"')>html.indexOf('id="export-bar"'));
 context.initAppShell();assert.ok(classes.has('clean-theme'));assert.ok(classes.has('clean-dark-theme'));assert.equal(field('app-theme').value,'clean-dark');assert.equal(document.documentElement.lang,'en');

@@ -56,7 +56,7 @@ async function restoreLatestWorkspace(canRestore=()=>state.workspace.mode==="non
 function baseFileName(name){return String(name||"").split(/[\\/]/).pop().replace(/[^a-zA-Z0-9._-]/g,"_")||"fichier.txt";}
 async function writeWorkspaceFile(directory,name,content){const fileHandle=await directory.getFileHandle(baseFileName(name),{create:true}),writer=await fileHandle.createWritable();try{await writer.write(content);await writer.close();}catch(error){try{await writer.abort();}catch{}throw error;}}
 async function workspacePermission(handle,request=false){if(!handle)return false;const options={mode:"readwrite"};if(await handle.queryPermission(options)==="granted")return true;return request&&(await handle.requestPermission(options))==="granted";}
-function workspaceSnapshot(){if(state.mode==="geographic"&&state.geographicReady)captureGeographicState();return {version:9,savedAt:new Date().toISOString(),mode:state.mode,workflow:state.workflow||state.mode,analysisJourney,hastusCorrections:state.hastusCorrections,networkStopSource:$("network-stop-source")?.value||"gtfs",geographicClientType:state.geographicClientType,geographicInputSource:state.geographicInputSource,geographicReady:state.geographicReady,geographicCache:state.geographicCache,files:state.files,parsed:state.parsed,originalEntries:state.originalEntries,mapping:state.mapping,decisions:state.decisions,groups:state.groups,routeMaps:state.routeMaps,places:state.places,gtfsStops:state.gtfsStops,timingPointSource:state.timingPointSource,timingPointIds:[...state.timingPointIds],variantStopIds:[...state.variantStopIds],endpointStopIds:[...state.endpointStopIds],unusedPlaceStops:state.unusedPlaceStops,groupingCandidates:state.groupingCandidates,referenceAnomalies:state.referenceAnomalies,timingSourceStats:state.timingSourceStats,clientLogo:state.clientLogo,workingStops:state.workingStops,workingParentStations:state.workingParentStations,collisions:state.collisions,stopIdRemap:[...state.stopIdRemap],associationKey:state.associationKey,mapDisplay:state.mapDisplay,mapLabelMode:state.mapLabelMode,timepointFallback:state.timepointFallback,settings:{radius:Number($("radius")?.value??200),blankTimepoints:Boolean($("blank-timepoints")?.checked),smartRadius:Boolean($("smart-radius")?.checked),renumberStopIds:Boolean($("renumber-stop-ids")?.checked),renumberStopIdStart:Number($("renumber-stop-id-start")?.value||100001),reviewExistingPlaces:Boolean($("review-existing-places")?.checked),referenceDistance:Number($("reference-distance")?.value??500),stopPlaceDistance:Number($("stop-place-distance")?.value??500),diagnosticDeadheadOnly:Boolean($("diagnostic-deadhead-only")?.checked),diagnosticEndpointsOnly:Boolean($("diagnostic-endpoints-only")?.checked),timingPointSource:$("timing-point-source")?.value||"gtfs",padStopIds:Boolean($("pad-stop-ids")?.checked),padStopIdWidth:$("pad-stop-id-width")?.value||"",padPlaceCodes:padPlaceCodes(),placeCodeCase:placeCodeCase(),placeCodeMaxLength:placeCodeMaxLength(),useCanadaPostAbbreviations:useCanadaPostAbbreviations(),placeReportLanguage:reportLanguageChoice("place-report-language"),networkLanguage:reportLanguageChoice("network-language"),networkMapMode:$("network-map-mode")?.value==="offline"?"offline":"online",networkTheme:"clean",placeReportOrientation:$("place-report-orientation")?.value||"landscape",placeReportHtmlMapMode:placeReportHtmlMapMode(),placeReportHtmlTheme:placeReportHtmlTheme(),placeReportHideFileExports:placeReportHideFileExports(),placeReportNearby:Boolean($("place-report-nearby")?.checked),placeReportMargin:Number($("place-report-margin")?.value||150),uiTheme:$("app-theme")?.value==="clean-dark"?"clean-dark":"clean",uiLanguage:$("app-language")?.value||"fr"}};}
+function workspaceSnapshot(){if(state.mode==="geographic"&&state.geographicReady)captureGeographicState();return {version:9,savedAt:new Date().toISOString(),mode:state.mode,workflow:state.workflow||state.mode,analysisJourney,hastusCorrections:state.hastusCorrections,networkStopSource:$("network-stop-source")?.value||"gtfs",geographicClientType:state.geographicClientType,geographicInputSource:state.geographicInputSource,geographicReady:state.geographicReady,geographicCache:state.geographicCache,files:state.files,parsed:state.parsed,originalEntries:state.originalEntries,mapping:state.mapping,decisions:state.decisions,groups:state.groups,routeMaps:state.routeMaps,places:state.places,gtfsStops:state.gtfsStops,timingPointSource:state.timingPointSource,timingPointIds:[...state.timingPointIds],variantStopIds:[...state.variantStopIds],endpointStopIds:[...state.endpointStopIds],unusedPlaceStops:state.unusedPlaceStops,groupingCandidates:state.groupingCandidates,referenceAnomalies:state.referenceAnomalies,timingSourceStats:state.timingSourceStats,clientLogo:state.clientLogo,workingStops:state.workingStops,workingParentStations:state.workingParentStations,collisions:state.collisions,stopIdRemap:[...state.stopIdRemap],associationKey:state.associationKey,mapDisplay:state.mapDisplay,mapLabelMode:state.mapLabelMode,timepointFallback:state.timepointFallback,settings:{radius:Number($("radius")?.value??200),blankTimepoints:Boolean($("blank-timepoints")?.checked),smartRadius:Boolean($("smart-radius")?.checked),renumberStopIds:Boolean($("renumber-stop-ids")?.checked),renumberStopIdStart:Number($("renumber-stop-id-start")?.value||100001),reviewExistingPlaces:Boolean($("review-existing-places")?.checked),referenceDistance:Number($("reference-distance")?.value??500),stopPlaceDistance:Number($("stop-place-distance")?.value??500),diagnosticDeadheadOnly:Boolean($("diagnostic-deadhead-only")?.checked),diagnosticEndpointsOnly:Boolean($("diagnostic-endpoints-only")?.checked),timingPointSource:$("timing-point-source")?.value||"gtfs",prefixStopIds:Boolean($("prefix-stop-ids")?.checked),stopIdPrefix:$("stop-id-prefix")?.value||"",padStopIds:Boolean($("pad-stop-ids")?.checked),padStopIdWidth:$("pad-stop-id-width")?.value||"",padPlaceCodes:padPlaceCodes(),placeCodeCase:placeCodeCase(),placeCodeMaxLength:placeCodeMaxLength(),useCanadaPostAbbreviations:useCanadaPostAbbreviations(),placeReportLanguage:reportLanguageChoice("place-report-language"),networkLanguage:reportLanguageChoice("network-language"),networkMapMode:$("network-map-mode")?.value==="offline"?"offline":"online",networkTheme:"clean",placeReportOrientation:$("place-report-orientation")?.value||"landscape",placeReportHtmlMapMode:placeReportHtmlMapMode(),placeReportHtmlTheme:placeReportHtmlTheme(),placeReportHideFileExports:placeReportHideFileExports(),placeReportNearby:Boolean($("place-report-nearby")?.checked),placeReportMargin:Number($("place-report-margin")?.value||150),uiTheme:$("app-theme")?.value==="clean-dark"?"clean-dark":"clean",uiLanguage:$("app-language")?.value||"fr"}};}
 function updateLoadedGtfsUi(){const found=Object.entries(GTFS_FILE_KEYS).filter(([,key])=>state.parsed[key]);$("gtfs-status").textContent=found.length?`GTFS chargé · ${found.length} fichier${found.length>1?'s':''} reconnu${found.length>1?'s':''}`:"Aucun GTFS chargé";$("gtfs-files").innerHTML=found.map(([name])=>`<span class="file-chip ${["calendar_dates.txt","frequencies.txt"].includes(name)?'optional':''}">${name}</span>`).join("");}
 function countWorkingParents(stops){return (stops?.rows||[]).filter(row=>normalize(row.parent_station)&&normalize(row.location_type)!=="1").length;}
 function refreshWorkingTimetableAccess(){const option=$("network-working-option"),count=state.workingParentStations||0,ready=count>0,schedulesReady=Boolean(state.parsed.routes&&state.parsed.trips&&state.parsed.times);if(option)option.disabled=!ready;if(!ready&&$("network-stop-source"))$("network-stop-source").value='gtfs';$("working-timetable-detail").textContent=ready?`${count} stop${count>1?'s':''} avec parent_station${schedulesReady?".":" · routes.txt et trips.txt requis pour les horaires."}`:"Disponible dès qu’un parent_station est enregistré dans working/stops.txt.";}
@@ -71,6 +71,8 @@ function restoreWorkspaceSnapshot(snapshot){
   $("place-report-hide-file-exports").checked=snapshot.settings?.placeReportHideFileExports!==false;
   if($("pad-stop-ids"))$("pad-stop-ids").checked=Boolean(snapshot.settings?.padStopIds);
   if($("pad-stop-id-width"))$("pad-stop-id-width").value=snapshot.settings?.padStopIdWidth||"";
+  if($("prefix-stop-ids"))$("prefix-stop-ids").checked=Boolean(snapshot.settings?.prefixStopIds);
+  if($("stop-id-prefix"))$("stop-id-prefix").value=snapshot.settings?.stopIdPrefix||"";
   if($("pad-place-codes"))$("pad-place-codes").checked=snapshot.settings?.padPlaceCodes!==false;
   if(snapshot.settings){$("radius").value=distanceValue(snapshot.settings.radius,200);$("radius-output").textContent=`${$("radius").value} m`;$("blank-timepoints").checked=Boolean(snapshot.settings.blankTimepoints);$("smart-radius").checked=Boolean(snapshot.settings.smartRadius);$("renumber-stop-ids").checked=Boolean(snapshot.settings.renumberStopIds);$("renumber-stop-id-start").value=snapshot.settings.renumberStopIdStart||100001;$("review-existing-places").checked=Boolean(snapshot.settings.reviewExistingPlaces);$("stop-place-distance").value=distanceValue(snapshot.settings.stopPlaceDistance,500);$("stop-place-distance-output").textContent=`${$("stop-place-distance").value} m`;$("diagnostic-endpoints-only").checked=Boolean(snapshot.settings.diagnosticEndpointsOnly);$("diagnostic-deadhead-only").checked=Boolean(snapshot.settings.diagnosticDeadheadOnly);$("reference-distance").value=distanceValue(snapshot.settings.referenceDistance,500);$("reference-distance-output").textContent=`${$("reference-distance").value} m`;$("timing-point-source").value=snapshot.settings.timingPointSource||state.timingPointSource;$("place-code-case").value=snapshot.settings.placeCodeCase==="lower"?"lower":"upper";$("use-canada-post-abbreviations").checked=Boolean(snapshot.settings.useCanadaPostAbbreviations);$("place-report-language").value=["fr","en"].includes(snapshot.settings.placeReportLanguage)?snapshot.settings.placeReportLanguage:"auto";if($("network-language"))$("network-language").value=["fr","en"].includes(snapshot.settings.networkLanguage)?snapshot.settings.networkLanguage:"auto";if($("network-map-mode"))$("network-map-mode").value=snapshot.settings.networkMapMode==="offline"?"offline":"online";if($("network-theme"))$("network-theme").value="clean";$("place-report-orientation").value=snapshot.settings.placeReportOrientation==="portrait"?"portrait":"landscape";$("place-report-html-map-mode").value=snapshot.settings.placeReportHtmlMapMode==="offline"?"offline":"online";$("place-report-nearby").checked=snapshot.settings.placeReportNearby!==false;$("place-report-margin").value=snapshot.settings.placeReportMargin||150;if($("place-report-html-theme"))$("place-report-html-theme").value="clean";if(typeof window.applyAppPreferences==="function")window.applyAppPreferences(snapshot.settings.uiTheme||"clean",snapshot.settings.uiLanguage||"fr");}
   updateLoadedGtfsUi();refreshWorkingTimetableAccess();state.mode="__restore__";setMode(restoredMode);if($("network-stop-source"))$("network-stop-source").value=snapshot.networkStopSource==="working"&&state.workingParentStations?"working":"gtfs";
@@ -174,7 +176,7 @@ function haversine(aLat, aLon, bLat, bLon) {
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 function cleanCode(text) { return normalize(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
-const PLACE_LINKING_WORDS=new Set(["DE","DU","DES","LA","LE","LES","UN","UNE","ET","D","L","OF","THE","A","AN","AND","TO","AT","IN","ON","FOR","FROM","BY","AFTER","BEFORE","AVE","DR","RD","ST","AD"]);
+const PLACE_LINKING_WORDS=new Set(["DE","DU","DES","LA","LE","LES","UN","UNE","ET","D","L","OF","THE","A","AN","AND","TO","AT","IN","ON","FOR","FROM","BY","AFTER","BEFORE","AV","AVE","DR","RD","ST","AD"]);
 const CANADA_POST_ABBREVIATIONS=new Map(Object.entries({AVENUE:"AVE",BOULEVARD:"BLVD",CARREFOUR:"CARREF",CENTRE:"CTR",CHEMIN:"CH",CIRCUIT:"CIRCT",CONCESSION:"CONC",CORNERS:"CRNRS",CROISSANT:"CROIS",DIVERSION:"DIVERS",DRIVE:"DR",ECHANGEUR:"ECH",ESPLANADE:"ESPL",ESTATES:"ESTATE",EXPRESSWAY:"EXPY",EXTENSION:"EXTEN",FREEWAY:"FWY",GARDENS:"GDNS",GROUNDS:"GRNDS",HARBOUR:"HARBR",HEIGHTS:"HTS",HIGHLANDS:"HGHLDS",HIGHWAY:"HWY",IMPASSE:"IMP",LANDING:"LANDNG",LIMITS:"LMTS",LOOKOUT:"LKOUT",MOUNTAIN:"MTN",PARK:"PK",PARKWAY:"PKY",PATHWAY:"PTWAY",PLATEAU:"PLAT",POINT:"PT",PRIVATE:"PVT",PROMENADE:"PROM",RANGE:"RG",ROAD:"RD",ROUTE:"RTE",RUELLE:"RLE",SENTIER:"SENT",SQUARE:"SQ",STREET:"ST",SUBDIVISION:"SUBDIV",TERRACE:"TERR",TERRASSE:"TSSE",THICKET:"THICK",TOWNLINE:"TLINE",TURNABOUT:"TRNABT",VILLAGE:"VILLGE",NORD:"N",SUD:"S",EST:"E",OUEST:"O"}));
 function useCanadaPostAbbreviations(){return Boolean($("use-canada-post-abbreviations")?.checked);}
 function placeCodeCase(){return $("place-code-case")?.value==="lower"?"lower":"upper";}
@@ -193,7 +195,7 @@ const PLACE_FACILITY_TYPES=[
   {key:'exchange',suffix:'ECH',forms:[['INTERCHANGES','Interchange'],['INTERCHANGE','Interchange'],['EXCHANGES','Exchange'],['EXCHANGE','Exchange'],['ECHANGEURS','Échangeur'],['ECHANGEUR','Échangeur'],['ECHANGES','Échange'],['ECHANGE','Échange']]},
   {key:'centre',suffix:'CTR',forms:[['TRANSIT CENTRE','Transit Centre'],['TRANSIT CENTER','Transit Center'],['TRANSIT CTR','Transit Centre'],['TRANSPORTATION CENTER','Transportation Center'],['TRANSPORTATION CENTRE','Transportation Centre'],['CENTRE DE TRANSIT','Centre de transit'],['CENTRE DE CORRESPONDANCE','Centre de correspondance']]}
 ];
-const PLACE_ROAD_TYPES=new Set(['ROAD','RD','STREET','ST','DRIVE','DR','AVENUE','AVE','BOULEVARD','BLVD','LANE','LN','WAY','RUE','CHEMIN']);
+const PLACE_ROAD_TYPES=new Set(['ROAD','RD','STREET','ST','DRIVE','DR','AVENUE','AV','AVE','BOULEVARD','BLVD','LANE','LN','WAY','RUE','CHEMIN']);
 function saintAwareName(text){
   return normalize(text).replace(/(^|[/&@]|\b(?:AT|BEFORE|AFTER|ON|RUE|CHEMIN|BOULEVARD|AVENUE)\s+)\s*ST\.?[\s-]+([\p{L}][\p{L}'’-]*)/giu,(match,prefix,next)=>{
     const word=cleanCode(next);return PLACE_LINKING_WORDS.has(word)||PLACE_ROAD_TYPES.has(word)||['STATION','STN','TERMINAL','HUB'].includes(word)?match:`${prefix}Saint ${next}`;
@@ -274,6 +276,7 @@ function stopIdPaddingPlan(rows,remap=new Map(),requested=""){
   return {remap:next,changes,width,maximum};
 }
 function refreshStopIdPaddingSetting(){
+  if($("stop-id-prefix"))$("stop-id-prefix").disabled=!$("prefix-stop-ids")?.checked;
   const field=$("pad-stop-id-width"),detail=$("stop-id-padding-detail");if(!field||!detail)return;
   const ids=(state.parsed.stops?.rows||[]).map(row=>normalize(row.stop_id)),maximum=ids.reduce((n,id)=>Math.max(n,id.length),0),numeric=ids.filter(id=>/^\d+$/.test(id)),numericMaximum=numeric.reduce((n,id)=>Math.max(n,id.length),0);
   field.min=String(Math.max(1,numericMaximum));field.placeholder=numericMaximum?String(numericMaximum):"Auto";field.disabled=!$("pad-stop-ids")?.checked;
@@ -284,6 +287,24 @@ function applyStopIdPadding(){
   const plan=stopIdPaddingPlan(state.parsed.stops.rows,state.stopIdRemap,$("pad-stop-id-width")?.value||"");
   state.stopIdRemap=plan.remap;
   for(const change of plan.changes){const existing=state.collisions.find(row=>row.old_stop_id===change.old_stop_id);if(existing){existing.new_stop_id=change.new_stop_id;existing.reason+=" + ZEROS_EN_TETE";}else state.collisions.push(change);}
+}
+function stopIdPrefixPlan(rows,remap=new Map(),prefix=""){
+  if(!/^[A-Za-z]$/.test(prefix))throw new Error(gtfsUi('Préfixe des Stop ID : saisissez une seule lettre de A à Z (majuscule ou minuscule).','Stop ID prefix: enter one letter from A to Z (uppercase or lowercase).'));
+  const next=new Map(remap),seen=new Map(),changes=[];
+  for(const row of rows){
+    const original=normalize(row.stop_id),id=remap.get(original)||original,output=prefix+id;
+    if(seen.has(output))throw new Error(gtfsUi(`Préfixe : les Stop ID ${seen.get(output)} et ${original} produisent le même identifiant ${output}.`,`Prefix: Stop IDs ${seen.get(output)} and ${original} produce the same ID ${output}.`));
+    seen.set(output,original);next.set(original,output);
+    changes.push({old_stop_id:original,new_stop_id:output,reason:'PREFIXE',stop_name:normalize(row.stop_name),stop_code:normalize(row.stop_code),hastus_description:''});
+  }
+  return {remap:next,changes};
+}
+function applyStopIdPrefix(){
+  if(!$("prefix-stop-ids")?.checked||isHastusInput())return;
+  const plan=stopIdPrefixPlan(state.parsed.stops.rows,state.stopIdRemap,$("stop-id-prefix")?.value||"");
+  state.stopIdRemap=plan.remap;
+  const audit=new Map(state.collisions.map(row=>[row.old_stop_id,row]));
+  for(const change of plan.changes){const existing=audit.get(change.old_stop_id);if(existing){existing.new_stop_id=change.new_stop_id;existing.reason+=' + PREFIXE';}else state.collisions.push(change);}
 }
 function gtfsUi(fr,en){return $("app-language")?.value==="en"?en:fr;}
 function refreshStopIdRenumberSetting(){
@@ -592,10 +613,13 @@ function stripPlaceDirections(description){return normalize(description).replace
 function commonDescription(items){
   const details=items.map(item=>placeFacilityDetails(stripPlaceDirections(item.description))),tokenLists=details.map(detail=>detail.base.split(' ').filter(Boolean));
   const primary=PLACE_FACILITY_TYPES.find(type=>details.some(detail=>detail.types.some(found=>found.key===type.key))),preferred=primary?details.findIndex(detail=>detail.types.some(type=>type.key===primary.key)):0;
-  const ignored=new Set([...PLACE_LINKING_WORDS,"ARRET","QUAI","NORD","SUD","EST","OUEST","ARRIVEE","DEPART","ALLER","RETOUR","NORTHBOUND","SOUTHBOUND","SOUTHBOUD","WESTBOUND","EASTBOUND"]);
+  const ignored=new Set([...PLACE_LINKING_WORDS,...PLACE_ROAD_TYPES,"ARRET","QUAI","NORD","SUD","EST","OUEST","ARRIVEE","DEPART","ALLER","RETOUR","NORTHBOUND","SOUTHBOUND","SOUTHBOUD","WESTBOUND","EASTBOUND"]);
   const common=(tokenLists[preferred]||[]).filter((word,index,all)=>!ignored.has(word)&&all.indexOf(word)===index&&tokenLists.every(words=>words.includes(word)));
   const title=words=>words.map(w=>w==='SAINT'&&items.some(item=>saintAwareName(item.description)!==normalize(item.description))?'St':w.charAt(0)+w.slice(1).toLowerCase()).join(' ');
-  let description=common.length?title(common):stripPlaceDirections(items[preferred]?.description)||"Nouvelle place";
+  // A shared street-type word must never become the whole place name. If no
+  // meaningful words are shared, use an informative stop name, not a generic one.
+  const fallback=[preferred,...tokenLists.keys()].find(index=>tokenLists[index]?.some(word=>!ignored.has(word)));
+  let description=common.length?title(common):fallback!==undefined?stripPlaceDirections(items[fallback]?.description):primary?details[preferred].types[0].label:gtfsUi('Nouvelle place','New place');
   // A facility named by only one platform must not disappear in the intersection
   // of shared words. Preserve all detected types in the description; the first
   // type in PLACE_FACILITY_TYPES takes precedence for the fixed code suffix.
@@ -732,7 +756,7 @@ function analyze() {
 
     if(isGeographicNew()){
       state.mapping={}; state.places=[];
-      applyTechnicalStopRenumbering();applyStopIdPadding();
+      applyTechnicalStopRenumbering();applyStopIdPadding();applyStopIdPrefix();
       const items=[];
       for(const id of [...timingIds].sort()){
         const s=stopById.get(id);
@@ -748,7 +772,7 @@ function analyze() {
 
     state.mapping = Object.fromEntries(fields.map(([key])=>[key,$(`map-${key}`).value]));
     const m=state.mapping, hastus=state.parsed.hastus.rows;
-    if(state.workflow!=="diagnostic"){applyTechnicalStopRenumbering(hastus.map(row=>row[m.stopId]));applyStopIdPadding();}
+    if(state.workflow!=="diagnostic"){applyTechnicalStopRenumbering(hastus.map(row=>row[m.stopId]));applyStopIdPadding();applyStopIdPrefix();}
     state.associationKey=directHastus?"stop_id":$("association-key").value;
     if(state.associationKey==="stop_code"&&!gtfs.headers.includes("stop_code")) throw new Error("La clé stop_code est sélectionnée, mais stops.txt ne contient pas cette colonne.");
     if (Object.entries(m).filter(([k])=>!["placeId","placeDesc","referenceId"].includes(k)).some(([,v])=>!v)) throw new Error("Toutes les colonnes obligatoires HASTUS doivent être associées.");
@@ -922,7 +946,6 @@ const alternatives=errors.some(error=>error.includes("code"))?alternativePlaceCo
   return `<section id="place-error-summary" class="place-error-summary danger"><span class="error-summary-icon">!</span><div><strong>${invalid.length} place${invalid.length>1?'s':''} avec une erreur</strong><small>Corrigez ces éléments avant l'export.</small>${applyAll}<ul>${rows}</ul></div></section>`;
 }
 function timetableSortValue(value){const parts=normalize(value).split(":").map(Number);return (parts[0]||0)*3600+(parts[1]||0)*60+(parts[2]||0);}
-function pamphletTime(value){const parts=normalize(value).split(":");return parts.length>=2?`${parts[0].padStart(2,"0")}:${parts[1].padStart(2,"0")}`:normalize(value)||"—";}
 function pamphletModelsFromPlaceMap(placeByStop){
   const routes=state.parsed.routes?.rows||[],trips=state.parsed.trips?.rows||[],times=state.parsed.times?.rows||[];
   if(!routes.length||!trips.length||!times.length)return [];
@@ -930,35 +953,91 @@ function pamphletModelsFromPlaceMap(placeByStop){
   const rowsByTrip=new Map();for(const row of times){const tripId=normalize(row.trip_id);if(!rowsByTrip.has(tripId))rowsByTrip.set(tripId,[]);rowsByTrip.get(tripId).push(row);}for(const rows of rowsByTrip.values())rows.sort((a,b)=>(Number(a.stop_sequence)||0)-(Number(b.stop_sequence)||0));
   const hasTimepoint=state.parsed.times.headers.includes("timepoint"),models=new Map();
   for(const trip of trips){
-    const routeId=normalize(trip.route_id),tripId=normalize(trip.trip_id),direction=normalize(trip.direction_id)||"0",service=normalize(trip.service_id)||"SERVICE",raw=(rowsByTrip.get(tripId)||[]).filter(row=>hasTimepoint?normalize(row.timepoint)==="1":(isZeroSecondTime(row.arrival_time)||isZeroSecondTime(row.departure_time))),points=[];
-    for(const row of raw){const place=placeByStop.get(normalize(row.stop_id));if(!place)continue;const time=normalize(row.arrival_time)||normalize(row.departure_time);if(points.at(-1)?.code===place.code)continue;points.push({...place,time});}
+    const routeId=normalize(trip.route_id),tripId=normalize(trip.trip_id),direction=normalize(trip.direction_id)||"?",service=normalize(trip.service_id)||"SERVICE",raw=(rowsByTrip.get(tripId)||[]).filter(row=>hasTimepoint?normalize(row.timepoint)==="1":(isZeroSecondTime(row.arrival_time)||isZeroSecondTime(row.departure_time))),points=[];
+    for(const row of raw){const place=placeByStop.get(normalize(row.stop_id));if(!place)continue;const time=normalize(row.arrival_time)||normalize(row.departure_time);points.push({...place,stopId:normalize(row.stop_id),time});}
     if(!points.length)continue;
-    const key=`${routeId}\u0001${direction}\u0001${service}`,route=routeById.get(routeId)||{route_id:routeId};if(!models.has(key))models.set(key,{key,routeId,direction,service,route,trips:[],points:[]});const model=models.get(key);model.trips.push({tripId,headsign:normalize(trip.trip_headsign),points,firstTime:points[0].time});if(points.length>model.points.length)model.points=points.map(({code,description,lat,lon})=>({code,description,lat,lon}));
+    const key=`${routeId}\u0001${direction}\u0001${service}`,route=routeById.get(routeId)||{route_id:routeId};if(!models.has(key))models.set(key,{key,routeId,direction,service,route,trips:[],points:[]});const model=models.get(key);model.trips.push({tripId,tripNumber:normalize(trip.trip_short_name)||tripId,headsign:normalize(trip.trip_headsign),points,firstTime:points[0].time});if(points.length>model.points.length)model.points=points.map(({code,description,lat,lon})=>({code,description,lat,lon}));
   }
   for(const model of models.values())model.trips.sort((a,b)=>timetableSortValue(a.firstTime)-timetableSortValue(b.firstTime));
   return [...models.values()].sort((a,b)=>(normalize(a.route.route_short_name)||a.routeId).localeCompare(normalize(b.route.route_short_name)||b.routeId,undefined,{numeric:true})||a.direction.localeCompare(b.direction)||a.service.localeCompare(b.service));
 }
 function newClientPamphletModels(){const placeByStop=new Map();for(const group of state.groups)for(const item of group.items)placeByStop.set(normalize(item.id),{code:normalize(group.code),description:normalize(group.description),lat:group.lat,lon:group.lon});return pamphletModelsFromPlaceMap(placeByStop);}
 function workingPamphletModels(){const stops=state.workingStops?.rows||[],stationById=new Map(stops.filter(row=>normalize(row.location_type)==="1").map(row=>[normalize(row.stop_id),row])),placeByStop=new Map();for(const stop of stops){const parent=normalize(stop.parent_station);if(!parent||normalize(stop.location_type)==="1")continue;const station=stationById.get(parent)||{};placeByStop.set(normalize(stop.stop_id),{code:parent,description:normalize(station.stop_name)||parent,lat:Number(station.stop_lat)||Number(stop.stop_lat),lon:Number(station.stop_lon)||Number(stop.stop_lon)});}return pamphletModelsFromPlaceMap(placeByStop);}
-function pamphletDiagram(points){
-  const width=620,height=116,count=points.length,left=42,right=width-42,y=54,step=count>1?(right-left)/(count-1):0;
-  const line=count>1?`<line x1="${left}" y1="${y}" x2="${right}" y2="${y}"/>`:"",nodes=points.map((point,index)=>{const x=count>1?left+step*index:width/2,labelY=index%2?101:22,stemY=index%2?84:31;return `<g><line x1="${x.toFixed(1)}" y1="${y}" x2="${x.toFixed(1)}" y2="${stemY}"/><circle cx="${x.toFixed(1)}" cy="${y}" r="7"/><text x="${x.toFixed(1)}" y="${labelY}" text-anchor="middle">${escapeHtml(point.code)}</text></g>`;}).join("");
-  return `<svg class="pamphlet-diagram" viewBox="0 0 ${width} ${height}" role="img" aria-label="Schéma de ${points.length} places timing points">${line}${nodes}</svg>`;
+const pamphletCollections=new Map();
+function pamphletText(fr,en){return $("app-language")?.value==="en"?en:fr;}
+function pairedPamphletModels(models){
+  const pairs=new Map();
+  for(const model of models){const key=JSON.stringify([model.routeId,model.service]);if(!pairs.has(key))pairs.set(key,{routeId:model.routeId,route:model.route,service:model.service,models:[]});pairs.get(key).models.push(model);}
+  return [...pairs.values()];
 }
-function pamphletCard(model){
-  const routeName=normalize(model.route.route_short_name)||model.routeId,longName=normalize(model.route.route_long_name),headsign=model.trips.find(trip=>trip.headsign)?.headsign||longName||`Direction ${model.direction}`,headers=model.points.map(point=>`<th><code>${escapeHtml(point.code)}</code><small>${escapeHtml(point.description)}</small></th>`).join(""),rows=model.trips.map((trip,index)=>{const byCode=new Map(trip.points.map(point=>[point.code,point.time]));return `<tr><th><span>${String(index+1).padStart(2,"0")}</span><small>${escapeHtml(trip.tripId)}</small></th>${model.points.map(point=>`<td>${pamphletTime(byCode.get(point.code))}</td>`).join("")}</tr>`;}).join("");
-  return `<article class="pamphlet-card" data-pamphlet-route="${escapeHtml(model.routeId)}"><header><div class="pamphlet-route-number">${escapeHtml(routeName)}</div><div><p>HORAIRE DE LIGNE</p><h4>${escapeHtml(headsign)}</h4><small>${escapeHtml(longName||model.routeId)} · direction ${escapeHtml(model.direction)} · service ${escapeHtml(model.service)}</small></div></header>${pamphletDiagram(model.points)}<div class="pamphlet-table-scroll"><table><thead><tr><th>Voyage</th>${headers}</tr></thead><tbody>${rows}</tbody></table></div><footer><span>TP · heures de passage planifiées</span><strong>${model.points.length} place${model.points.length!==1?'s':''}</strong></footer></article>`;
+function pamphletWorkingModel(pair,format="ampm",landscape=false){
+  const blocks=[],workingStops={},frequencies=[],frequencyByTrip=new Map();
+  for(const f of state.parsed.frequencies?.rows||[]){const id=normalize(f.trip_id);if(!frequencyByTrip.has(id))frequencyByTrip.set(id,[]);frequencyByTrip.get(id).push(f);}
+  const seconds=value=>{const m=normalize(value).match(/^(\d+):([0-5]\d):([0-5]\d)$/);return m?Number(m[1])*3600+Number(m[2])*60+Number(m[3]):null;};
+  for(const model of pair.models){
+    const patterns=new Map();
+    for(const trip of model.trips){
+      const ids=trip.points.map(p=>p.stopId||p.code),key=JSON.stringify(ids);
+      for(const p of trip.points)workingStops[p.stopId||p.code]={code:p.code,name:p.description};
+      if(!patterns.has(key))patterns.set(key,{routeId:pair.routeId,route:[pair.route.route_short_name||pair.routeId,pair.route.route_long_name].filter(Boolean).join(' - '),direction:model.direction,pattern:patterns.size+1,stopIds:ids,rows:[]});
+      const block=patterns.get(key),times=trip.points.map(p=>seconds(p.time)),windows=frequencyByTrip.get(trip.tripId);
+      if(windows?.length){
+        // Frequency templates are not scheduled trips. Exact windows need offsets
+        // from the first GTFS stop, which may precede the first displayed TP.
+        const first=(state.parsed.times?.rows||[]).filter(r=>normalize(r.trip_id)===trip.tripId).sort((a,b)=>Number(a.stop_sequence)-Number(b.stop_sequence))[0];
+        const origin=seconds(first?.departure_time)??seconds(first?.arrival_time);
+        for(const f of windows){const start=seconds(f.start_time),end=seconds(f.end_time),hw=Number(f.headway_secs),valid=start!==null&&end!==null&&end>start&&Number.isInteger(hw)&&hw>0;
+          if(valid&&origin!==null&&normalize(f.exact_times)==='1')for(let departure=start;departure<end;departure+=hw)block.rows.push({id:trip.tripId+'@'+departure,tripNumber:trip.tripNumber,times:times.map(time=>time===null?null:time-origin+departure),headway:null});
+          else frequencies.push({routeId:pair.routeId,route:pair.route.route_short_name||pair.routeId,direction:model.direction,trip:trip.tripNumber||trip.tripId,start:f.start_time,end:f.end_time,headway:hw,invalid:!valid});
+        }
+      }else block.rows.push({id:trip.tripId,tripNumber:trip.tripNumber||trip.tripId,times,headway:null});
+    }
+    for(const block of patterns.values()){
+      block.rows.sort((a,b)=>(a.times.find(Number.isFinite)??Infinity)-(b.times.find(Number.isFinite)??Infinity));
+      let previous=null;for(const row of block.rows){const first=row.times[0];row.headway=Number.isFinite(first)&&previous!==null?first-previous:null;previous=Number.isFinite(first)?first:null;}
+      blocks.push(block);
+    }
+  }
+  return {language:$("app-language")?.value==="en"?"en":"fr",client:state.parsed.agency?.rows?.[0]?.agency_name||'CSched',date:'',service:pair.service,timeFormat:format,workingLandscape:landscape,workingRouteCode:pair.route.route_short_name||pair.routeId,workingRoute:pair.route.route_long_name||pair.routeId,workingStops,blocks,frequencies,fallbackTiming:!state.parsed.times?.headers?.includes('timepoint')};
+}
+function pamphletCard(pair,index){
+  const trips=pair.models.reduce((sum,m)=>sum+m.trips.length,0),directions=[...new Set(pair.models.map(m=>m.direction))].join(' / ');
+  return `<details class="pamphlet-card" data-pamphlet-route="${escapeHtml(pair.routeId)}" data-pamphlet-index="${index}" ontoggle="loadPamphletPreview(this)"><summary><span class="pamphlet-route-number">${escapeHtml(pair.route.route_short_name||pair.routeId)}</span><span class="pamphlet-route-copy"><strong>${escapeHtml(pair.route.route_long_name||pair.routeId)}</strong><small>Service ${escapeHtml(pair.service)} · ${escapeHtml(directions)} · ${trips} ${pamphletText('voyages source','source trips')}</small></span><span class="pamphlet-open-label">${pamphletText('Aperçu','Preview')}</span></summary><div class="pamphlet-preview-actions"><button type="button" class="secondary" onclick="printPamphlets(this,${index})">${pamphletText('Ouvrir / PDF','Open / PDF')}</button><small>${pamphletText('Deux directions · codes de place · headway','Both directions · place codes · headway')}</small></div><div class="pamphlet-preview-host"></div></details>`;
+}
+function pamphletSection(id,models){
+  const pairs=pairedPamphletModels(models);pamphletCollections.set(id,pairs);
+  const routes=[...new Map(pairs.map(p=>[p.routeId,p.route])).entries()],options=routes.map(([id,route])=>`<option value="${escapeHtml(id)}">${escapeHtml(route.route_short_name||id)}${route.route_long_name?' · '+escapeHtml(route.route_long_name):''}</option>`).join('');
+  return `<section id="${id}" class="pamphlet-offer"><div class="pamphlet-offer-head"><div><p class="eyebrow">${pamphletText('HORAIRES','TIMETABLES')}</p><h3>${pamphletText('Pamphlets des places assignées','Assigned-place timetables')}</h3><small>${pamphletText('Une fiche par route et service, avec les deux directions côte à côte et les codes de place complets. Les services restent séparés : ces grilles ne représentent pas une journée calendaire.','One sheet per route and service, with both directions side by side and full place codes. Services remain separate: these grids do not represent a calendar date.')}</small></div><div class="pamphlet-controls"><label>${pamphletText('Route à afficher','Route to display')}<select data-pamphlet-filter onchange="filterPamphlets(this.value,this)"><option value="all">${pamphletText('Toutes les routes','All routes')}</option>${options}</select></label><label>${pamphletText('Format des heures','Time format')}<select data-pamphlet-time onchange="changePamphletTime(this)"><option value="ampm">AM/PM</option><option value="military">24 h</option></select></label><button type="button" class="primary" onclick="printPamphlets(this)"${pairs.length?'':' disabled'}>${pamphletText('Aperçu / PDF','Preview / PDF')}</button></div></div><details class="pamphlet-details"><summary><span data-pamphlet-count>${pairs.length}</span> ${pamphletText('pamphlets · ouvrir la liste','timetables · open list')}</summary><div class="pamphlet-grid">${pairs.length?pairs.map(pamphletCard).join(''):`<p>${pamphletText('Aucun voyage avec TP affecté à une place.','No trips with a timing point assigned to a place.')}</p>`}</div></details></section>`;
 }
 function pamphletOffer(){
   const ready=isGeographicNew()&&state.groups.length>0&&state.decisions.length>0&&state.workspace.lastSaved&&!state.workspace.dirty&&!groupValidationIssues().length&&!state.decisions.some(decision=>decision.status==="error");
-  if(!ready)return `<div id="pamphlet-offer"></div>`;
-  if(!state.parsed.routes||!state.parsed.trips)return `<section id="pamphlet-offer" class="pamphlet-offer"><div><p class="eyebrow">APRÈS LA SAUVEGARDE</p><h3>Créer les pamphlets horaires</h3><small>Ajoutez routes.txt et trips.txt au GTFS pour produire les horaires par ligne.</small></div></section>`;
-  const models=newClientPamphletModels();if(!models.length)return `<section id="pamphlet-offer" class="pamphlet-offer"><div><p class="eyebrow">APRÈS LA SAUVEGARDE</p><h3>Aucun horaire TP à présenter</h3><small>Aucun voyage ne relie les timing points aux places validées.</small></div></section>`;
-  const routeIds=[...new Set(models.map(model=>model.routeId))],options=routeIds.map(routeId=>`<option value="${escapeHtml(routeId)}">Route ${escapeHtml(routeId)}</option>`).join("");
-  return `<section id="pamphlet-offer" class="pamphlet-offer"><div class="pamphlet-offer-head"><div><p class="eyebrow">ÉTAPE DE FINITION</p><h3>Horaires voyageurs prêts à prévisualiser</h3><small>Les places sont valides et la sauvegarde est à jour. Les grilles affichent uniquement les passages aux TP avec leur code place de un à six caractères.</small></div><div><label>Filtrer une route<select onchange="filterPamphlets(this.value)"><option value="all">Toutes les routes</option>${options}</select></label><button type="button" class="primary" onclick="printPamphlets()">Imprimer les pamphlets</button></div></div><details class="pamphlet-details"><summary>Afficher les ${models.length} pamphlet${models.length!==1?'s':''} horaires</summary><div class="pamphlet-grid">${models.map(pamphletCard).join("")}</div></details></section>`;
+  if(!ready){pamphletCollections.delete('pamphlet-offer');return '<div id="pamphlet-offer"></div>';}
+  return pamphletSection('pamphlet-offer',newClientPamphletModels());
 }
-function workingTimetableModule(){const models=state.workingTimetableModels||[],routeIds=[...new Set(models.map(model=>model.routeId))],options=routeIds.map(routeId=>`<option value="${escapeHtml(routeId)}">Route ${escapeHtml(routeId)}</option>`).join("");return `<section id="working-timetable-module" class="pamphlet-offer working-timetable-module"><div class="pamphlet-offer-head"><div><p class="eyebrow">WORKING / STOPS.TXT</p><h3>Timetables des places assignées</h3><small>${state.workingParentStations} stops utilisent un parent_station. Les heures présentées sont uniquement celles des timing points.</small></div><div><label>Filtrer une route<select onchange="filterPamphlets(this.value)"><option value="all">Toutes les routes</option>${options}</select></label><button type="button" class="primary" onclick="printPamphlets()">Imprimer les timetables</button></div></div><div class="pamphlet-grid">${models.length?models.map(pamphletCard).join(""):`<div class="notice">Aucun voyage avec timing point ne correspond aux parent_station de working/stops.txt.</div>`}</div></section>`;}
+function workingTimetableModule(){return pamphletSection('working-timetable-module',state.workingTimetableModels||[]);}
 function refreshPamphletOffer(){const current=$("pamphlet-offer");if(current)current.outerHTML=pamphletOffer();}
+function loadPamphletPreview(card){
+  const host=card.querySelector('.pamphlet-preview-host');if(!host)return;if(!card.open){host.replaceChildren();return;}if(host.firstChild)return;
+  const section=card.closest('.pamphlet-offer'),pair=pamphletCollections.get(section.id)?.[Number(card.dataset.pamphletIndex)];if(!pair)return;
+  const frame=document.createElement('iframe');frame.className='pamphlet-working-frame';frame.title=pamphletText('Horaire de la route ','Route timetable ')+(pair.route.route_short_name||pair.routeId)+' · '+pair.service;
+  frame.srcdoc=WorkingTimetable.html(pamphletWorkingModel(pair,section.querySelector('[data-pamphlet-time]').value));host.append(frame);
+}
+function filterPamphlets(routeId,source){
+  const section=source?.closest('.pamphlet-offer')||$('working-timetable-module')||$('pamphlet-offer');if(!section)return;
+  let count=0;section.querySelectorAll('.pamphlet-card').forEach(card=>{const hidden=routeId!=='all'&&card.dataset.pamphletRoute!==routeId;card.classList.toggle('pamphlet-filtered',hidden);if(hidden)card.open=false;else count++;});section.querySelector('[data-pamphlet-count]').textContent=count;
+}
+function changePamphletTime(input){input.closest('.pamphlet-offer').querySelectorAll('.pamphlet-card[open]').forEach(card=>{card.querySelector('.pamphlet-preview-host').replaceChildren();loadPamphletPreview(card);});}
+function printPamphlets(source,index){
+  const section=source?.closest('.pamphlet-offer')||$('working-timetable-module')||$('pamphlet-offer');if(!section)return;
+  const all=pamphletCollections.get(section.id)||[],route=section.querySelector('[data-pamphlet-filter]').value,pairs=index===undefined?all.filter(p=>route==='all'||p.routeId===route):[all[index]].filter(Boolean);if(!pairs.length)return;
+  const popup=window.open('','_blank','width=1200,height=850');if(!popup){alert(pamphletText('La fenêtre d’aperçu a été bloquée par le navigateur.','The browser blocked the preview window.'));return;}
+  try{
+    const format=section.querySelector('[data-pamphlet-time]').value,docs=pairs.map(pair=>WorkingTimetable.html(pamphletWorkingModel(pair,format,pairs.length>1))),start='<section class="working-page" data-layout="rte333wk">';
+    const html=docs[0].slice(0,docs[0].indexOf(start))+docs.map(doc=>doc.slice(doc.indexOf(start),doc.lastIndexOf('</body>'))).join('')+'</body></html>';
+    popup.document.open();popup.document.write(html);popup.document.close();
+  }catch(error){popup.close();alert(pamphletText('Impossible de préparer les pamphlets : ','Unable to prepare timetables: ')+error.message);}
+}
+
 function refreshGroupErrorSummary(){const summary=$("place-error-summary");if(summary)summary.outerHTML=groupErrorSummary();}
 function smartRadiusNotice(){const stats=state.smartRadiusStats;if(!stats)return "";return `<div class="notice smart-radius-notice"><strong>Rayon intelligent actif.</strong> Les rayons locaux varient de ${stats.minimum} à ${stats.maximum} m (moyenne ${stats.average} m) selon la densité des ${stats.stops} timing points, leur fréquence de passage et les routes issues de trips.txt. Le rayon général reste le plafond.</div>`;}
 function stopIdChangeNotice(){
@@ -1323,8 +1402,7 @@ window.downloadDailyCounts=()=>download("comparaison_voyages_par_jour.csv",daily
 window.downloadHastusPreparation=()=>download("timetable_preparation_hastus.csv",hastusPreparationCsv());
 window.selectTimetableDate=date=>{state.selectedTimetableDate=date;render();document.getElementById('day-route-summary')?.scrollIntoView({behavior:'smooth',block:'start'});};
 window.downloadServiceImportPlan=()=>download("hastus_import_dates.csv",ServiceImportPlan.csv(state.timetableAnalysis.importPlan,$("app-language")?.value));
-window.filterPamphlets=routeId=>{document.querySelectorAll(".pamphlet-card").forEach(card=>card.classList.toggle("pamphlet-filtered",routeId!=="all"&&card.dataset.pamphletRoute!==routeId));};
-window.printPamphlets=()=>{const section=$("working-timetable-module")||$("pamphlet-offer");if(!section)return;const popup=window.open("","_blank","width=1200,height=850");if(!popup){alert("La fenêtre d’impression a été bloquée par le navigateur.");return;}popup.document.open();popup.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Pamphlets horaires</title><link rel="stylesheet" href="${new URL("styles.css",location.href).href}"><style>body{background:#fff;padding:12px}.pamphlet-offer-head>div:last-child,.pamphlet-details>summary{display:none}.pamphlet-details{display:block}.pamphlet-grid{display:block}.pamphlet-card{break-after:page;margin:0 0 12mm;box-shadow:none}.pamphlet-card:last-child{break-after:auto}@page{size:landscape;margin:9mm}</style></head><body>${section.outerHTML}<script>document.querySelector("details")?.setAttribute("open","");window.addEventListener("load",()=>setTimeout(()=>window.print(),700));<\/script></body></html>`);popup.document.close();};
+
 
 function resolvedPlace(d) {
   if(isGeographicNew()) {const g=state.groups.find(x=>x.id===d.groupId);return g?{id:g.code,description:g.description,lat:g.lat,lon:g.lon,isNew:true}:null;}
@@ -1341,6 +1419,7 @@ function buildExports(includeTimes=true) {
   if(!headers.includes("location_type")) headers.push("location_type");
   const rows=state.gtfsStops.map(r=>{const copy={...r},oldId=normalize(copy.stop_id);copy.stop_id=state.stopIdRemap.get(oldId)||oldId;if(state.stopIdRemap.has(normalize(copy.parent_station)))copy.parent_station=state.stopIdRemap.get(normalize(copy.parent_station));return copy;});
   const byId=new Map(rows.map(r=>[normalize(r.stop_id),r]));
+  const sourceStationIds=new Set(state.gtfsStops.filter(row=>String(row.location_type)==='1').map(row=>normalize(row.stop_id)));
   const timeHeaders=[...sourceTimes.headers];
   const timeRows=includeTimes?sourceTimes.rows.map(r=>({...r,stop_id:state.stopIdRemap.get(normalize(r.stop_id))||normalize(r.stop_id)})):[];
   const existingPlaceCodes=new Set(state.places.map(p=>placeCodeKey(p.id)));
@@ -1359,7 +1438,7 @@ function buildExports(includeTimes=true) {
   const placeRows=new Map(); const report=[]; const creations=new Map();
   for(const d of state.decisions.filter(x=>x.status!=="error")){
     const p=resolvedPlace(d); if(!p) continue;
-    let parentId=p.id;
+    let parentId=sourceStationIds.has(p.id)?displayStopId(p.id):p.id;
     const collision=byId.get(parentId);
     if(collision && normalize(collision.location_type)!=="1") {
       const base=`${isGeographicNew()?"GTFS":"HASTUS"}_PLACE_${p.id}`; parentId=base; let suffix=2;
@@ -1611,7 +1690,7 @@ function placeBrowserEditorData(entries, gtfs, orientation, title) {
   const rows=gtfs?.stops.rows||[],stations=rows.filter(row=>String(row.location_type)==="1");
   const sourceStations=new Set((state.parsed.stops?.rows||[]).filter(row=>String(row.location_type)==="1").map(row=>displayStopId(normalize(row.stop_id))));
   const places=entries.map(group=>{
-    const station=stations.find(row=>row.stop_id===group.code)||stations.find(row=>row.stop_id===`GTFS_PLACE_${group.code}`||row.stop_id===`HASTUS_PLACE_${group.code}`);
+    const station=stations.find(row=>row.stop_id===displayStopId(group.code))||stations.find(row=>row.stop_id===displayStopId(`GTFS_PLACE_${group.code}`)||row.stop_id===displayStopId(`HASTUS_PLACE_${group.code}`));
     return {key:group.anchor,originalCode:group.code,code:group.code,description:group.description,exportId:station?.stop_id||null,generated:!station||!sourceStations.has(station.stop_id),lat:group.lat,lon:group.lon,radius:Number(group.radius??$("radius").value??200),geometry:placeReportMapGeometry(group,orientation)};
   });
   const assignments=Object.create(null),points=new Map(),byId=new Map(rows.map(row=>[row.stop_id,row]));
@@ -1813,13 +1892,15 @@ $("deadhead-remove").addEventListener("click",()=>{
   $("diagnostic-deadhead-only").checked=false;refreshDeadheadUi();refreshStopPlaceDiagnostic();
 });
 $("app-language")?.addEventListener("change",refreshDeadheadUi);
-$("app-language")?.addEventListener("change",()=>{refreshStopIdPaddingSetting();refreshRadiusConflictSummary();});
+$("app-language")?.addEventListener("change",()=>{refreshStopIdPaddingSetting();refreshRadiusConflictSummary();refreshPamphletOffer();const working=$("working-timetable-module");if(working)working.outerHTML=workingTimetableModule();});
 $("smart-radius").addEventListener("change",event=>{if(event.target.checked&&!state.parsed.trips){event.target.checked=false;alert("trips.txt est requis pour activer le rayon intelligent.");return;}if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML=`Recalculer avec le rayon ${event.target.checked?'intelligent':'manuel'} <span>→</span>`;$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();});
 function markStopIdRenumberingChanged(){if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer avec la nouvelle numérotation <span>→</span>';$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();}
 $("place-code-max-length").addEventListener("change",()=>{if(state.mode==="geographic"&&state.geographicReady){render();captureGeographicState();}queueQuickSave();});
 $("renumber-stop-ids").addEventListener("change",markStopIdRenumberingChanged);
 $("pad-stop-ids").addEventListener("change",()=>{refreshStopIdPaddingSetting();markStopIdRenumberingChanged();});
 $("pad-stop-id-width").addEventListener("input",()=>{refreshStopIdPaddingSetting();markStopIdRenumberingChanged();});
+$("prefix-stop-ids").addEventListener("change",()=>{refreshStopIdPaddingSetting();markStopIdRenumberingChanged();});
+$("stop-id-prefix").addEventListener("input",markStopIdRenumberingChanged);
 $("pad-place-codes").addEventListener("change",()=>queueQuickSave());
 $("renumber-stop-id-start").addEventListener("input",markStopIdRenumberingChanged);
 $("place-code-case").addEventListener("change",()=>{for(const group of state.groups)group.code=applyPlaceCodeCase(group.code);for(const decision of state.decisions)if(decision.newCode)decision.newCode=applyPlaceCodeCase(decision.newCode);if(state.mode==="geographic"&&state.geographicReady){render();captureGeographicState();}queueQuickSave();});

@@ -29,7 +29,7 @@ assert.equal(api.placeLabels(placeSource,{...placeOptions,geographicCache:{stopI
 assert.equal(api.placeLabels(placeSource,{geographicCache:{clientType:'existing',places:[{id:'EXIST',description:'Existing place'}],decisions:[{id:'B',choice:'EXIST'}]}}).B.code,'EXIST');
 assert.equal(JSON.stringify(placeOptions),originalOptions);
 const assignedReport=api.pdf(a,'2026-10-05','333','en','Test',placeOptions);
-assert.ok(assignedReport.html.includes('>RENAMED</th>'));assert.ok(!assignedReport.html.includes('class="block"'));
+assert.ok(assignedReport.html.includes('>RENAMED</span></th>'));assert.ok(!assignedReport.html.includes('class="block"'));
 for(const language of ['fr','en']){
   const report=api.pdf(a,'2026-10-05','333',language,'Test Client');
   assert.equal(report.model.direction,'both');assert.equal(report.model.compact,true);assert.equal(report.model.timing,true);

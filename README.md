@@ -2,6 +2,41 @@
 
 **Version 14.1** — voir les [notes de version](CHANGELOG.md).
 
+## Timetables compacts
+
+Le module Cartes des routes et timetables, ses exports PDF et les pamphlets
+utilisent une grille compacte commune. La largeur est adaptée au nombre de TP :
+une direction seule utilise toute la page ; les deux directions restent côte
+à côte lorsqu'elles tiennent. Les codes des TP sont toujours verticaux. Lorsqu'une
+seule direction est affichée, les informations de voyage se trouvent à gauche.
+La hauteur des lignes et la pagination s'adaptent également au volume de voyages.
+Les horaires trop volumineux sont paginés sans supprimer de passage ; les codes
+et descriptions complets restent disponibles dans la légende.
+
+Les codes de place, le headway et le choix AM/PM ou 24 h sont conservés, sans
+colonne bloc. Les pamphlets regroupent les deux directions par route et service,
+avec des aperçus chargés à l'ouverture. Le filtre de route s'applique au PDF.
+Les services restent séparés et ne remplacent pas le filtre de date du module
+timetable. La section suit le thème clair ou sombre ; les feuilles imprimées
+restent blanches. Régénérer les rapports HTML pour recevoir les modifications.
+
+## Gestion des stops et noms de place
+
+La préparation GTFS permet de préfixer tous les Stop ID du fichier source avec
+une lettre (A–Z ou a–z), après la renumérotation technique et les zéros en tête.
+Exemple : 12 → 0012 → A0012. Les ID alphanumériques reçoivent aussi le préfixe ;
+les stop_code restent inchangés. Les références dans les fichiers du GTFS complet
+sont adaptées et les stations source conservent leurs rattachements. Le préfixe
+et son activation sont conservés dans les sauvegardes. Relancer l’analyse après
+un changement ; elle repart des sources, sans cumuler les préfixes.
+
+Pour un nouveau projet, le complément des codes de place avec des zéros est
+désactivé et les abréviations de Postes Canada sont activées. Les choix des
+sauvegardes existantes sont conservés. « Av » est exclu comme mot entier ; un
+type de voie commun ne suffit plus à former une description de place. Refaire
+l’analyse pour générer les nouvelles propositions, ou corriger manuellement
+une place déjà nommée : les noms existants ne sont pas remplacés en silence.
+
 ## Export GTFS prêt à importer
 
 Le bouton **Télécharger GTFS prêt à importer** remplace l’export isolé des horaires.

@@ -7,6 +7,7 @@ function unzip(bytes){const entries=new Map();let i=0;while(bytes.readUInt32LE(i
  try{
   browser=await chromium.launch({channel:'msedge',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],alerts=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>{alerts.push(d.message());d.accept();});await page.route('https://**',r=>r.fulfill({contentType:'text/html',body:'Synthetic map'}));await page.goto('http://127.0.0.1:'+server.address().port);
+  assert.equal(await page.locator('#pad-place-codes').isChecked(),false);assert.equal(await page.locator('#use-canada-post-abbreviations').isChecked(),true);
   await page.evaluate(()=>{
    const files={
     'agency.txt':'agency_id,agency_name,agency_url,agency_timezone\na,Demo Agency,https://example.com,America/Toronto\n',
@@ -32,6 +33,24 @@ function unzip(bytes){const entries=new Map();let i=0;while(bytes.readUInt32LE(i
   assert.match(get('stops.txt'),/0012,Main/);assert.match(get('stop_times.txt'),/t,0012,1/);assert.match(get('transfers.txt'),/0012,9876,0/);assert.match(get('stops.txt'),/SOURCE,Original empty station/);
   assert.doesNotMatch(get('hastus_import/places/places.csv'),/SOURCE|place;;/);assert.match(get('hastus_import/sched_unit_to_import.txt'),/scheduling_unit,r,Route r,1100,r/);assert.doesNotMatch(get('hastus_import/sched_unit_to_import.txt'),/wrong/);
   assert.deepEqual(entries.get('hastus_import/scheduling units.oir'),fs.readFileSync(path.join(root,'assets/scheduling units.oir')));
+  await page.evaluate(()=>setMode('geographic'));
+  await page.locator('#prefix-stop-ids').check();await page.locator('#stop-id-prefix').fill('A');
+  assert.equal(await page.evaluate(()=>{try{buildExports();return false;}catch{return true;}}),true,'Changing the prefix requires fresh analysis');
+  await page.evaluate(()=>analyze());
+  const before=await page.evaluate(()=>buildExports());await page.evaluate(()=>analyze());assert.deepEqual(await page.evaluate(()=>buildExports()),before,'Repeated analysis must not double-prefix IDs');
+  const snap=await page.evaluate(()=>JSON.parse(JSON.stringify(workspaceSnapshot())));assert.equal(snap.settings.prefixStopIds,true);assert.equal(snap.settings.stopIdPrefix,'A');
+  await page.evaluate(s=>restoreWorkspaceSnapshot(s),snap);assert.equal(await page.locator('#prefix-stop-ids').isChecked(),true);assert.equal(await page.locator('#stop-id-prefix').inputValue(),'A');
+  await page.locator('#go-to-reports').click();const [prefixDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#download-times').click()]);const prefixFiles=unzip(fs.readFileSync(await prefixDownload.path()));
+  assert.match(prefixFiles.get('stops.txt').toString(),/A0012,Main/);assert.match(prefixFiles.get('stops.txt').toString(),/AEG450,Arena/);assert.match(prefixFiles.get('stops.txt').toString(),/ASOURCE,Original empty station/);
+  assert.match(prefixFiles.get('stop_times.txt').toString(),/t,A0012,1/);assert.match(prefixFiles.get('transfers.txt').toString(),/A0012,A9876,0/);
+  assert.equal(await page.evaluate(()=>state.parsed.stops.rows[0].stop_id),'12','Source GTFS unchanged');
+  await page.evaluate(()=>setMode('geographic'));await page.locator('#prefix-stop-ids').uncheck();await page.evaluate(()=>analyze());
+  const unprefixed=await page.evaluate(()=>buildExports());assert.match(unprefixed.gtfs,/0012,Main/);assert.doesNotMatch(unprefixed.gtfs,/A0012/);
+  const headings=await page.locator('#geographic-client-setting>span,#timing-source-setting>span,#radius-setting>label:first-child').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top));assert.equal(headings.length,3);assert.ok(Math.max(...headings)-Math.min(...headings)<=2,'Grouping, timing source and radius headings align');
+  assert.equal(await page.locator('#stop-management-title').textContent(),'Stop management');
+  for(const dark of [false,true]){if(await page.locator('#app-theme').isChecked()!==dark)await page.locator('.theme-switch').click();await page.locator('#stop-id-renumber-setting').screenshot({path:path.join(root,`tmp/stop-management-${dark?'dark':'light'}.png`)});}
+  await page.setViewportSize({width:390,height:844});assert.ok(await page.locator('#stop-id-renumber-setting').evaluate(n=>n.scrollWidth<=n.clientWidth),'Stop management fits mobile width');await page.setViewportSize({width:1440,height:1000});
+  await page.locator('#go-to-reports').click();
   await page.evaluate(()=>setMode('scheduling'));await page.selectOption('#scu-route-key','route_short_name');await page.evaluate(()=>setMode('reports'));assert.match(await page.evaluate(()=>readyGtfsExportPlan().units.text),/scheduling_unit,42,Route 42,1100,42/);
   await page.evaluate(()=>state.originalEntries=state.originalEntries.filter(e=>e.name!=='trips.txt'));await page.locator('#download-times').click();assert.ok(alerts.some(m=>/Incomplete GTFS: trips.txt/.test(m)));assert.equal(await page.locator('#download-times').isEnabled(),true);assert.deepEqual(errors,[]);
   console.log('PASS: full ready-to-import ZIP, numeric ID dependencies, empty proposed/source places, current GTFS routes, both route keys, exact OIR script, FR/EN and incomplete-feed guard.');
