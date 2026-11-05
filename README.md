@@ -15,6 +15,9 @@ La proximité reste à confirmer selon les contraintes de circulation.
 
 Le panneau **Corrections HASTUS** du diagnostic et de son rapport HTML complet
 permet d'éditer rattachements stop–place, références, descriptions et coordonnées.
+Dans le rapport, il est masqué au démarrage : le bouton **Corrections HASTUS**
+près des exports permet de l’afficher ou de le masquer sans perdre les corrections.
+La validation se fait fiche par fiche ; la commande de validation par lot a été retirée.
 Les originaux et le GTFS ne sont jamais modifiés. Le projet, le brouillon du rapport
 et sa copie HTML sauvegardée conservent les corrections. Une correction dans le
 rapport remet les validations en attente. Les cartes et alertes restent l'état
@@ -40,7 +43,8 @@ inconnues, auto-références, chaînes de références et coordonnées invalides
 l'export. L'extrait client partiel n'inclut pas l'éditeur ni le référentiel complet
 de corrections pour éviter d'exposer des données non sélectionnées.
 
-Sur les cartes, **Stops aux alentours** montre les stops localisés des fichiers
+La commande **Stops aux alentours**, placée hors de la surface de chaque carte
+y compris en plein écran, montre les stops localisés des fichiers
 chargés, dans la fenêtre cartographique, sans changer le cadrage. Cliquer un stop
 affiche ID, description, latitude/longitude, routes connues et statut TP (inconnu
 si la source manque). Fond et marqueurs partagent le même repère au redimensionnement.

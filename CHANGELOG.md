@@ -2,6 +2,12 @@
 
 ## 14.0 — 2026-10-27
 
+Correctif du 5 novembre 2026 :
+
+- Rapport diagnostic : panneau Corrections HASTUS masqué au démarrage, accessible avec un bouton près des exports. Masquer le panneau conserve les modifications.
+- Commande Stops aux alentours déplacée hors de la surface cartographique, y compris en plein écran ; recalage du fond et des étiquettes quand la zone disponible change.
+- Retrait de la validation par lot du rapport HTML ; validations individuelles, notes et historique conservés.
+
 - Correctifs mobile : boutons d’espace de travail ramenés à une hauteur compacte avec cibles tactiles de 44 px, bandeau réorganisé et switch clair/foncé corrigé (suppression d’un double déplacement du curseur).
 - Cartes agrandies : bouton plein écran, commandes discrètes +/−, recentrage et flèches ; glissement, pincement et molette dans cette vue. Fond et marqueurs sont agrandis ensemble, sans modifier le cadrage de la fiche normale. Le zoom agrandit le fond disponible ; il ne télécharge pas de cartes hors ligne supplémentaires.
 - La sélection successive des fichiers ne déclenche plus de défilement vers les paramètres. Recliquez sur un même stop pour fermer son infobulle.

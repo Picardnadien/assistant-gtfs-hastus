@@ -8,6 +8,10 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
   browser=await chromium.launch({channel:'msedge',headless:true});const context=await browser.newContext({acceptDownloads:true,viewport:{width:1440,height:1000}});
   await context.route('https://**',r=>r.abort());const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());const origin='http://127.0.0.1:'+server.address().port;
   await page.goto(origin);await page.locator('#review-tutorial-close').click();
+  const toggle=page.locator('#toggle-assessment-corrections');
+  assert.equal(await page.locator('.hastus-corrections').isVisible(),false);
+  assert.equal(await toggle.getAttribute('aria-expanded'),'false');await toggle.click();
+  assert.equal(await toggle.getAttribute('aria-expanded'),'true');
   const source=await page.locator('#assessment-data').textContent(),baseline=JSON.parse(source).hastusBaseline;
   assert.ok(baseline?.places.length);assert.match(await page.locator('.hastus-corrections .hc-table thead').textContent(),/Est une place de référence/);
   const field=(id,key)=>page.locator(`[data-hc-id="${id}"][data-hc-field="${key}"]`);
@@ -24,11 +28,12 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
   }
   assert.match(downloads.csv,/"is_reference_place";"reference_place_code"/);assert.match(downloads.csv,/"stop-AAA";[^\r\n]*;"TARGET";/);
   assert.match(downloads.journal,/"stop";"stop-AAA";"place_code";"AAA";"TARGET"/);assert.match(downloads.note,/Description corrigée/);
-  await page.reload();assert.ok(await page.locator('.hastus-corrections').isVisible());await page.selectOption('[data-hc-kind]','stop');assert.equal(await field('stop-AAA','place_code').inputValue(),'TARGET','Browser draft survives reload');
+  await toggle.click();assert.equal(await page.locator('.hastus-corrections').isVisible(),false);await toggle.click();assert.equal(await field('stop-AAA','place_code').inputValue(),'TARGET');
+  await page.reload();assert.equal(await page.locator('.hastus-corrections').isVisible(),false);await toggle.click();await page.selectOption('[data-hc-kind]','stop');assert.equal(await field('stop-AAA','place_code').inputValue(),'TARGET','Browser draft survives reload');
   const pending=page.waitForEvent('download');await page.locator('#download-assessment-copy').click();await(await pending).saveAs(path.join(root,'tmp/hastus-corrections-saved.html'));
   const html=fs.readFileSync(path.join(root,'tmp/hastus-corrections-saved.html'),'utf8');assert.ok(!html.includes('<section data-no-translate="" class="hastus-corrections">'),'Live editor is not serialized');
   await page.evaluate(()=>localStorage.clear());await page.goto(origin+'/saved');await page.locator('#review-tutorial-close').click();
-  await page.selectOption('[data-hc-kind]','stop');assert.equal(await field('stop-AAA','place_code').inputValue(),'TARGET','Downloaded report embeds corrections');
+  assert.equal(await page.locator('.hastus-corrections').isVisible(),false);await toggle.click();await page.selectOption('[data-hc-kind]','stop');assert.equal(await field('stop-AAA','place_code').inputValue(),'TARGET','Downloaded report embeds corrections');
   await field('stop-AAA','stop_latitude').fill('999');await field('stop-AAA','stop_latitude').press('Tab');assert.ok(await page.locator('[data-hc-csv]').isDisabled());
   const restored=JSON.parse(await page.locator('#assessment-data').textContent()).hastusBaseline;assert.deepEqual(restored,baseline,'Baseline is immutable through editing and saving');
   assert.deepEqual(errors,[]);console.log('PASS: diagnostic assignment/reference editing, reference-place label, approval invalidation, physical-coordinate preservation, CSV/journal/impact note downloads, browser draft, saved HTML reopening and invalid-coordinate blocking.');
