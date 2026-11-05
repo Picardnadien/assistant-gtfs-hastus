@@ -2,23 +2,26 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),asse
 const {buildPages}=require('../scripts/build-pages.cjs');
 const root=path.resolve(__dirname,'..'),destination=fs.mkdtempSync(path.join(os.tmpdir(),'gtfs-pages-test-'));
 const {version,files}=buildPages(root,destination);
-assert.equal(version,'14.0');
+assert.equal(version,'14.1');
 for(const file of ['index.html','tutorial.js','tutorial.css','app.js','report-editor.js','working-timetable.js','assets/csched-logo.svg','assets/scheduling units.oir','.nojekyll'])assert.ok(files.includes(file),file);
 for(const file of files)assert.ok(fs.statSync(path.join(destination,file)).isFile());
 for(const file of ['.git','tests','tmp','output','README.md','serve.py','supabase'])assert.ok(!fs.existsSync(path.join(destination,file)),file+' must not be deployed');
 for(const file of ['portal.html','portal.css','portal.js','portal-config.js'])assert.ok(files.includes(file));
 for(const file of ['assignment-diagnostics.js','assignment-diagnostics.css'])assert.ok(files.includes(file));
 const html=fs.readFileSync(path.join(destination,'index.html'),'utf8');
-assert.match(html,/id="release-14-0"/);assert.match(html,/https:\/\/github.com\/zbbedard\/ATP-Data-Cleanup/);
-assert.match(html,/v14\.0/);assert.match(html,/The GTFS Missing Link/);assert.match(html,/href="app.html"/);
+assert.match(html,/<section id="release-14-1"/);assert.match(html,/https:\/\/zbbedard.github.io\/ATP-Data-Cleanup\/culver.html/);
+for(const release of ['14-0','13-12','13-02','13-01'])assert.match(html,new RegExp('<details id="release-'+release+'"[^>]*>\\s*<summary '));
+assert.ok(html.indexOf('id="atp-tool"')>html.indexOf('id="release-notes"'));
+assert.ok(html.indexOf('id="atp-tool"')<html.indexOf('id="demo"'));
+assert.match(html,/v14\.1/);assert.match(html,/The GTFS Missing Link/);assert.match(html,/href="app.html"/);
 assert.match(html,/id="release-13-12"/);assert.match(html,/Appliquer à tous/);assert.match(html,/id="release-13-02"/);assert.match(html,/Sélection client/);assert.match(html,/Client selection/);
 assert.ok(!/oc[\s_-]*transpo/i.test(html),'Public version menu must not mention the client');
 assert.match(html,/id="release-13-01"/);assert.match(html,/hastus_import\/places/);
 assert.match(html,/Navigation depuis les validations/);assert.match(html,/Clickable status/);
 assert.match(html,/Carte en plein écran/);assert.match(html,/Full-screen map shortcut/);
 assert.match(html,/id="release-notes"/);assert.match(html,/Les nouveautés depuis la v12/);assert.match(html,/What’s new since v12/);
-assert.match(fs.readFileSync(path.join(destination,'app.html'),'utf8'),/content="14\.0"/);
-for(const release of ['13.12','13.02','12.0','11.0','10.0']){
+assert.match(fs.readFileSync(path.join(destination,'app.html'),'utf8'),/content="14\.1"/);
+for(const release of ['14.0','13.12','13.02','12.0','11.0','10.0']){
   const prefix=`versions/v${release}/`;
   assert.ok(html.includes(prefix));
   const archived=fs.readFileSync(path.join(destination,prefix+'index.html'),'utf8');
@@ -26,6 +29,9 @@ for(const release of ['13.12','13.02','12.0','11.0','10.0']){
   assert.ok(fs.readFileSync(path.join(destination,prefix+'app.js'),'utf8').includes(`WORKSPACE_DB="hastus-gtfs-workspaces-archive-v${release}"`));
   for(const m of archived.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="([^"]+)"/g))assert.ok(files.includes(prefix+m[1].split('?')[0]));
 }
+const archivedV14=fs.readFileSync(path.join(destination,'versions/v14.0/app.js'),'utf8');
+const publishedV14=require('node:child_process').execFileSync('git',['show','74e2f13f3807c32cdfe6ed483456209e5eae439b:app.js'],{cwd:root,maxBuffer:30*1024*1024,encoding:'utf8'});
+assert.equal(archivedV14,publishedV14.replace('WORKSPACE_DB="hastus-gtfs-workspaces"','WORKSPACE_DB="hastus-gtfs-workspaces-archive-v14.0"'),'Archive keeps the final published v14 with isolated browser storage');
 for(const language of ['fr','en']){
   const demo=fs.readFileSync(path.join(destination,`demo/review-${language}.html`),'utf8');
   assert.ok(demo.includes('DEMOHUB')&&demo.includes('public-fictional-v13-'+language));

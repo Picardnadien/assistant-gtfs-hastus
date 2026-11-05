@@ -15,6 +15,15 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       await page.locator('[data-help-read]').click();
       await page.locator('[data-help-close]').click();
       const first=page.locator('[data-report-place]').first(),key=await first.getAttribute('data-place-key');
+      for(const width of [1366,390]){
+        await page.setViewportSize({width,height:900});
+        const ids=page.locator('tr[data-candidate-stop]>td:nth-child(2)');assert.ok(await ids.count(),'Nearby stop fixture');
+        assert.ok(await ids.evaluateAll(nodes=>nodes.every(node=>{
+          const css=getComputedStyle(node),range=document.createRange();range.selectNodeContents(node);
+          return css.whiteSpace==='nowrap'&&css.wordBreak==='normal'&&new Set([...range.getClientRects()].filter(r=>r.width).map(r=>Math.round(r.top))).size<=1;
+        })),'Outside-perimeter stop IDs remain on one line at '+width+'px');
+      }
+      await page.setViewportSize({width:1366,height:900});
       const code=first.locator('[data-place-code]'),description=first.locator('[data-place-description]'),search=page.locator('#place-search');
       const oldCode=await code.inputValue(),oldDescription=await description.inputValue();
       await search.fill(oldCode);assert.ok(await first.isVisible());
@@ -30,11 +39,15 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       await summaryStatus.click();assert.equal(confirmations.length,0,'Approving needs no confirmation');
       assert.equal(await summaryStatus.getAttribute('aria-pressed'),'true');
       assert.equal(await first.locator('[data-place-approve]').getAttribute('aria-pressed'),'true','Summary and card share approval state');
+      const tile=page.locator(`.summary-place-link[data-place-key="${key}"]`);
+      assert.match(await tile.locator('.summary-place-status').textContent(),lang==='fr'?/Validé/:/Validated/);
+      assert.equal(await tile.evaluate(n=>getComputedStyle(n).borderLeftColor),'rgb(181, 218, 150)');
       assert.notEqual(await summaryStatus.evaluate(e=>getComputedStyle(e).backgroundColor),pendingColor);
       cancelConfirmation=true;await summaryStatus.click();assert.equal(await summaryStatus.getAttribute('aria-pressed'),'true','Cancel preserves approval');
       assert.match(confirmations.at(-1),lang==='fr'?/À valider/:/Pending/);
       cancelConfirmation=false;await summaryStatus.click();assert.equal(await summaryStatus.getAttribute('aria-pressed'),'false');
       assert.equal(await first.locator('[data-place-approve]').getAttribute('aria-pressed'),'false');
+      assert.equal(await tile.evaluate(n=>n.classList.contains('review-approved')),false);
       assert.equal(await summaryStatus.evaluate(e=>getComputedStyle(e).backgroundColor),pendingColor);
       await summaryStatus.focus();await page.keyboard.press('Enter');assert.equal(await summaryStatus.getAttribute('aria-pressed'),'true');
       for(const column of [0,1]){
@@ -48,6 +61,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       const assignment=first.locator(`[data-associated-body] [data-stop-row][data-stop-id="${stopId}"] select`);
       await assignment.focus();await assignment.selectOption(secondKey);
       const stopLink=approvals.locator(`[data-summary-stop="${stopId}"]`);
+      assert.equal(await tile.evaluate(n=>n.classList.contains('review-approved')),false,'Reassigning a stop invalidates the overview approval');
       assert.equal(await stopLink.getAttribute('data-summary-place'),secondKey,'Stop links follow edited assignments');
       await search.fill('no-match');await stopLink.click();assert.ok(await second.isVisible());
       assert.equal(await second.evaluate(e=>document.activeElement===e),true);
@@ -91,6 +105,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       assert.equal(await page.locator('#place-search').inputValue(),'');
       await page.locator('.review-summary>summary').click();
       assert.equal(await page.locator(`[data-summary-approve="${key}"]`).getAttribute('aria-pressed'),'true','Summary approval survives saved HTML');
+      assert.match(await tile.locator('.summary-place-status').textContent(),lang==='fr'?/Validé/:/Validated/);
       await page.locator(`[data-summary-approve="${key}"]`).click();
       assert.equal(await page.locator(`[data-summary-approve="${key}"]`).getAttribute('aria-pressed'),'false','Summary actions still work after reopening');
       assert.deepEqual(errors,[]);await context.close();

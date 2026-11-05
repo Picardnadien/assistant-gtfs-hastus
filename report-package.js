@@ -75,7 +75,7 @@ function reportPackageTools() {
   }
   function placeImportFiles(result){
     if(result.errors.length)throw new Error(result.errors.join(', '));
-    const places=[...result.places].sort((a,b)=>a.code.localeCompare(b.code,'en',{numeric:true,sensitivity:'base'}));
+    const places=[...(result.importPlaces||result.places)].sort((a,b)=>a.code.localeCompare(b.code,'en',{numeric:true,sensitivity:'base'}));
     // The supplied OIR specifies a separator, but no quoted-field convention.
     // Never silently strip characters or emit ambiguous import records.
     if(places.some(place=>[place.code,place.description].some(value=>/[;"\r\n\x00]/.test(text(value)))))throw new Error('invalidPlaceImport');

@@ -1,5 +1,20 @@
 # Notes de version
 
+## 14.1 — 2026-11-05
+
+- Conflits de rayon : une fiche et une carte communes pour les cas liés aux mêmes places. Validez le cas pour le déplacer dans la section Validés ; une modification du rayon ou de l’affectation le remet à examiner.
+- Stop ID numériques : option de zéros en tête, longueur automatique selon le plus long ID numérique, contrôle des collisions et des longueurs trop courtes. Les ID alphanumériques restent inchangés.
+- Codes de place : possibilité de conserver les codes courts sans ajouter de zéros à la fin, dans la limite choisie de 6 ou 8 caractères.
+- GTFS prêt à importer : un ZIP complet remplace le téléchargement isolé des horaires enrichis. Il inclut les scheduling units, la liste des places et leurs scripts d’import OIR dans hastus_import/.
+- Places proposées devenues vides : exclues des exports GTFS et de la liste d’import des places lorsqu’aucun stop ni autre fichier ne les référence. Les stations du GTFS source sont préservées.
+- Rapport HTML GTFS : les places approuvées passent au statut Validé avec une bordure vert clair dans le sommaire. Les Stop ID des tableaux, dont les stops hors périmètre, restent sur une ligne.
+- Accueil : v14 disponible dans les archives, anciennes notes repliées et accès direct à ATP Data Cleanup sous les notes de version.
+
+- Scheduling units : routes du GTFS courant, avec route_id par défaut ou route_short_name selon le choix du module dédié. Références aux Stop ID mises à jour dans les tables annexes.
+- Archive v14.0 conservée à son dernier état publié, avec un espace de sauvegarde navigateur distinct.
+- Régénérer les rapports HTML pour bénéficier des correctifs. Sources conservées, aucune écriture directe dans HASTUS.
+- Validation : 36 suites de régression et tests navigateur des exports, conflits et rapports bilingues ; accueil testé sur formats mobile et tablette.
+
 ## 14.0 — 2026-10-27
 
 Correctif du 5 novembre 2026 :

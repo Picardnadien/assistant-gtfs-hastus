@@ -1,6 +1,45 @@
 # The GTFS Missing Link
 
-**Version 14.0** — voir les [notes de version](CHANGELOG.md).
+**Version 14.1** — voir les [notes de version](CHANGELOG.md).
+
+## Export GTFS prêt à importer
+
+Le bouton **Télécharger GTFS prêt à importer** remplace l’export isolé des horaires.
+Le ZIP contient le GTFS complet corrigé et le dossier `hastus_import/` :
+`sched_unit_to_import.txt` et son script `scheduling units.oir`, ainsi que
+`places/places.csv` et `places/place - GTFS DESC.oir`. Les scheduling units
+utilisent les routes du GTFS courant et les choix du module dédié (route_id par
+défaut). Les tables annexes conservent les références cohérentes après renumérotation.
+
+Une place proposée sans stop associé n’est pas créée. Dans les nouveaux rapports
+HTML, une place générée devenue vide après réaffectation est aussi exclue des
+exports, sauf si une autre table la référence encore. Les stations du GTFS source
+ne sont pas supprimées. Les Stop ID restent sur une ligne dans les tableaux
+des stops associés et hors périmètre ; régénérer le rapport pour recevoir ces correctifs.
+
+## Revue des conflits et format des identifiants
+
+Dans la préparation GTFS, les conflits de rayon liés aux mêmes places sont réunis
+dans une fiche avec une seule carte et les affectations individuelles. **Valider ce
+cas** le déplace vers **Validés** ; il peut être remis à valider. Les validations sont
+conservées dans la sauvegarde de travail. Changer un rayon, une affectation ou les
+données du groupe annule sa validation.
+
+L’option de zéros en tête concerne uniquement les Stop ID numériques : la longueur
+automatique est celle du plus long ID numérique après renumérotation éventuelle.
+Le maximum de tous les ID et le maximum numérique sont affichés. Une longueur
+manuelle trop courte ou une collision (12 et 0012, par exemple) bloque l’analyse.
+Relancer l’analyse après changement de ces paramètres avant d’exporter. Les
+références sont adaptées dans stops.txt, stop_times.txt et dans les tables annexes
+du ZIP GTFS complet. Les identifiants alphanumériques sont conservés.
+
+Pour les codes de place, décocher **Compléter les codes courts avec des zéros**
+conserve les codes courts, dans la limite de 6 ou 8 caractères. Cette option
+s’applique aux prochaines propositions ; elle ne renomme pas les places existantes.
+
+Le sommaire du rapport HTML indique **Validé** avec une bordure vert clair dès
+qu’une place est approuvée. Retirer la validation ou modifier la place rétablit
+son statut initial. Régénérer les rapports pour recevoir cet affichage.
 
 ## Nouveaux parcours — 27 octobre 2026
 

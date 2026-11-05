@@ -14,11 +14,20 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     const origin=`http://127.0.0.1:${server.address().port}`;await page.goto(origin);
     if(await page.locator('html').getAttribute('lang')!=='fr')await page.locator('#language').click();
     assert.equal(await page.locator('#private-open').isVisible(),false);
-    assert.match(await page.locator('.current h2').innerText(),/v14\.0/);
-    assert.match(await page.locator('#release-14-0').innerText(),/Est une place de référence/);
-    assert.equal(await page.locator('#atp-tool a').getAttribute('href'),'https://github.com/zbbedard/ATP-Data-Cleanup');
+    assert.match(await page.locator('.current h2').innerText(),/v14\.1/);
+    assert.ok(await page.locator('#release-14-1 ul').isVisible());
+    assert.match(await page.locator('#release-14-1').innerText(),/GTFS prêt à importer/);
+    for(const id of ['release-14-0','release-13-12','release-13-02','release-13-01','release-notes']){
+      const section=page.locator('#'+id);assert.equal(await section.getAttribute('open'),null);
+      assert.ok(await section.locator('summary').isVisible());assert.equal(await section.locator('ul').first().isVisible(),false);
+    }
+    assert.equal(await page.locator('#atp-tool a').getAttribute('href'),'https://zbbedard.github.io/ATP-Data-Cleanup/culver.html');
+    assert.ok(await page.locator('#atp-tool').evaluate(el=>el.previousElementSibling.matches('article.current')),'ATP follows the release notes');
+    assert.equal(await page.locator('.archives a[href="versions/v14.0/"]').count(),1);
     assert.equal(await page.locator('.archives a[href="versions/v13.12/"]').count(),1);
     assert.ok(await page.locator('#release-13-12').isVisible());assert.ok(await page.locator('#release-13-02').isVisible());
+    for(const id of ['release-14-0','release-13-02','release-13-01'])await page.locator('#'+id+'>summary').click();
+    assert.match(await page.locator('#release-14-0').innerText(),/Est une place de référence/);
     assert.match(await page.locator('#release-13-02').innerText(),/Sélection client/);
     assert.doesNotMatch(await page.locator('body').innerText(),/oc[\s_-]*transpo/i);
     assert.ok(await page.locator('#release-13-01').isVisible());
@@ -36,9 +45,12 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
     assert.match(await page.locator('#release-13-01').innerText(),/Stable search/);
     assert.match(await page.locator('#release-13-02').innerText(),/Client selection/);
     assert.match(await page.locator('#release-14-0').innerText(),/Is a reference place/);
+    assert.match(await page.locator('#release-14-1').innerText(),/GTFS ready to import/);
     assert.doesNotMatch(await page.locator('body').innerText(),/oc[\s_-]*transpo/i);
     assert.ok(await notes.locator('[data-en]').evaluateAll(nodes=>nodes.every(node=>node.textContent===node.dataset.en)));
     await page.locator('#language').click();await notes.locator('summary').click();
+    for(const id of ['release-14-0','release-13-02','release-13-01'])await page.locator('#'+id+'>summary').click();
+    await page.screenshot({path:path.join(root,'tmp/launcher-v14-1.png'),fullPage:true});
     for(const size of [{width:820,height:1180},{width:1180,height:820}]){await page.setViewportSize(size);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
     await page.locator('#language').click();assert.equal(await page.locator('html').getAttribute('lang'),'en');assert.equal(await page.locator('#demo').getAttribute('href'),'demo/review-en.html');
     await page.locator('#demo').click();await page.locator('#review-tutorial-close').click();await page.locator('#start-assessment-review').click();await page.locator('#review-show-all').click();await page.locator('#review-map-validate').click();await page.locator('#review-close').click();
@@ -53,7 +65,7 @@ const {chromium}=require(process.argv[2]||'playwright'),root=path.resolve(__dirn
       await page.locator('#private-file').setInputFiles(privateFile);const next=context.waitForEvent('page');await page.locator('#private-open').click();const privatePage=await next;await privatePage.waitForLoadState('domcontentloaded');
       await privatePage.locator('#review-tutorial-close').click();await privatePage.locator('#start-assessment-review').click();assert.ok(await privatePage.locator('#review-map-validate').isVisible());await privatePage.close();
     }
-    for(const url of ['/app.html','/versions/v13.12/','/versions/v13.02/','/versions/v12.0/','/versions/v11.0/','/versions/v10.0/']){await page.goto(origin+url);assert.ok(await page.locator('meta[name="application-version"]').count());}
-    assert.deepEqual(errors,[]);console.log('PASS: bilingual launcher, tablet viewports, demo, download fallback, private local HTML reopening, all six application versions.');
+    for(const url of ['/app.html','/versions/v14.0/','/versions/v13.12/','/versions/v13.02/','/versions/v12.0/','/versions/v11.0/','/versions/v10.0/']){await page.goto(origin+url);assert.ok(await page.locator('meta[name="application-version"]').count());}
+    assert.deepEqual(errors,[]);console.log('PASS: bilingual launcher, collapsed older notes, ATP link position, tablet viewports, demo, download fallback, private local HTML reopening, all seven application versions.');
   }finally{await browser?.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

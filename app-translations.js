@@ -1,5 +1,9 @@
 /* UI copy only: never translate source data or independently generated reports. */
 const APP_ENGLISH = {
+  'Ajouter des zéros en tête aux Stop ID numériques':'Add leading zeros to numeric Stop IDs',
+  'Longueur cible (vide = automatique)':'Target length (blank = automatic)',
+  'Compléter les codes courts avec des zéros jusqu’à la longueur choisie':'Pad short codes with zeros to the selected length',
+  'Les codes générés utilisent jusqu’à 6 ou 8 caractères. Le complément par des zéros est facultatif ; désactivez-le pour conserver les codes courts. Les codes existants ne sont pas modifiés et la saisie manuelle peut rester plus courte. Les codes dépassant la longueur choisie doivent être corrigés avant l’export.':'Generated codes use up to 6 or 8 characters. Zero padding is optional; disable it to keep short codes. Existing codes remain unchanged and manual codes may be shorter. Codes exceeding the selected length must be corrected before export.',
   'Matrice deadhead / HLP · facultative':'Deadhead matrix · optional',
   'Export texte HASTUS linkdt · origines et destinations':'HASTUS linkdt text export · origins and destinations',
   'Retirer la matrice':'Remove matrix',
@@ -83,7 +87,7 @@ const APP_ENGLISH = {
   'Client existant : le diagnostic HTML présente les références suspectes et toutes les places classées par type de validation, avec recherche et cartes. Il est en consultation seule ; le rapport HTML de validation des places reste disponible séparément. Les options de langue, de thème et de cartes ci-dessus s’appliquent aux deux rapports.':'Existing client: the HTML diagnostic shows suspicious references and all places grouped by validation type, with search and maps. It is read-only; the editable place validation HTML report remains available separately. The language, theme and map options above apply to both reports.',
   'Utiliser agency.txt':'Use agency.txt','Rapport HTML · Diagnostic HASTUS':'HTML report · HASTUS diagnostic','Télécharger le rapport HTML':'Download HTML report','Ouvrir le rapport PDF':'Open PDF report',
   'Prêt à exporter':'Ready to export','Contenu du rapport PDF':'PDF report content','Tous les stops':'All stops','Sans intervention':'No action needed','À évaluer':'Needs review',
-  'Rapport PDF · références suspectes':'PDF report · suspicious references','Correspondance des ID':'ID mapping','Places par stop':'Places by stop','Stops par place':'Stops by place','Regroupements suggérés':'Suggested groupings','Références éloignées':'Distant references','Places sans timing point':'Places without timing points','Places à créer':'Places to create','Télécharger stop_times_enrichi.txt':'Download stop_times_enrichi.txt','Télécharger stops_enrichi.txt':'Download stops_enrichi.txt',
+  'Rapport PDF · références suspectes':'PDF report · suspicious references','Correspondance des ID':'ID mapping','Places par stop':'Places by stop','Stops par place':'Stops by place','Regroupements suggérés':'Suggested groupings','Références éloignées':'Distant references','Places sans timing point':'Places without timing points','Places à créer':'Places to create','Télécharger GTFS prêt à importer':'Download GTFS ready to import','Télécharger stops_enrichi.txt':'Download stops_enrichi.txt',
   'Prototype de préparation · aucune écriture directe dans HASTUS':'Preparation prototype · no direct writes to HASTUS'
 };
 function appDynamicEnglish(text){

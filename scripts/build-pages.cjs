@@ -1,8 +1,8 @@
 // Deliberately package only application resources, never the repository root.
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
-const ARCHIVES=['13.12','13.02','12.0','11.0','10.0'];
-// Keep the final published 13.12 fix, which followed its original release tag.
-const ARCHIVE_REFS={'13.12':'9690e9e28ff8b88f2599914780bb8be9f90e1cb6'};
+const ARCHIVES=['14.0','13.12','13.02','12.0','11.0','10.0'];
+// Preserve the final published fixes, which followed the original release tags.
+const ARCHIVE_REFS={'14.0':'74e2f13f3807c32cdfe6ed483456209e5eae439b','13.12':'9690e9e28ff8b88f2599914780bb8be9f90e1cb6'};
 function buildPages(root,destination){
   const version=fs.readFileSync(path.join(root,'VERSION'),'utf8').trim();
   if(!/^\d+\.\d+(?:\.\d+)?$/.test(version))throw new Error('Invalid VERSION');
