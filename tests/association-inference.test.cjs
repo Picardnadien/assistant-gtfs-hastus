@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict'),{infer}=require('../stop-description-check.js');
+const m={stopId:'id',stopDesc:'name'},stops=[{stop_id:'001',stop_code:'A'},{stop_id:'002',stop_code:'B'}];
+assert.equal(infer(stops,[{id:'A'},{id:'B'}],m).suggested,'stop_code');
+assert.equal(infer(stops,[{id:'001'},{id:'002'}],m).suggested,'stop_id');
+assert.equal(infer(stops,[{id:'A'},{id:'001'}],m).suggested,null);
+assert.equal(infer(stops,[],m).reason,'none');
+assert.equal(infer(stops,[{id:'A'},{id:'A'},{id:'001'}],m).suggested,'stop_id');
+assert.equal(infer([{stop_id:'1',stop_code:'A'},{stop_id:'2',stop_code:'A'}],[{id:'A'}],m).reason,'none');
+assert.equal(infer(stops,[{id:'1'},{id:'2'}],m).reason,'none');
+console.log('PASS: association inference, unique matches, ties, missing keys, duplicates and leading zeros.');

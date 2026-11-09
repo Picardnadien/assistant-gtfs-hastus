@@ -65,3 +65,28 @@ body[data-workflow="reports"] #feed-section{display:none!important}
 #reports-workflow{margin-top:24px}
 #reports-workflow-empty{margin:16px 0}
 #go-to-reports{margin:20px 0}
+
+/* Compact preparation controls: data choices, distances, then filters. */
+.settings-row.compact-analysis-settings{display:flex;flex-direction:column;align-items:stretch;gap:16px}
+.compact-analysis-settings .analysis-source-row,.compact-analysis-settings .analysis-radius-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.compact-analysis-settings .analysis-filter-row{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center}
+.compact-analysis-settings .analysis-filter-row .check-label{display:flex;align-items:center;gap:8px;flex:1 1 240px;margin:0;min-height:32px}
+.compact-analysis-settings .analysis-radius-row:has(>.range-label:not(.hidden):only-child){grid-template-columns:1fr}
+.compact-analysis-settings .range-label{display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:8px 12px;align-items:center;min-width:0}
+.compact-analysis-settings .range-label input[type=range]{grid-column:1/-1;width:100%;margin:2px 0}
+.compact-analysis-settings .range-label output{justify-self:end}
+.compact-analysis-settings .range-label input[type=number]{width:90px;min-width:0;padding:7px 9px}
+.compact-analysis-settings .range-label label{margin:0}
+.compact-analysis-settings .select-label{min-width:0;display:flex;flex-direction:column;gap:7px;align-self:start}
+.compact-analysis-settings select{width:100%;min-width:0}
+.compact-analysis-settings .association-checkbox{display:flex;align-items:center;gap:8px;min-height:38px}
+.compact-analysis-settings input[type=checkbox]{width:16px;height:16px;min-width:16px;flex-shrink:0;margin:0}
+.compact-analysis-settings #association-key[hidden]{display:none!important}
+.compact-analysis-settings #analyze{align-self:flex-end}
+@media(max-width:760px){.compact-analysis-settings .analysis-source-row,.compact-analysis-settings .analysis-radius-row{grid-template-columns:1fr;gap:16px}.compact-analysis-settings .analysis-filter-row{flex-direction:column;align-items:stretch}.compact-analysis-settings .analysis-filter-row .check-label{flex:initial}.compact-analysis-settings #analyze{align-self:stretch}}
+
+.hastus-network-label{font-size:16px!important;letter-spacing:.06em;font-weight:750}
+#stop-id-renumber-setting>summary,#place-naming-setting>summary,.compact-disclosure>summary{cursor:pointer;grid-column:1/-1;font-weight:700;padding:5px 0}
+#stop-id-renumber-setting:not([open])>*:not(summary),#place-naming-setting:not([open])>*:not(summary),.compact-disclosure:not([open])>*:not(summary){display:none!important}
+.compact-disclosure{padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
+.compact-disclosure[open]>summary{margin-bottom:14px}

@@ -1,5 +1,17 @@
 # Notes de version
 
+## 14.2 — 2026-11-09
+
+- Préparation GTFS client existant : détection de la clé stop_id / stop_code selon les correspondances uniques HASTUS, bilan des correspondances, priorité au choix manuel et relance de la détection à la demande.
+- Changer de clé réactive le regroupement. Bouton de recalcul toujours visible, désactivé lorsque les résultats sont à jour.
+- Contrôle des descriptions GTFS/HASTUS replié par défaut : écarts de libellé, descriptions ou clés manquantes, correspondances absentes et doublons. Filtres par type et exports CSV / Excel XLSX de la sélection filtrée ; zéros en tête conservés dans Excel.
+- Sources simplifiées : GTFS ZIP/dossier empilés, export HASTUS au centre et espace de travail à droite. Imports facultatifs intégrés au panneau Sources et repliés ; indication explicite des données obligatoires complètes.
+- Script GTFS_Tool_Stops.id téléchargeable depuis l’import HASTUS, conservé à l’identique.
+- Paramètres regroupés : trois distances côte à côte, suppression du sélecteur de client en doublon, section Grouping settings ouverte par défaut. Gestion des stops, création des codes et correspondance des colonnes repliées.
+- Valeurs initiales client existant : rayon intelligent et réévaluation des places activés, codes jusqu’à 8 caractères en majuscules ; renumérotation, préfixes, zéros de complément et abréviations Postes Canada désactivés. Choix manuels et sauvegardes existantes préservés. trips.txt requis pour le rayon intelligent.
+- Textes FR/EN et disposition responsive ; icône de téléchargement avec libellé accessible.
+- v14.1 archivée à son dernier état publié. Calcul de matrice deadhead reporté à une autre version ; import d’une matrice existante conservé. Règle de longueur des zéros en tête inchangée.
+
 ## 14.1 — 2026-11-05
 
 - Gestion des stops : préfixe facultatif d’une lettre pour les Stop ID, après renumérotation et zéros en tête. Références GTFS et sauvegardes mises à jour ; pas de cumul des préfixes lors d’une nouvelle analyse.

@@ -1,6 +1,6 @@
 "use strict";
 
-const state = { mode: "geographic", workflow:"geographic", hastusCorrections:null, geographicClientType: "new", geographicInputSource:"gtfs", geographicReady: false, geographicNeedsRegroup: false, geographicCache: null, showCombinedConflictMap: false, activeConflictGroupId: null, activeConflictGroupSnapshot: null, reviewedConflictGroups: new Set(), conflictApprovals:{}, conflictMapViews: new Map(), conflictResolutionFullscreen: false, smartRadiusStats: null, files: {}, parsed: {}, originalEntries: [], mapping: {}, decisions: [], groups: [], routeMaps: [], places: [], gtfsStops: [], timingPointSource:"gtfs", timingPointIds:new Set(), variantStopIds:new Set(), endpointStopIds:new Set(), unusedPlaceStops:[], groupingCandidates:[], referenceAnomalies:[], timingSourceStats:null, clientLogo:{dataUrl:"",name:""}, workingStops: null, workingParentStations: 0, workingTimetableModels: [], collisions: [], stopIdRemap: new Map(), associationKey: "stop_id", mapDisplay: "combined", mapLabelMode: "stop_code", mapLabelModes: new Map(), mapZooms: new Map(), mapPans: new Map(), combinedRouteStates: new Map(), fullscreenMapId: null, workspace: {id:null,name:"",handle:null,mode:"none",lastSaved:null,dirty:false}, timepointFallback: false, filter: "all" };
+const state = { mode: "geographic", workflow:"geographic", hastusCorrections:null, associationManual:false, existingClientDefaultsApplied:false, geographicClientType: "new", geographicInputSource:"gtfs", geographicReady: false, geographicNeedsRegroup: false, geographicCache: null, showCombinedConflictMap: false, activeConflictGroupId: null, activeConflictGroupSnapshot: null, reviewedConflictGroups: new Set(), conflictApprovals:{}, conflictMapViews: new Map(), conflictResolutionFullscreen: false, smartRadiusStats: null, files: {}, parsed: {}, originalEntries: [], mapping: {}, decisions: [], groups: [], routeMaps: [], places: [], gtfsStops: [], timingPointSource:"gtfs", timingPointIds:new Set(), variantStopIds:new Set(), endpointStopIds:new Set(), unusedPlaceStops:[], groupingCandidates:[], referenceAnomalies:[], timingSourceStats:null, clientLogo:{dataUrl:"",name:""}, workingStops: null, workingParentStations: 0, workingTimetableModels: [], collisions: [], stopIdRemap: new Map(), associationKey: "stop_id", mapDisplay: "combined", mapLabelMode: "stop_code", mapLabelModes: new Map(), mapZooms: new Map(), mapPans: new Map(), combinedRouteStates: new Map(), fullscreenMapId: null, workspace: {id:null,name:"",handle:null,mode:"none",lastSaved:null,dirty:false}, timepointFallback: false, filter: "all" };
 const $ = (id) => document.getElementById(id);
 const journeyCaches=new Map();let analysisJourney="geographic";
 const GTFS_FILE_KEYS={"stops.txt":"stops","stop_times.txt":"times","routes.txt":"routes","trips.txt":"trips","shapes.txt":"shapes","calendar.txt":"calendar","calendar_dates.txt":"calendarDates","agency.txt":"agency","frequencies.txt":"frequencies"};
@@ -56,7 +56,7 @@ async function restoreLatestWorkspace(canRestore=()=>state.workspace.mode==="non
 function baseFileName(name){return String(name||"").split(/[\\/]/).pop().replace(/[^a-zA-Z0-9._-]/g,"_")||"fichier.txt";}
 async function writeWorkspaceFile(directory,name,content){const fileHandle=await directory.getFileHandle(baseFileName(name),{create:true}),writer=await fileHandle.createWritable();try{await writer.write(content);await writer.close();}catch(error){try{await writer.abort();}catch{}throw error;}}
 async function workspacePermission(handle,request=false){if(!handle)return false;const options={mode:"readwrite"};if(await handle.queryPermission(options)==="granted")return true;return request&&(await handle.requestPermission(options))==="granted";}
-function workspaceSnapshot(){if(state.mode==="geographic"&&state.geographicReady)captureGeographicState();return {version:9,savedAt:new Date().toISOString(),mode:state.mode,workflow:state.workflow||state.mode,analysisJourney,hastusCorrections:state.hastusCorrections,networkStopSource:$("network-stop-source")?.value||"gtfs",geographicClientType:state.geographicClientType,geographicInputSource:state.geographicInputSource,geographicReady:state.geographicReady,geographicCache:state.geographicCache,files:state.files,parsed:state.parsed,originalEntries:state.originalEntries,mapping:state.mapping,decisions:state.decisions,groups:state.groups,routeMaps:state.routeMaps,places:state.places,gtfsStops:state.gtfsStops,timingPointSource:state.timingPointSource,timingPointIds:[...state.timingPointIds],variantStopIds:[...state.variantStopIds],endpointStopIds:[...state.endpointStopIds],unusedPlaceStops:state.unusedPlaceStops,groupingCandidates:state.groupingCandidates,referenceAnomalies:state.referenceAnomalies,timingSourceStats:state.timingSourceStats,clientLogo:state.clientLogo,workingStops:state.workingStops,workingParentStations:state.workingParentStations,collisions:state.collisions,stopIdRemap:[...state.stopIdRemap],associationKey:state.associationKey,mapDisplay:state.mapDisplay,mapLabelMode:state.mapLabelMode,timepointFallback:state.timepointFallback,settings:{radius:Number($("radius")?.value??200),blankTimepoints:Boolean($("blank-timepoints")?.checked),smartRadius:Boolean($("smart-radius")?.checked),renumberStopIds:Boolean($("renumber-stop-ids")?.checked),renumberStopIdStart:Number($("renumber-stop-id-start")?.value||100001),reviewExistingPlaces:Boolean($("review-existing-places")?.checked),referenceDistance:Number($("reference-distance")?.value??500),stopPlaceDistance:Number($("stop-place-distance")?.value??500),diagnosticDeadheadOnly:Boolean($("diagnostic-deadhead-only")?.checked),diagnosticEndpointsOnly:Boolean($("diagnostic-endpoints-only")?.checked),timingPointSource:$("timing-point-source")?.value||"gtfs",prefixStopIds:Boolean($("prefix-stop-ids")?.checked),stopIdPrefix:$("stop-id-prefix")?.value||"",padStopIds:Boolean($("pad-stop-ids")?.checked),padStopIdWidth:$("pad-stop-id-width")?.value||"",padPlaceCodes:padPlaceCodes(),placeCodeCase:placeCodeCase(),placeCodeMaxLength:placeCodeMaxLength(),useCanadaPostAbbreviations:useCanadaPostAbbreviations(),placeReportLanguage:reportLanguageChoice("place-report-language"),networkLanguage:reportLanguageChoice("network-language"),networkMapMode:$("network-map-mode")?.value==="offline"?"offline":"online",networkTheme:"clean",placeReportOrientation:$("place-report-orientation")?.value||"landscape",placeReportHtmlMapMode:placeReportHtmlMapMode(),placeReportHtmlTheme:placeReportHtmlTheme(),placeReportHideFileExports:placeReportHideFileExports(),placeReportNearby:Boolean($("place-report-nearby")?.checked),placeReportMargin:Number($("place-report-margin")?.value||150),uiTheme:$("app-theme")?.value==="clean-dark"?"clean-dark":"clean",uiLanguage:$("app-language")?.value||"fr"}};}
+function workspaceSnapshot(){if(state.mode==="geographic"&&state.geographicReady)captureGeographicState();return {version:9,savedAt:new Date().toISOString(),mode:state.mode,workflow:state.workflow||state.mode,analysisJourney,associationManual:state.associationManual,existingClientDefaultsApplied:state.existingClientDefaultsApplied,hastusCorrections:state.hastusCorrections,networkStopSource:$("network-stop-source")?.value||"gtfs",geographicClientType:state.geographicClientType,geographicInputSource:state.geographicInputSource,geographicReady:state.geographicReady,geographicCache:state.geographicCache,files:state.files,parsed:state.parsed,originalEntries:state.originalEntries,mapping:state.mapping,decisions:state.decisions,groups:state.groups,routeMaps:state.routeMaps,places:state.places,gtfsStops:state.gtfsStops,timingPointSource:state.timingPointSource,timingPointIds:[...state.timingPointIds],variantStopIds:[...state.variantStopIds],endpointStopIds:[...state.endpointStopIds],unusedPlaceStops:state.unusedPlaceStops,groupingCandidates:state.groupingCandidates,referenceAnomalies:state.referenceAnomalies,timingSourceStats:state.timingSourceStats,clientLogo:state.clientLogo,workingStops:state.workingStops,workingParentStations:state.workingParentStations,collisions:state.collisions,stopIdRemap:[...state.stopIdRemap],associationKey:state.associationKey,mapDisplay:state.mapDisplay,mapLabelMode:state.mapLabelMode,timepointFallback:state.timepointFallback,settings:{associationKey:$("association-key")?.value||state.associationKey,radius:Number($("radius")?.value??200),blankTimepoints:Boolean($("blank-timepoints")?.checked),smartRadius:Boolean($("smart-radius")?.checked),renumberStopIds:Boolean($("renumber-stop-ids")?.checked),renumberStopIdStart:Number($("renumber-stop-id-start")?.value||100001),reviewExistingPlaces:Boolean($("review-existing-places")?.checked),referenceDistance:Number($("reference-distance")?.value??500),stopPlaceDistance:Number($("stop-place-distance")?.value??500),diagnosticDeadheadOnly:Boolean($("diagnostic-deadhead-only")?.checked),diagnosticEndpointsOnly:Boolean($("diagnostic-endpoints-only")?.checked),timingPointSource:$("timing-point-source")?.value||"gtfs",prefixStopIds:Boolean($("prefix-stop-ids")?.checked),stopIdPrefix:$("stop-id-prefix")?.value||"",padStopIds:Boolean($("pad-stop-ids")?.checked),padStopIdWidth:$("pad-stop-id-width")?.value||"",padPlaceCodes:padPlaceCodes(),placeCodeCase:placeCodeCase(),placeCodeMaxLength:placeCodeMaxLength(),useCanadaPostAbbreviations:useCanadaPostAbbreviations(),placeReportLanguage:reportLanguageChoice("place-report-language"),networkLanguage:reportLanguageChoice("network-language"),networkMapMode:$("network-map-mode")?.value==="offline"?"offline":"online",networkTheme:"clean",placeReportOrientation:$("place-report-orientation")?.value||"landscape",placeReportHtmlMapMode:placeReportHtmlMapMode(),placeReportHtmlTheme:placeReportHtmlTheme(),placeReportHideFileExports:placeReportHideFileExports(),placeReportNearby:Boolean($("place-report-nearby")?.checked),placeReportMargin:Number($("place-report-margin")?.value||150),uiTheme:$("app-theme")?.value==="clean-dark"?"clean-dark":"clean",uiLanguage:$("app-language")?.value||"fr"}};}
 function updateLoadedGtfsUi(){const found=Object.entries(GTFS_FILE_KEYS).filter(([,key])=>state.parsed[key]);$("gtfs-status").textContent=found.length?`GTFS chargé · ${found.length} fichier${found.length>1?'s':''} reconnu${found.length>1?'s':''}`:"Aucun GTFS chargé";$("gtfs-files").innerHTML=found.map(([name])=>`<span class="file-chip ${["calendar_dates.txt","frequencies.txt"].includes(name)?'optional':''}">${name}</span>`).join("");}
 function countWorkingParents(stops){return (stops?.rows||[]).filter(row=>normalize(row.parent_station)&&normalize(row.location_type)!=="1").length;}
 function refreshWorkingTimetableAccess(){const option=$("network-working-option"),count=state.workingParentStations||0,ready=count>0,schedulesReady=Boolean(state.parsed.routes&&state.parsed.trips&&state.parsed.times);if(option)option.disabled=!ready;if(!ready&&$("network-stop-source"))$("network-stop-source").value='gtfs';$("working-timetable-detail").textContent=ready?`${count} stop${count>1?'s':''} avec parent_station${schedulesReady?".":" · routes.txt et trips.txt requis pour les horaires."}`:"Disponible dès qu’un parent_station est enregistré dans working/stops.txt.";}
@@ -64,6 +64,8 @@ function restoreWorkspaceSnapshot(snapshot){
   if((!snapshot?.parsed?.stops||!snapshot?.parsed?.times)&&(!snapshot?.parsed?.hastus||!snapshot?.parsed?.variants))throw new Error("Cet espace de travail ne contient ni GTFS valide ni duo d’exports HASTUS valide.");
   const legacyMode=snapshot.mode,restoredMode=["new","existing"].includes(legacyMode)?"geographic":(snapshot.workflow||legacyMode||"geographic"),clientType=snapshot.geographicClientType||(legacyMode==="existing"?"existing":"new"),ready=snapshot.geographicReady??Boolean(snapshot.geographicCache||(snapshot.decisions||[]).length||(snapshot.groups||[]).length);
   analysisJourney=snapshot.analysisJourney||(snapshot.workflow==="diagnostic"?"diagnostic":"geographic");state.hastusCorrections=snapshot.hastusCorrections||null;state.files=snapshot.files||{};state.parsed=snapshot.parsed||{};state.originalEntries=snapshot.originalEntries||[];state.geographicClientType=clientType;state.geographicInputSource=snapshot.geographicInputSource||"gtfs";state.geographicReady=ready;
+  state.associationManual=snapshot.associationManual??Boolean(snapshot.settings?.associationKey||snapshot.associationKey);
+  state.existingClientDefaultsApplied=snapshot.existingClientDefaultsApplied??(clientType==="existing");
   state.geographicCache=snapshot.geographicCache||(ready?{clientType,mapping:snapshot.mapping||{},decisions:snapshot.decisions||[],groups:snapshot.groups||[],places:snapshot.places||[],groupingCandidates:snapshot.groupingCandidates||[],referenceAnomalies:snapshot.referenceAnomalies||[],gtfsStops:snapshot.gtfsStops||state.parsed.stops.rows,collisions:snapshot.collisions||[],stopIdRemap:snapshot.stopIdRemap||[],associationKey:snapshot.associationKey||"stop_id",timepointFallback:Boolean(snapshot.timepointFallback)}:null);
   state.mapping=snapshot.mapping||{};state.decisions=snapshot.decisions||[];state.groups=snapshot.groups||[];state.routeMaps=snapshot.routeMaps||[];state.places=snapshot.places||[];state.gtfsStops=snapshot.gtfsStops||state.parsed.stops.rows;state.timingPointSource=snapshot.timingPointSource||"gtfs";state.timingPointIds=new Set(snapshot.timingPointIds||[]);state.variantStopIds=new Set(snapshot.variantStopIds||[]);state.endpointStopIds=new Set(snapshot.endpointStopIds||[]);state.unusedPlaceStops=snapshot.unusedPlaceStops||[];state.groupingCandidates=snapshot.groupingCandidates||[];state.referenceAnomalies=snapshot.referenceAnomalies||[];state.timingSourceStats=snapshot.timingSourceStats||null;state.clientLogo=snapshot.clientLogo||{dataUrl:"",name:""};state.workingStops=snapshot.workingStops||null;state.workingParentStations=snapshot.workingParentStations||countWorkingParents(state.workingStops);state.collisions=snapshot.collisions||[];state.stopIdRemap=new Map(snapshot.stopIdRemap||[]);state.associationKey=snapshot.associationKey||"stop_id";state.mapDisplay=snapshot.mapDisplay||"combined";state.mapLabelMode=snapshot.mapLabelMode||"stop_code";state.timepointFallback=Boolean(snapshot.timepointFallback);
   $("map-display").value=state.mapDisplay;$("map-label-mode").value=state.mapLabelMode;
@@ -75,6 +77,7 @@ function restoreWorkspaceSnapshot(snapshot){
   if($("stop-id-prefix"))$("stop-id-prefix").value=snapshot.settings?.stopIdPrefix||"";
   if($("pad-place-codes"))$("pad-place-codes").checked=snapshot.settings?.padPlaceCodes!==false;
   if(snapshot.settings){$("radius").value=distanceValue(snapshot.settings.radius,200);$("radius-output").textContent=`${$("radius").value} m`;$("blank-timepoints").checked=Boolean(snapshot.settings.blankTimepoints);$("smart-radius").checked=Boolean(snapshot.settings.smartRadius);$("renumber-stop-ids").checked=Boolean(snapshot.settings.renumberStopIds);$("renumber-stop-id-start").value=snapshot.settings.renumberStopIdStart||100001;$("review-existing-places").checked=Boolean(snapshot.settings.reviewExistingPlaces);$("stop-place-distance").value=distanceValue(snapshot.settings.stopPlaceDistance,500);$("stop-place-distance-output").textContent=`${$("stop-place-distance").value} m`;$("diagnostic-endpoints-only").checked=Boolean(snapshot.settings.diagnosticEndpointsOnly);$("diagnostic-deadhead-only").checked=Boolean(snapshot.settings.diagnosticDeadheadOnly);$("reference-distance").value=distanceValue(snapshot.settings.referenceDistance,500);$("reference-distance-output").textContent=`${$("reference-distance").value} m`;$("timing-point-source").value=snapshot.settings.timingPointSource||state.timingPointSource;$("place-code-case").value=snapshot.settings.placeCodeCase==="lower"?"lower":"upper";$("use-canada-post-abbreviations").checked=Boolean(snapshot.settings.useCanadaPostAbbreviations);$("place-report-language").value=["fr","en"].includes(snapshot.settings.placeReportLanguage)?snapshot.settings.placeReportLanguage:"auto";if($("network-language"))$("network-language").value=["fr","en"].includes(snapshot.settings.networkLanguage)?snapshot.settings.networkLanguage:"auto";if($("network-map-mode"))$("network-map-mode").value=snapshot.settings.networkMapMode==="offline"?"offline":"online";if($("network-theme"))$("network-theme").value="clean";$("place-report-orientation").value=snapshot.settings.placeReportOrientation==="portrait"?"portrait":"landscape";$("place-report-html-map-mode").value=snapshot.settings.placeReportHtmlMapMode==="offline"?"offline":"online";$("place-report-nearby").checked=snapshot.settings.placeReportNearby!==false;$("place-report-margin").value=snapshot.settings.placeReportMargin||150;if($("place-report-html-theme"))$("place-report-html-theme").value="clean";if(typeof window.applyAppPreferences==="function")window.applyAppPreferences(snapshot.settings.uiTheme||"clean",snapshot.settings.uiLanguage||"fr");}
+  $("association-key").value=snapshot.settings?.associationKey||snapshot.associationKey||"stop_id";syncAssociationToggle();
   updateLoadedGtfsUi();refreshWorkingTimetableAccess();state.mode="__restore__";setMode(restoredMode);if($("network-stop-source"))$("network-stop-source").value=snapshot.networkStopSource==="working"&&state.workingParentStations?"working":"gtfs";
   syncDistanceControls();if(typeof refreshSchedulingUnits==="function")refreshSchedulingUnits();
   if(restoredMode==="timetables"&&state.timetableAnalysis){render();$("results-section").classList.remove("hidden");}
@@ -362,7 +365,7 @@ async function loadFile(kind, input) {
     input.closest(".dropzone").classList.add("loaded");
     const required=requiredKinds();
     const count=required.filter(k=>state.files[k]).length, total=required.length;
-    $("file-status").textContent = `${count} fichier${count > 1 ? "s" : ""} sur ${total} chargé${count > 1 ? "s" : ""}`;
+    $("file-status").textContent = requiredDataStatus(count,total);
     if (count === total) setupMapping();
     queueQuickSave();
   }catch(error){delete state.files[kind];delete state.parsed[kind];input.value="";input.closest(".dropzone").classList.remove("loaded");alert(`Impossible de lire le fichier : ${error.message}`);}
@@ -448,6 +451,14 @@ function hastusStopsAsGtfs(hastus,m){
   const byId=new Map();for(const row of hastus){const id=normalize(row[m.stopId]).replace(/^:/,"");if(!id||byId.has(associationLookupKey(id)))continue;byId.set(associationLookupKey(id),{stop_id:id,stop_code:id,stop_name:normalize(row[m.stopDesc])||id,stop_lat:normalize(row[m.lat]),stop_lon:normalize(row[m.lon]),parent_station:m.placeId?normalize(row[m.placeId]):"",location_type:"0"});}
   return {headers:["stop_id","stop_code","stop_name","stop_lat","stop_lon","parent_station","location_type"],rows:[...byId.values()]};
 }
+function refreshGroupingAction(){
+  const button=$("analyze");if(!button)return;
+  button.classList.remove('hidden');
+  button.disabled=state.mode==='geographic'&&state.geographicReady&&!state.geographicNeedsRegroup;
+  if(state.mode==='geographic')button.innerHTML=gtfsUi(state.geographicReady?'Recalculer':'Regrouper les points horaires',state.geographicReady?'Recalculate':'Group timing points')+' <span>→</span>';
+  const title=$("grouping-settings-title");if(title)title.textContent=gtfsUi('Paramètres de regroupement','Grouping settings');
+}
+function refreshMappingDisclosure(){const label=$("column-mapping-label");if(label)label.textContent=gtfsUi('Correspondance des colonnes','Column mapping');const box=$("column-mapping-details");if(box)box.classList.toggle('hidden',$("mapping-grid").classList.contains?.('hidden')||false);}
 function setupMapping() {
   const hasTimepoint=state.parsed.times?.headers.includes("timepoint");
   const usesTimepoints=state.mode!=="timetables"&&state.mode!=="workingTimetables";
@@ -490,6 +501,7 @@ function setupMapping() {
     $("mapping-eyebrow").textContent="CALENDRIER"; $("mapping-title").textContent="Comparer les volumes de service"; $("mapping-subtitle").textContent="calendar.txt et calendar_dates.txt seront combinés pour calculer les variations quotidiennes.";
   }
   $("mapping-section").classList.remove("hidden");
+  refreshMappingDisclosure();detectAssociationKey();refreshGroupingAction();
   // Imports reveal the next step without moving away from the file selectors.
 }
 
@@ -502,7 +514,33 @@ function restoreGeographicState(){
   state.geographicClientType=cache.clientType||"new";state.geographicInputSource=cache.inputSource||state.geographicInputSource||"gtfs";state.geographicNeedsRegroup=Boolean(cache.needsRegroup);state.showCombinedConflictMap=Boolean(cache.showCombinedConflictMap);state.activeConflictGroupId=cache.activeConflictGroupId||null;state.activeConflictGroupSnapshot=cache.activeConflictGroupSnapshot||null;state.reviewedConflictGroups=new Set(cache.reviewedConflictGroups||[]);state.conflictApprovals=cache.conflictApprovals||{};state.smartRadiusStats=cache.smartRadiusStats||null;state.mapping=cache.mapping||{};state.decisions=cache.decisions||[];state.groups=cache.groups||[];state.places=cache.places||[];state.gtfsStops=cache.gtfsStops||state.parsed.stops?.rows||[];state.timingPointSource=cache.timingPointSource||"gtfs";state.timingPointIds=new Set(cache.timingPointIds||[]);state.variantStopIds=new Set(cache.variantStopIds||[]);state.endpointStopIds=new Set(cache.endpointStopIds||[]);state.unusedPlaceStops=cache.unusedPlaceStops||[];state.groupingCandidates=cache.groupingCandidates||[];state.referenceAnomalies=cache.referenceAnomalies||[];state.timingSourceStats=cache.timingSourceStats||null;state.collisions=cache.collisions||[];state.stopIdRemap=new Map(cache.stopIdRemap||[]);state.associationKey=cache.associationKey||"stop_id";state.timepointFallback=Boolean(cache.timepointFallback);state.geographicReady=true;return true;
 }
 function resetGeographicResults(){state.hastusCorrections=null;state.geographicReady=false;state.geographicNeedsRegroup=false;state.geographicCache=null;state.showCombinedConflictMap=false;state.activeConflictGroupId=null;state.activeConflictGroupSnapshot=null;state.reviewedConflictGroups=new Set();state.conflictApprovals={};state.conflictMapViews.clear();state.smartRadiusStats=null;state.mapping={};state.decisions=[];state.groups=[];state.places=[];state.timingPointIds=new Set();state.variantStopIds=new Set();state.endpointStopIds=new Set();state.unusedPlaceStops=[];state.groupingCandidates=[];state.referenceAnomalies=[];state.timingSourceStats=null;state.collisions=[];state.stopIdRemap=new Map();}
+function requiredDataStatus(count,total){return count===total?gtfsUi('Données obligatoires complètes','Required data complete'):gtfsUi(`${count} / ${total} fichiers obligatoires chargés`,`${count} / ${total} required files loaded`);}
+function syncCombinedImports(){
+  const slot=$("hastus-feed-slot"),home=$("hastus-upload-home"),card=$("hastus-upload");if(!slot?.appendChild||!home?.parentNode||!card)return;
+  const combined=state.workflow==='geographic'&&isGeographicExisting()&&!isHastusInput();
+  document.body.classList.toggle('combined-imports',combined);slot.classList.toggle('hidden',!combined);
+  if(combined&&card.parentNode!==slot)slot.appendChild(card);
+  else if(!combined&&card.parentNode!==home.parentNode)home.after(card);
+  const optional=$("optional-hastus-imports"),optionalSlot=$("optional-feed-slot"),optionalHome=$("optional-hastus-home"),status=$("file-status");
+  if(optional&&optionalSlot&&optionalHome){
+    optionalSlot.classList.toggle('hidden',!combined);
+    if(combined){if(optional.parentNode!==optionalSlot)optionalSlot.appendChild(optional);if(status&&status.parentNode!==optionalSlot)optionalSlot.appendChild(status);}
+    else{if(optional.parentNode!==optionalHome.parentNode)optionalHome.after(optional);if(status&&status.parentNode!==$("source-section"))$("source-section").appendChild(status);}
+  }
+}
+function refreshHastusImportCopy(){
+  syncCombinedImports();
+  const box=$("optional-hastus-imports");if(!box?.dataset)return;
+  const direct=isHastusInput(),t=gtfsUi;
+  box.classList.toggle('hidden',!direct&&!isGeographicExisting());
+  if(box.dataset.direct!==String(direct)){box.open=direct;box.dataset.direct=String(direct);}
+  $("optional-hastus-title").textContent=direct?t('Versions de routes requises · matrice deadhead facultative','Required route versions · optional deadhead matrix'):t('Données facultatives · versions de routes et matrice deadhead','Optional data · route versions and deadhead matrix');
+  $("optional-hastus-help").textContent=direct?t('Les versions de routes sont nécessaires sans GTFS. La matrice deadhead reste facultative.','Route versions are required without a GTFS feed. The deadhead matrix remains optional.'):t('À charger uniquement pour utiliser les timing points HASTUS ou filtrer les places selon leurs liaisons deadhead.','Load only to use HASTUS timing points or filter places by their deadhead links.');
+  const downloadLabel=t('Télécharger le script HASTUS','Download HASTUS script');$("hastus-extract-download").setAttribute('aria-label',downloadLabel);$("hastus-extract-download").title=downloadLabel;
+  $("hastus-extract-help").textContent=t('Si besoin, utilisez ce script dans HASTUS pour extraire automatiquement les données des stops, leurs places de rattachement, références et localisations.','If needed, run this script in HASTUS to automatically extract stops, their assigned places, references and locations.');
+}
 function updateGeographicSourceVisibility(){
+  refreshHastusImportCopy();
   const geographic=state.mode==="geographic",direct=isHastusInput(),existing=geographic&&state.geographicClientType==="existing";
   $('journey-client-setting')?.classList.toggle('hidden',state.workflow!=='geographic');if($('journey-client'))$('journey-client').value=state.geographicClientType;
   document.querySelector('[data-source="hastus"]')?.classList.toggle('hidden',state.workflow==='geographic');
@@ -513,7 +551,7 @@ function updateGeographicSourceVisibility(){
   document.querySelectorAll(".data-source-card").forEach(card=>{const active=card.dataset.source===state.geographicInputSource;card.classList.toggle("active",active);card.setAttribute("aria-pressed",String(active));});
 }
 function setGeographicInputSource(source){
-  if(!["gtfs","hastus"].includes(source)||source===state.geographicInputSource)return;state.geographicInputSource=source;if(source==="hastus"){state.geographicClientType="existing";state.timingPointSource="variants";$("timing-point-source").value="variants";$("review-existing-places").checked=true;}else state.geographicClientType=state.workflow==='diagnostic'?'existing':($('journey-client')?.value||'new');resetGeographicResults();updateGeographicSourceVisibility();$("results-section").classList.add("hidden");const required=requiredKinds(),count=required.filter(kind=>state.files[kind]).length;$("file-status").textContent=`${count} fichier${count>1?"s":""} sur ${required.length} chargé${count>1?"s":""}`;if(count===required.length)setupMapping();else $("mapping-section").classList.add("hidden");queueQuickSave();
+  if(!["gtfs","hastus"].includes(source)||source===state.geographicInputSource)return;state.geographicInputSource=source;if(source==="hastus"){state.geographicClientType="existing";state.timingPointSource="variants";$("timing-point-source").value="variants";$("review-existing-places").checked=true;}else state.geographicClientType=state.workflow==='diagnostic'?'existing':($('journey-client')?.value||'new');resetGeographicResults();updateGeographicSourceVisibility();$("results-section").classList.add("hidden");const required=requiredKinds(),count=required.filter(kind=>state.files[kind]).length;$("file-status").textContent=requiredDataStatus(count,required.length);if(count===required.length)setupMapping();else $("mapping-section").classList.add("hidden");queueQuickSave();
 }
 function updateWorkflowVisibility(){
   const workflow=state.workflow||state.mode;
@@ -551,24 +589,31 @@ function setMode(mode){
     if(typeof refreshSchedulingUnits==='function')refreshSchedulingUnits();queueQuickSave();return;
   }
   if(mode==="maps"){$("map-display").value="combined";$("map-label-mode").value="stop_code";state.mapDisplay="combined";state.mapLabelMode="stop_code";}
-  $("analyze").classList.remove("hidden");$("analyze").innerHTML=mode==="geographic"?'Regrouper les points horaires <span>→</span>':mode==="maps"?'Générer les cartes <span>→</span>':mode==="timetables"?'Comparer les horaires <span>→</span>':'Générer les timetables working <span>→</span>';
+  refreshGroupingAction();$("analyze").innerHTML=mode==="geographic"?'Regrouper les points horaires <span>→</span>':mode==="maps"?'Générer les cartes <span>→</span>':mode==="timetables"?'Comparer les horaires <span>→</span>':'Générer les timetables working <span>→</span>';
   const required=requiredKinds();
   const count=required.filter(k=>state.files[k]).length;
-  $("file-status").textContent=`${count} fichier${count>1?"s":""} sur ${required.length} chargé${count>1?"s":""}`;
+  $("file-status").textContent=requiredDataStatus(count,required.length);
   if(count===required.length) setupMapping();
   if(mode==="geographic"&&restoreGeographicState()){
     $("geographic-client-type").value=state.geographicClientType;updateGeographicSourceVisibility();
     const restoredRequired=requiredKinds();if(restoredRequired.every(kind=>state.files[kind]))setupMapping();
-    render();$("results-section").classList.remove("hidden");$("analyze").classList.toggle("hidden",!state.geographicNeedsRegroup);if(state.geographicNeedsRegroup)$("analyze").innerHTML=`Regrouper avec un rayon de ${$("radius").value} m <span>→</span>`;
+    render();$("results-section").classList.remove("hidden");refreshGroupingAction();if(state.geographicNeedsRegroup)$("analyze").innerHTML=`Regrouper avec un rayon de ${$("radius").value} m <span>→</span>`;
   }
   updateWorkflowVisibility();queueQuickSave();
 }
 
+function applyExistingClientDefaults(){
+  if(state.existingClientDefaultsApplied||state.workflow!=='geographic'||state.geographicInputSource!=='gtfs')return;
+  for(const [id,value] of Object.entries({'smart-radius':true,'review-existing-places':true,'renumber-stop-ids':false,'pad-stop-ids':false,'prefix-stop-ids':false,'pad-place-codes':false,'use-canada-post-abbreviations':false}))$(id).checked=value;
+  for(const [id,value] of Object.entries({'renumber-stop-id-start':'100001','pad-stop-id-width':'8','stop-id-prefix':'A','place-code-max-length':'8','place-code-case':'upper'}))$(id).value=value;
+  state.existingClientDefaultsApplied=true;
+  refreshStopIdPaddingSetting();
+}
 function setGeographicClientType(type){
   if(state.workflow==='diagnostic'&&type==='new')return;
   if(!["new","existing"].includes(type)||type===state.geographicClientType)return;
-  state.geographicClientType=type;resetGeographicResults();updateGeographicSourceVisibility();$("results-section").classList.add("hidden");$("analyze").classList.remove("hidden");
-  const required=requiredKinds(),count=required.filter(kind=>state.files[kind]).length;$("file-status").textContent=`${count} fichier${count>1?"s":""} sur ${required.length} chargé${count>1?"s":""}`;
+  state.geographicClientType=type;if(type==="existing")applyExistingClientDefaults();resetGeographicResults();updateGeographicSourceVisibility();$("results-section").classList.add("hidden");refreshGroupingAction();
+  const required=requiredKinds(),count=required.filter(kind=>state.files[kind]).length;$("file-status").textContent=requiredDataStatus(count,required.length);
   if(count===required.length)setupMapping();else $("mapping-section").classList.add("hidden");queueQuickSave();
 }
 
@@ -767,7 +812,7 @@ function analyze() {
       const usedCodes=new Set(gtfs.rows.map(r=>normalize(r.stop_id).toUpperCase()).filter(Boolean));
       state.groups=groupNearbyStops(items,radius,usedCodes,smartContext);
       for(const group of state.groups) for(const item of group.items) state.decisions.push({...item,originalId:item.id,status:"review",source:"new-stop",choice:"__new__",candidates:[],groupId:group.id});
-      state.geographicReady=true;state.geographicNeedsRegroup=false;captureGeographicState();render(); $("results-section").classList.remove("hidden"); $("analyze").classList.add("hidden");$("results-section").scrollIntoView({behavior:"smooth",block:"start"});queueQuickSave(); return;
+      state.geographicReady=true;state.geographicNeedsRegroup=false;captureGeographicState();render(); $("results-section").classList.remove("hidden"); refreshGroupingAction();$("results-section").scrollIntoView({behavior:"smooth",block:"start"});queueQuickSave(); return;
     }
 
     state.mapping = Object.fromEntries(fields.map(([key])=>[key,$(`map-${key}`).value]));
@@ -807,7 +852,7 @@ function analyze() {
     state.geographicReady=true;state.geographicNeedsRegroup=false;captureGeographicState();
     render();
     $("results-section").classList.remove("hidden");
-    $("analyze").classList.add("hidden");
+    refreshGroupingAction();
     $("results-section").scrollIntoView({behavior:"smooth",block:"start"});
     queueQuickSave();
   } catch (e) { alert(e.message); }
@@ -1087,7 +1132,52 @@ function relationshipDiagnosticsHtml(){
   if(!state.groupingCandidates.length&&!anomalyRows)return `<div class="notice"><strong>Aucune anomalie de regroupement détectée.</strong> Les places proches sont déjà reliées et aucune référence ne dépasse le seuil de ${$("reference-distance").value} m.</div>`;
   return `<section class="relationship-diagnostics"><h3>Diagnostic des regroupements et références</h3><p>Le rayon de proximité est de ${$("radius").value} m; une référence est signalée au-delà de ${$("reference-distance").value} m.</p>${state.groupingCandidates.length?`<details open><summary>${state.groupingCandidates.length} regroupement${state.groupingCandidates.length!==1?'s':''} ou rattachement${state.groupingCandidates.length!==1?'s':''} suggéré${state.groupingCandidates.length!==1?'s':''}</summary>${groupingCandidateModule()}</details>`:""}${anomalyRows?`<details><summary>${state.referenceAnomalies.length} référence${state.referenceAnomalies.length!==1?'s':''} éloignée${state.referenceAnomalies.length!==1?'s':''} ou suspecte${state.referenceAnomalies.length!==1?'s':''}</summary><div class="diagnostic-table-wrap"><table><thead><tr><th>Référence</th><th>Place A</th><th>Place B</th><th>Distance</th><th>Anomalie</th><th>Carte</th></tr></thead><tbody>${anomalyRows}</tbody></table></div>${state.referenceAnomalies.length>100?'<small>Les 100 premiers cas sont affichés; le CSV contient la liste complète.</small>':''}</details>`:""}</section>`;
 }
+function detectAssociationKey(apply=true){
+  if(typeof StopDescriptionCheck==='undefined'||!isGeographicExisting()||isHastusInput()||!state.parsed.stops||!state.parsed.hastus)return;
+  const mapping={stopId:$("map-stopId")?.value||state.mapping.stopId,stopDesc:$("map-stopDesc")?.value||state.mapping.stopDesc};if(!mapping.stopId)return;
+  const result=StopDescriptionCheck.infer(state.parsed.stops.rows,state.parsed.hastus.rows,mapping),t=gtfsUi;
+  if(apply&&!state.associationManual&&result.suggested&&$("association-key").value!==result.suggested){$("association-key").value=result.suggested;associationKeyChanged(false);}
+  syncAssociationToggle();
+  const detail=$("association-detection");if(detail){const a=result.scores.stop_id,b=result.scores.stop_code;detail.textContent=t(`Correspondances uniques : stop_id ${a.matched}/${a.total} · stop_code ${b.matched}/${b.total}. `,`Unique matches: stop_id ${a.matched}/${a.total} · stop_code ${b.matched}/${b.total}. `)+(state.associationManual?t('Choix manuel conservé.','Manual choice retained.'):result.suggested?t(`Clé proposée : ${result.suggested}.`,`Suggested key: ${result.suggested}.`):t('Résultat indécis : vérifiez la clé.','Inconclusive: check the key.'));}
+  if($("association-auto"))$("association-auto").textContent=t('Détecter automatiquement','Detect automatically');
+}
+function syncAssociationToggle(){const label=document.querySelector?.('#association-setting [data-fr]');if(label)label.textContent=gtfsUi('Utiliser stop_code plutôt que stop_id','Use stop_code instead of stop_id');const toggle=$("association-code-toggle");if(toggle)toggle.checked=$("association-key").value==='stop_code';}
+function renderStopDescriptionValidation(){
+  syncAssociationToggle();
+  const host=$("description-validation");if(!host)return;
+  if(typeof StopDescriptionCheck==='undefined'||!isGeographicExisting()||isHastusInput()||!state.parsed.stops||!state.parsed.hastus){host.innerHTML='';return;}
+  const expanded=host.querySelector('details')?.open||false,filter=host.querySelector('#description-error-filter')?.value||'all';
+  const association=$("association-key").value||'stop_id',m={...state.mapping};
+  for(const field of ['stopId','stopDesc'])if($("map-"+field))m[field]=$("map-"+field).value;
+  if(!m.stopId||!m.stopDesc){host.innerHTML='';return;}
+  const rows=StopDescriptionCheck.compare(state.parsed.stops.rows,state.parsed.hastus.rows,association,m),issues=rows.filter(r=>r.status!=='same'),t=gtfsUi;
+  const labels={'different':t('Description différente','Different description'),'missing-key':t('Clé absente','Missing key'),'unmatched':t('Absent de HASTUS','Not found in HASTUS'),'ambiguous':t('Clé ambiguë / doublon','Ambiguous / duplicate key'),'missing-description':t('Description manquante','Missing description')};
+  const visible=issues.filter(r=>filter==='all'||r.status===filter);
+  host.innerHTML=`<details class="notice" ${expanded?'open':''}><summary><strong>${t('Validation des descriptions GTFS / HASTUS','GTFS / HASTUS description validation')}</strong> · ${escapeHtml(association)} · ${issues.length} ${t('à vérifier','to review')} / ${rows.length}</summary><p>${t('Tous les arrêts physiques, TP ou non. Casse et espaces ignorés ; ponctuation et abréviations conservées. Aucune description modifiée automatiquement.','All physical stops, TP or not. Case and whitespace ignored; punctuation and abbreviations retained. No descriptions are changed automatically.')}</p>${state.geographicNeedsRegroup?`<p>${t('Clé ou paramètres modifiés : relancez le regroupement avant export.','Key or settings changed: rerun grouping before export.')}</p>`:''}<div class="description-export-controls"><button type="button" data-description-export="csv">${t('Exporter CSV','Export CSV')}</button><button type="button" data-description-export="xlsx">${t('Exporter Excel','Export Excel')} (.xlsx)</button><small>${t('Export des écarts selon le filtre sélectionné.','Export issues matching the selected filter.')}</small></div><label>${t('Type d’écart','Issue type')} <select id="description-error-filter"><option value="all">${t('Tous les écarts','All issues')} (${issues.length})</option>${Object.entries(labels).map(([value,label])=>`<option value="${value}" ${filter===value?'selected':''}>${label} (${issues.filter(r=>r.status===value).length})</option>`).join('')}</select></label>${visible.length?`<div style="overflow:auto;max-height:420px"><table><thead><tr><th>Stop ID</th><th>${escapeHtml(association)}</th><th>GTFS</th><th>HASTUS</th><th>${t('Contrôle','Check')}</th></tr></thead><tbody>${visible.map(r=>`<tr><td>${escapeHtml(r.stopId)}</td><td>${escapeHtml(r.associationValue)}</td><td>${escapeHtml(r.gtfs)}</td><td>${escapeHtml(r.hastus)}</td><td>${labels[r.status]}</td></tr>`).join('')}</tbody></table></div>`:`<p>${issues.length?t('Aucun écart pour ce filtre.','No issues for this filter.'):t('Les descriptions associées concordent.','Matched descriptions agree.')}</p>`}</details>`;
+}
+function exportStopDescriptionIssues(format){
+  const m={...state.mapping};for(const field of ['stopId','stopDesc'])if($("map-"+field))m[field]=$("map-"+field).value;
+  const association=$("association-key").value,filter=$("description-error-filter")?.value||'all';
+  const rows=StopDescriptionCheck.compare(state.parsed.stops.rows,state.parsed.hastus.rows,association,m).filter(r=>r.status!=='same'&&(filter==='all'||filter===r.status));
+  const t=gtfsUi,labels={'different':t('Description différente','Different description'),'missing-key':t('Clé absente','Missing key'),'unmatched':t('Absent de HASTUS','Not found in HASTUS'),'ambiguous':t('Clé ambiguë / doublon','Ambiguous / duplicate key'),'missing-description':t('Description manquante','Missing description')};
+  const table=[[t('Stop ID GTFS','GTFS Stop ID'),t('Clé d’association','Association key'),t('Valeur de la clé','Key value'),'Description GTFS','Description HASTUS',t('Type d’écart','Issue type')],...rows.map(r=>[r.stopId,association,r.associationValue,r.gtfs,r.hastus,labels[r.status]])];
+  if(format==='xlsx')download('stop_descriptions_'+association+'.xlsx',reportPackageTools().zip(StopDescriptionCheck.xlsxEntries(table),{allowPaths:true}),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  else download('stop_descriptions_'+association+'.csv','\uFEFF'+StopDescriptionCheck.csv(table));
+}
+function associationKeyChanged(manual=true){
+  if(manual)state.associationManual=true;
+  if(state.mode==='geographic'&&isGeographicExisting()&&!isHastusInput()){
+    state.geographicNeedsRegroup=true;
+    $("analyze").innerHTML=gtfsUi('Regrouper avec la nouvelle clé d’association','Regroup using the new association key')+' <span>→</span>';
+    refreshGroupingAction();captureGeographicState();
+    renderStopDescriptionValidation();
+  }
+  queueQuickSave();
+}
+
 function render() {
+  refreshGroupingAction();
+  renderStopDescriptionValidation();
   updateWorkflowVisibility();
   document.body.classList.toggle("map-fullscreen-open",Boolean(state.fullscreenMapId));
   const existingReportReady=isGeographicExisting()&&state.geographicReady;
@@ -1859,12 +1949,12 @@ $("back-to-new-client").addEventListener("click",()=>setGeographicClientType("ne
 $("radius").addEventListener("input",event=>{
   syncDistanceControls();
   $("radius-output").textContent=`${event.target.value} m`;
-  if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML=`Regrouper avec un rayon de ${event.target.value} m <span>→</span>`;$("analyze").classList.remove("hidden");captureGeographicState();queueQuickSave();}
+  if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML=`Regrouper avec un rayon de ${event.target.value} m <span>→</span>`;refreshGroupingAction();captureGeographicState();queueQuickSave();}
 });
 $("reference-distance").addEventListener("input",event=>{
   syncDistanceControls();
   $("reference-distance-output").textContent=`${event.target.value} m`;
-  if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer les diagnostics de référence <span>→</span>';$("analyze").classList.remove("hidden");captureGeographicState();queueQuickSave();}
+  if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer les diagnostics de référence <span>→</span>';refreshGroupingAction();captureGeographicState();queueQuickSave();}
 });
 bindDistanceNumber("radius");bindDistanceNumber("reference-distance");bindDistanceNumber("stop-place-distance");
 let stopPlaceDiagnosticTimer;
@@ -1893,8 +1983,18 @@ $("deadhead-remove").addEventListener("click",()=>{
 });
 $("app-language")?.addEventListener("change",refreshDeadheadUi);
 $("app-language")?.addEventListener("change",()=>{refreshStopIdPaddingSetting();refreshRadiusConflictSummary();refreshPamphletOffer();const working=$("working-timetable-module");if(working)working.outerHTML=workingTimetableModule();});
-$("smart-radius").addEventListener("change",event=>{if(event.target.checked&&!state.parsed.trips){event.target.checked=false;alert("trips.txt est requis pour activer le rayon intelligent.");return;}if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML=`Recalculer avec le rayon ${event.target.checked?'intelligent':'manuel'} <span>→</span>`;$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();});
-function markStopIdRenumberingChanged(){if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer avec la nouvelle numérotation <span>→</span>';$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();}
+$("app-language")?.addEventListener("change",()=>{refreshMappingDisclosure();refreshGroupingAction();});
+$("association-auto")?.addEventListener("click",event=>{event.preventDefault();state.associationManual=false;detectAssociationKey();queueQuickSave();});
+$("mapping-grid")?.addEventListener("change",event=>{if(event.target.id==='map-stopId')detectAssociationKey();});
+$("app-language")?.addEventListener("change",()=>detectAssociationKey(false));
+$("association-key").addEventListener("change",()=>{syncAssociationToggle();associationKeyChanged();detectAssociationKey(false);});
+$("description-validation")?.addEventListener("click",event=>{const button=event.target.closest('[data-description-export]');if(button)exportStopDescriptionIssues(button.dataset.descriptionExport);});
+$("description-validation")?.addEventListener("change",event=>{if(event.target.id==='description-error-filter')renderStopDescriptionValidation();});
+$("app-language")?.addEventListener("change",()=>{refreshHastusImportCopy();const required=requiredKinds();$("file-status").textContent=requiredDataStatus(required.filter(k=>state.files[k]).length,required.length);});
+$("association-code-toggle")?.addEventListener("change",event=>{$("association-key").value=event.target.checked?'stop_code':'stop_id';associationKeyChanged();detectAssociationKey(false);});
+$("app-language")?.addEventListener("change",renderStopDescriptionValidation);
+$("smart-radius").addEventListener("change",event=>{if(event.target.checked&&!state.parsed.trips){event.target.checked=false;alert("trips.txt est requis pour activer le rayon intelligent.");return;}if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML=`Recalculer avec le rayon ${event.target.checked?'intelligent':'manuel'} <span>→</span>`;refreshGroupingAction();captureGeographicState();}queueQuickSave();});
+function markStopIdRenumberingChanged(){if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer avec la nouvelle numérotation <span>→</span>';refreshGroupingAction();captureGeographicState();}queueQuickSave();}
 $("place-code-max-length").addEventListener("change",()=>{if(state.mode==="geographic"&&state.geographicReady){render();captureGeographicState();}queueQuickSave();});
 $("renumber-stop-ids").addEventListener("change",markStopIdRenumberingChanged);
 $("pad-stop-ids").addEventListener("change",()=>{refreshStopIdPaddingSetting();markStopIdRenumberingChanged();});
@@ -1904,9 +2004,9 @@ $("stop-id-prefix").addEventListener("input",markStopIdRenumberingChanged);
 $("pad-place-codes").addEventListener("change",()=>queueQuickSave());
 $("renumber-stop-id-start").addEventListener("input",markStopIdRenumberingChanged);
 $("place-code-case").addEventListener("change",()=>{for(const group of state.groups)group.code=applyPlaceCodeCase(group.code);for(const decision of state.decisions)if(decision.newCode)decision.newCode=applyPlaceCodeCase(decision.newCode);if(state.mode==="geographic"&&state.geographicReady){render();captureGeographicState();}queueQuickSave();});
-$("use-canada-post-abbreviations").addEventListener("change",()=>{if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer les codes de place <span>→</span>';$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();});
-$("review-existing-places").addEventListener("change",()=>{if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer les places proposées <span>→</span>';$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();});
-$("timing-point-source").addEventListener("change",event=>{state.timingPointSource=event.target.value;if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer avec la nouvelle source TP <span>→</span>';$("analyze").classList.remove("hidden");captureGeographicState();}queueQuickSave();});
+$("use-canada-post-abbreviations").addEventListener("change",()=>{if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer les codes de place <span>→</span>';refreshGroupingAction();captureGeographicState();}queueQuickSave();});
+$("review-existing-places").addEventListener("change",()=>{if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer les places proposées <span>→</span>';refreshGroupingAction();captureGeographicState();}queueQuickSave();});
+$("timing-point-source").addEventListener("change",event=>{state.timingPointSource=event.target.value;if(state.mode==="geographic"&&state.geographicReady){state.geographicNeedsRegroup=true;$("analyze").innerHTML='Recalculer avec la nouvelle source TP <span>→</span>';refreshGroupingAction();captureGeographicState();}queueQuickSave();});
 
 $("map-label-mode").addEventListener("change",e=>{state.mapLabelMode=e.target.value;if(state.mode==="maps"&&state.routeMaps.length)render();});
 $("analyze").addEventListener("click",analyze);

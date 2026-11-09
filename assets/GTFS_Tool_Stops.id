@@ -1,0 +1,41 @@
+att hide_inaccessible_values
+
+file Stops
+   {
+   foreach stop
+      {
+      sort_by stopSort
+         {
+         criteria stp_identifier { value 'stp_identifier' }
+         }
+
+      line stop
+         {
+         item stp_identifier { value 'stp_identifier' }
+         item sloc_description { value 'Object(stop_location, stp_locations).sloc_description' }
+         item stp_code { value 'stp_code' }
+         item stp_place { value 'stp_place' }
+         item stp_district { value 'stp_district' }
+         item stp_zone { value 'stp_zone' }
+         item plc_reference_place { value 'Object(place, stp_place).plc_reference_place'
+            mask 'xxxxxx' }
+         }
+      foreach stop_location
+         {
+         from 'Object(stop_location, stp_locations)'
+         line stop_location
+            {
+            item sloc_identifier { value 'sloc_identifier' }
+            item sloc_stop { value 'sloc_stop' }
+            item sloc_description { value 'sloc_description' }
+            item loca_segname { value 'loca_segname' }
+            item loca_near_inter { value 'loca_near_inter' }
+            item loca_inter_distance { value 'loca_inter_distance' }
+            item loca_x_coord { value 'loca_x_coord' }
+            item loca_y_coord { value 'loca_y_coord' }
+            item loca_latitude { value 'loca_latitude' }
+            item loca_longitude { value 'loca_longitude' }
+            }
+         }
+      }
+   }

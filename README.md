@@ -1,6 +1,22 @@
 # The GTFS Missing Link
 
-**Version 14.1** — voir les [notes de version](CHANGELOG.md).
+**Version 14.2** — voir les [notes de version](CHANGELOG.md).
+
+## Client existant : association et descriptions
+
+Changer la clé d'association GTFS → HASTUS réaffiche le bouton de regroupement
+et marque l'analyse comme à recalculer avant export. La clé choisie est conservée
+dans la sauvegarde, y compris lorsque le regroupement reste à relancer.
+
+Un contrôle compare `stop_name` aux descriptions HASTUS selon `stop_id` ou
+`stop_code`, pour tous les arrêts physiques (TP ou non). Il distingue les écarts,
+les descriptions manquantes, les correspondances absentes et les clés ambiguës.
+La casse et les espaces sont ignorés ; les accents, ponctuations et abréviations
+restent significatifs. Les données sources ne sont pas modifiées.
+
+Le module de création de matrice deadhead est mis en pause : ses accès sont
+masqués, son travail préparatoire est conservé pour une version ultérieure.
+L'import d'une matrice existante pour le diagnostic reste disponible.
 
 ## Timetables compacts
 
@@ -1391,5 +1407,6 @@ Les exports de timetables sont embarqués depuis `report-timetable-export.js`.
 de test avec `openpyxl` (lecture seule), leurs valeurs, styles et relations XML.
 
 Le prototype ne modifie jamais les fichiers sources.
-#   a s s i s t a n t - g t f s - h a s t u s - w i n d o w s  
+#   a s s i s t a n t - g t f s - h a s t u s - w i n d o w s 
+ 
  

@@ -101,3 +101,56 @@ body.clean-dark-theme .theme-switch input:checked+.switch-track:after{background
 @media(max-width:650px){.clean-theme .stop-id-renumber-setting{grid-template-columns:minmax(0,1fr)}.stop-id-value{padding-left:24px}.stop-id-value input{max-width:230px}}
 .conflict-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;flex-wrap:wrap}
 .conflict-card-head strong{font-size:14px}.radius-conflict-item.conflict-approved{border-left:5px solid #b5da96}.validated-conflicts>summary{cursor:pointer;padding:14px;font-weight:600}.radius-conflict-map-legend{color:var(--ink)!important}.radius-conflict-map-legend span{opacity:1!important}
+
+/* GTFS inputs stacked left, HASTUS centre, workspace right. */
+.clean-theme.combined-imports #feed-section{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(260px,1.15fr)}
+.clean-theme #gtfs-source-inputs{grid-template-columns:1fr}
+.clean-theme.combined-imports #feed-section .workspace-setup{grid-column:3;grid-row:2/5}
+.clean-theme.combined-imports #hastus-feed-slot{grid-column:2;grid-row:3;min-width:0}
+.clean-theme.combined-imports #hastus-feed-slot .dropzone{height:100%;box-sizing:border-box;min-width:0}
+.clean-theme.combined-imports #gtfs-source-status{grid-column:1/3}
+.clean-theme.combined-imports #source-section>.section-heading,.clean-theme.combined-imports #source-back-row{display:none}
+.description-export-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}
+@media(max-width:1000px){.clean-theme.combined-imports #feed-section{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.clean-theme.combined-imports #feed-section .workspace-setup{grid-column:1/-1;grid-row:auto}.clean-theme.combined-imports #hastus-feed-slot{grid-row:3}}
+@media(max-width:700px){.clean-theme.combined-imports #feed-section{display:flex;flex-direction:column}.clean-theme.combined-imports #feed-section .workspace-setup{order:5}.clean-theme.combined-imports #hastus-feed-slot{order:3}.clean-theme.combined-imports #gtfs-source-status{order:4}}
+
+/* One aligned source row; the workflow already selects GTFS. */
+body[data-workflow="geographic"] #geographic-source-choice{display:none!important}
+.clean-theme.combined-imports #gtfs-source-inputs{grid-column:1;grid-row:2}
+.clean-theme.combined-imports #hastus-feed-slot{grid-column:2;grid-row:2;align-self:start}
+.clean-theme.combined-imports #feed-section .workspace-setup{grid-column:3;grid-row:2;align-self:start}
+.clean-theme.combined-imports #hastus-feed-slot .dropzone{height:auto;gap:12px;justify-content:flex-start}
+#hastus-extract-download{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:6px;box-sizing:border-box;align-self:start;background:transparent;color:var(--teal);border:1px solid var(--line);border-radius:12px 0 12px 0;text-decoration:none}
+#hastus-extract-download:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.clean-dark #hastus-extract-download{color:inherit}
+@media(max-width:1000px){.clean-theme.combined-imports #feed-section .workspace-setup{grid-column:1/-1;grid-row:3}}
+@media(max-width:700px){.clean-theme.combined-imports #feed-section .workspace-setup{order:5}}
+
+/* Matching disclosure panels and compact association action. */
+.clean-theme #column-mapping-details{display:block;margin:14px 0 16px;padding:16px;border:1px solid var(--line)}
+.clean-theme #column-mapping-details>summary{font-size:inherit;font-weight:700}
+.clean-theme #column-mapping-details[open]>.section-heading{margin-top:14px}
+.clean-theme .compact-analysis-settings #association-setting{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 10px;align-items:center}
+#association-setting>span:first-child{grid-column:1/-1}
+#association-setting>.association-checkbox{grid-column:1;grid-row:2;min-height:32px;font-size:11px}
+#association-setting>#association-auto{grid-column:2;grid-row:2;width:auto;min-height:30px;padding:5px 9px;font-size:10px;line-height:1.2;white-space:normal;max-width:125px;margin:0}
+#association-setting>#association-detection{grid-column:1/-1;grid-row:3}
+@media(max-width:400px){.clean-theme .compact-analysis-settings #association-setting{grid-template-columns:1fr}#association-setting>#association-auto{grid-column:1;grid-row:3;justify-self:start}#association-setting>#association-detection{grid-row:4}}
+
+.clean-theme #grouping-settings{display:block;padding:16px;margin-top:14px}
+#grouping-settings>summary{cursor:pointer;font-weight:700;padding:5px 0}
+#grouping-settings[open]>summary{margin-bottom:16px}
+#grouping-settings:not([open])>.settings-row{display:none!important}
+.clean-theme #grouping-settings .analysis-source-row{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+#grouping-settings #analyze{align-self:flex-end;margin-top:4px;min-width:140px}
+#grouping-settings #analyze:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+@media(max-width:760px){.clean-theme #grouping-settings .analysis-source-row{grid-template-columns:1fr}}
+
+.clean-theme #optional-feed-slot{grid-column:1/-1;grid-row:5;min-width:0}
+.clean-theme #optional-hastus-imports{display:block;margin:0;padding:16px;border:1px solid var(--line)}
+#optional-hastus-imports>summary{font-weight:700;cursor:pointer;padding:5px 0}
+#optional-hastus-imports:not([open])>*:not(summary){display:none!important}
+#optional-hastus-imports>.upload-grid{grid-template-columns:repeat(2,minmax(0,1fr));margin-top:14px}
+#optional-hastus-imports .dropzone{min-height:0;gap:10px}
+.clean-theme.combined-imports #source-section{display:none!important}
+@media(max-width:700px){.clean-theme #optional-feed-slot{order:6;width:100%}#optional-hastus-imports>.upload-grid{grid-template-columns:1fr}}
