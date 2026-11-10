@@ -360,6 +360,7 @@ async function loadFile(kind, input) {
     const file=input.files[0],isXlsx=["hastus","variants"].includes(kind)&&file.name.toLowerCase().endsWith(".xlsx");
     state.files[kind] = file.name;
     state.parsed[kind] = isXlsx ? await parseXlsxFirstSheet(file) : parseCSV(await file.text());
+    if(kind==='stops'||kind==='hastus')state.associationManual=false;
     if(kind==='routes'&&typeof refreshSchedulingUnits==='function')refreshSchedulingUnits();
     if(state.mode==="geographic")resetGeographicResults();
     input.closest(".dropzone").classList.add("loaded");
@@ -430,6 +431,7 @@ async function loadCompleteGtfs(input){
     for(const entry of entries){const base=entry.name.split(/[\\/]/).pop().toLowerCase(),key=GTFS_FILE_KEYS[base];if(!key)continue;state.parsed[key]=parseCSV(entry.text);state.files[key]=base;}
     const found=Object.entries(GTFS_FILE_KEYS).filter(([,key])=>state.parsed[key]);
     if(!state.parsed.stops||!state.parsed.times)throw new Error("Le GTFS doit contenir au minimum stops.txt et stop_times.txt.");
+    state.associationManual=false;
     $("gtfs-status").textContent=`GTFS chargé · ${found.length} fichier${found.length>1?'s':''} reconnu${found.length>1?'s':''}`;
     $("gtfs-files").innerHTML=found.map(([name])=>`<span class="file-chip ${["calendar_dates.txt","frequencies.txt"].includes(name)?'optional':''}">${name}</span>`).join("");
     input.closest(".dropzone").classList.add("loaded");setMode(state.workflow||state.mode);if(typeof refreshSchedulingUnits==="function")refreshSchedulingUnits();
@@ -517,6 +519,8 @@ function resetGeographicResults(){state.hastusCorrections=null;state.geographicR
 function requiredDataStatus(count,total){return count===total?gtfsUi('Données obligatoires complètes','Required data complete'):gtfsUi(`${count} / ${total} fichiers obligatoires chargés`,`${count} / ${total} required files loaded`);}
 function syncCombinedImports(){
   const slot=$("hastus-feed-slot"),home=$("hastus-upload-home"),card=$("hastus-upload");if(!slot?.appendChild||!home?.parentNode||!card)return;
+  const mappingBox=$("column-mapping-details"),mappingTarget=isHastusInput()?$("source-section"):$("mapping-feed-slot");
+  if(mappingBox&&mappingTarget?.appendChild&&mappingBox.parentNode!==mappingTarget)mappingTarget.appendChild(mappingBox);
   const combined=state.workflow==='geographic'&&isGeographicExisting()&&!isHastusInput();
   document.body.classList.toggle('combined-imports',combined);slot.classList.toggle('hidden',!combined);
   if(combined&&card.parentNode!==slot)slot.appendChild(card);
@@ -1139,7 +1143,6 @@ function detectAssociationKey(apply=true){
   if(apply&&!state.associationManual&&result.suggested&&$("association-key").value!==result.suggested){$("association-key").value=result.suggested;associationKeyChanged(false);}
   syncAssociationToggle();
   const detail=$("association-detection");if(detail){const a=result.scores.stop_id,b=result.scores.stop_code;detail.textContent=t(`Correspondances uniques : stop_id ${a.matched}/${a.total} · stop_code ${b.matched}/${b.total}. `,`Unique matches: stop_id ${a.matched}/${a.total} · stop_code ${b.matched}/${b.total}. `)+(state.associationManual?t('Choix manuel conservé.','Manual choice retained.'):result.suggested?t(`Clé proposée : ${result.suggested}.`,`Suggested key: ${result.suggested}.`):t('Résultat indécis : vérifiez la clé.','Inconclusive: check the key.'));}
-  if($("association-auto"))$("association-auto").textContent=t('Détecter automatiquement','Detect automatically');
 }
 function syncAssociationToggle(){const label=document.querySelector?.('#association-setting [data-fr]');if(label)label.textContent=gtfsUi('Utiliser stop_code plutôt que stop_id','Use stop_code instead of stop_id');const toggle=$("association-code-toggle");if(toggle)toggle.checked=$("association-key").value==='stop_code';}
 function renderStopDescriptionValidation(){
@@ -1984,7 +1987,6 @@ $("deadhead-remove").addEventListener("click",()=>{
 $("app-language")?.addEventListener("change",refreshDeadheadUi);
 $("app-language")?.addEventListener("change",()=>{refreshStopIdPaddingSetting();refreshRadiusConflictSummary();refreshPamphletOffer();const working=$("working-timetable-module");if(working)working.outerHTML=workingTimetableModule();});
 $("app-language")?.addEventListener("change",()=>{refreshMappingDisclosure();refreshGroupingAction();});
-$("association-auto")?.addEventListener("click",event=>{event.preventDefault();state.associationManual=false;detectAssociationKey();queueQuickSave();});
 $("mapping-grid")?.addEventListener("change",event=>{if(event.target.id==='map-stopId')detectAssociationKey();});
 $("app-language")?.addEventListener("change",()=>detectAssociationKey(false));
 $("association-key").addEventListener("change",()=>{syncAssociationToggle();associationKeyChanged();detectAssociationKey(false);});

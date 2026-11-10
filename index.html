@@ -99,6 +99,16 @@
         <label class="dropzone"><span class="file-no">DIR</span><strong>Dossier GTFS extrait</strong><small>Sélectionnez le dossier contenant les fichiers .txt</small><input id="gtfs-folder" type="file" multiple webkitdirectory directory accept=".txt"></label>
       </div>
       <div id="hastus-feed-slot" class="hidden"></div>
+      <div id="mapping-feed-slot" style="grid-column:1/-1">
+      <details id="column-mapping-details" class="compact-disclosure place-naming-setting hidden">
+      <summary><span id="column-mapping-label" data-no-translate>Correspondance des colonnes</span></summary>
+      <div class="section-heading">
+        <div><p id="mapping-eyebrow" class="eyebrow">CORRESPONDANCE</p><h2 id="mapping-title">Colonnes HASTUS</h2></div>
+        <p id="mapping-subtitle">Vérifiez les colonnes détectées automatiquement.</p>
+      </div>
+      <div id="mapping-grid" class="mapping-grid"></div>
+      </details>
+      </div>
       <div id="optional-feed-slot" class="hidden"></div>
       <div id="gtfs-source-status"><div id="gtfs-status" class="status-line">Aucun GTFS chargé</div><div id="gtfs-files" class="file-chips"></div></div>
     </section>
@@ -141,14 +151,7 @@
     </section>
 
     <section id="mapping-section" class="panel hidden">
-      <details id="column-mapping-details" class="compact-disclosure place-naming-setting">
-      <summary><span id="column-mapping-label" data-no-translate>Correspondance des colonnes</span></summary>
-      <div class="section-heading">
-        <div><p id="mapping-eyebrow" class="eyebrow">CORRESPONDANCE</p><h2 id="mapping-title">Colonnes HASTUS</h2></div>
-        <p id="mapping-subtitle">Vérifiez les colonnes détectées automatiquement.</p>
-      </div>
-      <div id="mapping-grid" class="mapping-grid"></div>
-      </details>
+
       <label id="smart-radius-setting" class="smart-toggle hidden"><input id="smart-radius" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Rayon intelligent</strong><small id="smart-radius-detail">Adapte chaque rayon à la densité des timing points et aux voyages du GTFS.</small></span></label>
       <details id="stop-id-renumber-setting" class="stop-id-renumber-setting hidden" aria-labelledby="stop-management-title">
         <summary><strong id="stop-management-title">Gestion des stops</strong></summary>
@@ -178,7 +181,7 @@
         <div class="analysis-source-row">
         <label id="geographic-client-setting" style="display:none" class="select-label hidden"><span>Type de regroupement</span><select id="geographic-client-type"><option value="new">Nouveau client · partir de zéro</option><option value="existing">Client existant dans HASTUS</option></select></label>
         <label id="timing-source-setting" class="select-label hidden"><span>Source des timing points</span><select id="timing-point-source"><option value="gtfs">GTFS · stop_times.txt</option><option value="variants">HASTUS · versions de routes</option></select><small id="timing-source-detail">Chargez l’export de versions pour activer cette source.</small></label>
-        <div id="association-setting" class="select-label"><span>Clé d'association GTFS → HASTUS</span><select id="association-key" hidden aria-hidden="true" tabindex="-1"><option value="stop_id">stop_id</option><option value="stop_code">stop_code</option></select><label class="association-checkbox" for="association-code-toggle"><input id="association-code-toggle" type="checkbox"><span data-fr="Utiliser stop_code plutôt que stop_id" data-en="Use stop_code instead of stop_id">Utiliser stop_code plutôt que stop_id</span></label><small id="association-detection" data-no-translate></small><button type="button" id="association-auto" class="secondary" data-no-translate>Détecter automatiquement</button></div>
+        <div id="association-setting" class="select-label"><span>Clé d'association GTFS → HASTUS</span><select id="association-key" hidden aria-hidden="true" tabindex="-1"><option value="stop_id">stop_id</option><option value="stop_code">stop_code</option></select><label class="association-checkbox" for="association-code-toggle"><input id="association-code-toggle" type="checkbox"><span data-fr="Utiliser stop_code plutôt que stop_id" data-en="Use stop_code instead of stop_id">Utiliser stop_code plutôt que stop_id</span></label><small id="association-detection" data-no-translate></small></div>
         </div>
         <div class="analysis-radius-row">
         <div id="radius-setting" class="range-label"><label for="radius">Rayon de recherche</label><output id="radius-output">200 m</output><input id="radius" type="range" min="0" max="1000" step="1" value="200"><label for="radius-number">Saisie en mètres (0–1000)</label><input id="radius-number" type="number" min="0" max="1000" step="1" value="200" inputmode="numeric"></div>

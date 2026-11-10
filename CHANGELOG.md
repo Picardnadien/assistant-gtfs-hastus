@@ -2,9 +2,10 @@
 
 ## 14.2 — 2026-11-09
 
-- Préparation GTFS client existant : détection de la clé stop_id / stop_code selon les correspondances uniques HASTUS, bilan des correspondances, priorité au choix manuel et relance de la détection à la demande.
+- Préparation GTFS client existant : détection de la clé stop_id / stop_code selon les correspondances uniques HASTUS, bilan des correspondances, case réglée automatiquement au chargement du GTFS ou de la liste HASTUS, puis choix manuel conservé. Bouton de détection supprimé.
 - Changer de clé réactive le regroupement. Bouton de recalcul toujours visible, désactivé lorsque les résultats sont à jour.
 - Contrôle des descriptions GTFS/HASTUS replié par défaut : écarts de libellé, descriptions ou clés manquantes, correspondances absentes et doublons. Filtres par type et exports CSV / Excel XLSX de la sélection filtrée ; zéros en tête conservés dans Excel.
+- Mise à jour du 10 novembre : correspondance des colonnes déplacée dans Sources et toujours repliée par défaut.
 - Sources simplifiées : GTFS ZIP/dossier empilés, export HASTUS au centre et espace de travail à droite. Imports facultatifs intégrés au panneau Sources et repliés ; indication explicite des données obligatoires complètes.
 - Script GTFS_Tool_Stops.id téléchargeable depuis l’import HASTUS, conservé à l’identique.
 - Paramètres regroupés : trois distances côte à côte, suppression du sélecteur de client en doublon, section Grouping settings ouverte par défaut. Gestion des stops, création des codes et correspondance des colonnes repliées.
