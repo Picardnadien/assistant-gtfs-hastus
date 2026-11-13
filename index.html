@@ -2,15 +2,15 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="application-version" content="14.2">
+  <meta name="application-version" content="14.3">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The GTFS Missing Link</title>
-  <link rel="stylesheet" href="styles.css?v=14.2-r2">
-  <link rel="stylesheet" href="clean-theme.css?v=14.2-r2">
-  <link rel="stylesheet" href="place-code-layout.css?v=14.2">
-  <link rel="stylesheet" href="service-import-plan.css?v=14.2">
-  <link rel="stylesheet" href="tutorial.css?v=14.2">
-  <link rel="stylesheet" href="assignment-diagnostics.css?v=14.2">
+  <link rel="stylesheet" href="styles.css?v=14.3-r2">
+  <link rel="stylesheet" href="clean-theme.css?v=14.3-r2">
+  <link rel="stylesheet" href="place-code-layout.css?v=14.3">
+  <link rel="stylesheet" href="service-import-plan.css?v=14.3">
+  <link rel="stylesheet" href="tutorial.css?v=14.3">
+  <link rel="stylesheet" href="assignment-diagnostics.css?v=14.3">
 </head>
 <body class="clean-theme">
   <aside id="local-file-warning" class="local-file-warning hidden" role="alert">
@@ -71,6 +71,7 @@
         <button class="mode-card" data-mode="reports" aria-pressed="false">
           <span class="mode-number">05</span><span><strong>Rapports et exports</strong><small>Diagnostic HASTUS, validation client, PDF, HTML et fichiers de sortie.</small></span><span class="mode-check">✓</span>
         </button>
+        <a class="mode-card network-prototype-link" href="network-explorer.html" target="_blank" rel="noopener"><span><strong>Explorateur réseau · Prototype</strong><small>Explorer les stops, places, références et tracés de routes sur la carte. Fichiers chargés localement.</small></span></a>
       </div></details>
       <label id="journey-client-setting">Client GTFS<select id="journey-client"><option value="new">Nouveau client · créer les places</option><option value="existing">Client existant · réutiliser le mapping HASTUS</option></select></label>
       <p id="journey-help">Les affectations existantes sont conservées. Un TP sans place est proposé à une place proche avant toute création.</p>
@@ -165,6 +166,8 @@
         <label class="stop-id-value"><span>Lettre du préfixe</span><input id="stop-id-prefix" type="text" maxlength="1" pattern="[A-Za-z]" placeholder="A" autocomplete="off" spellcheck="false" disabled></label>
         <small class="stop-id-help">Le préfixe s’applique à tous les Stop ID, numériques ou alphanumériques, après la renumérotation et les zéros en tête. Exemple : 12 → 0012 → A0012. Les références entre fichiers suivent ces changements.</small>
       </details>
+      <label id="allow-existing-reassignment-setting" class="smart-toggle hidden"><input id="allow-existing-reassignment" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Autoriser les réaffectations manuelles</strong><small>Choisir une autre place HASTUS pour un stop, même hors du rayon de recherche. Les affectations actuelles restent conservées tant que vous ne les changez pas.</small></span></label>
+      <datalist id="existing-place-options"></datalist>
       <label id="review-existing-setting" class="smart-toggle hidden"><input id="review-existing-places" type="checkbox" role="switch"><span class="switch-track" aria-hidden="true"></span><span><strong>Réévaluer les places déjà affectées</strong><small>Conserve la place HASTUS actuelle par défaut, mais propose les autres places dont le centre se trouve dans le rayon choisi.</small></span></label>
       <details id="place-naming-setting" class="place-naming-setting" aria-labelledby="place-naming-title">
         <summary><strong id="place-naming-title">Création des codes de place</strong></summary>
@@ -249,28 +252,28 @@
       <div class="place-report-actions"><button id="scu-save" type="button" class="secondary" disabled>Enregistrer dans un dossier GTFS…</button><button id="scu-download" type="button" class="primary" disabled>Télécharger le ZIP avec les imports</button></div>
     </section>
   </main>
-  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v14.2</span></footer>
-  <script src="report-package.js?v=14.2"></script>
-  <script src="report-payload.js?v=14.2"></script>
-  <script src="report-network.js?v=14.2-r3"></script>
-  <script src="report-timetable-export.js?v=14.2"></script>
-  <script src="report-network-document.js?v=14.2"></script>
-  <script src="report-editor.js?v=14.2"></script>
-  <script src="app-translations.js?v=14.2-r1"></script>
-  <script src="app-shell.js?v=14.2"></script>
-  <script src="workspace-storage.js?v=14.2"></script>
-  <script src="map-tools.js?v=14.2"></script>
-  <script src="hastus-corrections.js?v=14.2"></script>
-  <script src="report-existing.js?v=14.2"></script>
-  <script src="assignment-diagnostics.js?v=14.2"></script>
-  <script src="scheduling-units.js?v=14.2"></script>
-  <script src="service-import-plan.js?v=14.2"></script>
-  <script src="working-timetable.js?v=14.2-r4"></script>
-  <script src="day-route-summary.js?v=14.2"></script>
+  <footer>Prototype de préparation · aucune écriture directe dans HASTUS <span data-no-translate>· v14.3</span></footer>
+  <script src="report-package.js?v=14.3"></script>
+  <script src="report-payload.js?v=14.3"></script>
+  <script src="report-network.js?v=14.3-r3"></script>
+  <script src="report-timetable-export.js?v=14.3"></script>
+  <script src="report-network-document.js?v=14.3"></script>
+  <script src="report-editor.js?v=14.3"></script>
+  <script src="app-translations.js?v=14.3-r1"></script>
+  <script src="app-shell.js?v=14.3"></script>
+  <script src="workspace-storage.js?v=14.3"></script>
+  <script src="map-tools.js?v=14.3"></script>
+  <script src="hastus-corrections.js?v=14.3"></script>
+  <script src="report-existing.js?v=14.3"></script>
+  <script src="assignment-diagnostics.js?v=14.3"></script>
+  <script src="scheduling-units.js?v=14.3"></script>
+  <script src="service-import-plan.js?v=14.3"></script>
+  <script src="working-timetable.js?v=14.3-r4"></script>
+  <script src="day-route-summary.js?v=14.3"></script>
   <script src="stop-description-check.js"></script>
-  <script src="app.js?v=14.2-r3"></script>
+  <script src="app.js?v=14.3-r3"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
-  <script src="tutorial.js?v=14.2"></script>
+  <script src="tutorial.js?v=14.3"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>
 </body>
 </html>

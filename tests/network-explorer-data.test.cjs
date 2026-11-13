@@ -1,0 +1,9 @@
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {build,shapes}=require('../network-explorer-data');
+const stops=[{Stop:'001',Description:'One',Place:'A','Loca latitude':33,'Loca longitude':-117},{Stop:'002',Place:'A','Loca latitude':'','Loca longitude':''},{Stop:'003',Place:'b','Loca latitude':33.1,'Loca longitude':-117.1},{Stop:'004',Place:'','Loca latitude':91,'Loca longitude':0}];
+const before=JSON.stringify(stops),d=build(stops,[{Place:'A','Refer.':'R'},{Place:'R'},{Place:'b',Latitude:33.2,Longitude:-117.2}],[{Stop:'001',Route:'01',Description:'Route',TP:'TRUE'}],'linkdt;V;R;B\nlinkdt;V;R;B\nlinkdt;V;B;R');
+assert.equal(d.stops.length,4);assert.equal(d.stops[0].id,'001');assert.equal(d.stops[0].tp,true);assert.equal(d.stops[1].lat,null);assert.equal(d.stops[3].lat,null);
+const p=new Map(d.places.map(p=>[p.id,p]));assert.deepEqual(p.get('A').dh,[0,0]);assert.deepEqual(p.get('R').dh,[1,1]);assert.deepEqual(p.get('R').children,['A']);assert.equal(p.get('R').lat,null,'No invented reference position');assert.equal(p.get('A').lat,33);assert.equal(p.get('A').estimated,true);assert.equal(p.get('b').lat,33.2);assert.deepEqual(p.get('b').dh,[0,0],'Codes are case sensitive');assert.equal(JSON.stringify(stops),before);assert.equal(build(stops).deadheadLoaded,false);
+assert.throws(()=>shapes(new ArrayBuffer(0),new ArrayBuffer(0),'PROJCS WGS_1984'),/WGS84/);
+const html=fs.readFileSync('network-explorer.html','utf8'),js=fs.readFileSync('network-explorer.js','utf8');assert.match(html,/Prototype/);assert.match(html,/gx-file-shapes/);assert.ok(!html.includes('octc'));assert.ok(!js.includes('octc'));assert.ok(!js.includes('window.openai'));
+console.log('PASS: prototype imports, leading zeros, missing coordinates, exact references, direct deadhead counts, source preservation and no embedded client data.');

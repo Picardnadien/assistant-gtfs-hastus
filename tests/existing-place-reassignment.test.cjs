@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const nodes=new Map(),get=id=>{if(!nodes.has(id))nodes.set(id,{checked:false,value:'',innerHTML:''});return nodes.get(id)};
+const ctx=vm.createContext({window:{},document:{getElementById:get},console});
+vm.runInContext(fs.readFileSync('app.js','utf8').split('const decisionList=')[0],ctx);
+vm.runInContext(`state.mode='geographic';state.workflow='geographic';state.geographicClientType='existing';state.geographicInputSource='gtfs';render=()=>{};captureGeographicState=()=>{};queueQuickSave=()=>{};gtfsUi=(fr,en)=>fr;state.places=[{id:'WIkea',description:'Ikea',lat:45.1,lon:-75.1}];state.decisions=[{id:'461',originalId:'461',originalPlaceId:'OLD',choice:'OLD',source:'existing',lat:45,lon:-75,status:'assigned',candidates:[{id:'OLD'}]}];`,ctx);
+const input={value:'WIkea',setCustomValidity(v){this.error=v},reportValidity(){this.reported=true}};
+ctx.window.assignExistingPlace('461',input);assert.equal(vm.runInContext('state.decisions[0].choice',ctx),'OLD');
+get('allow-existing-reassignment').checked=true;
+ctx.window.assignExistingPlace('461',input);
+assert.equal(vm.runInContext('resolvedPlace(state.decisions[0]).id',ctx),'WIkea');assert.equal(vm.runInContext('state.decisions[0].originalPlaceId',ctx),'OLD');assert.equal(vm.runInContext('state.decisions[0].status',ctx),'review');assert.equal(vm.runInContext('state.decisions[0].candidates.length',ctx),2);
+input.value='missing';ctx.window.assignExistingPlace('461',input);assert(input.error);assert.equal(vm.runInContext('state.decisions[0].choice',ctx),'WIkea');
+get('allow-existing-reassignment').checked=false;assert.equal(vm.runInContext('resolvedPlace(state.decisions[0]).id',ctx),'WIkea');
+get('allow-existing-reassignment').checked=true;vm.runInContext("state.workflow='diagnostic'",ctx);assert.equal(ctx.manualExistingReassignmentEnabled(),false);
+console.log('PASS: manual existing-client reassignment gated, exact mixed-case code, export resolver, preserved baseline, invalid targets and diagnostic isolation.');

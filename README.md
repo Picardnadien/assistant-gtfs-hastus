@@ -1,6 +1,19 @@
 # The GTFS Missing Link
 
-**Version 14.2** — voir les [notes de version](CHANGELOG.md).
+**Version 14.3** — voir les [notes de version](CHANGELOG.md).
+
+## Explorateur réseau · Prototype
+
+Accessible depuis les outils complémentaires, dans un onglet séparé. Prototype
+français en lecture seule, sans sauvegarde ni modification des fichiers source.
+Charger les exports Excel de stops, places et variantes, puis éventuellement la
+matrice `linkdt` et un ZIP shapefile de polylignes WGS84 (SHP, DBF, PRJ).
+Les colonnes attendues sont indiquées sur la page. Tous les stops sont listés ;
+ceux sans coordonnées restent consultables sans marqueur. Les centres sans
+coordonnées de place sont estimés à partir de leurs stops, et les surfaces sont
+indicatives. Les liens deadhead directs sont distingués des liens de référence.
+La carte OSM et la bibliothèque cartographique nécessitent Internet. Aucune
+donnée client n'est incluse dans le code distribué.
 
 ## Client existant : association et descriptions
 

@@ -90,3 +90,7 @@ body[data-workflow="reports"] #feed-section{display:none!important}
 #stop-id-renumber-setting:not([open])>*:not(summary),#place-naming-setting:not([open])>*:not(summary),.compact-disclosure:not([open])>*:not(summary){display:none!important}
 .compact-disclosure{padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:16px}
 .compact-disclosure[open]>summary{margin-bottom:14px}
+
+.network-prototype-link{text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:18px 0;display:flex;align-items:center}.network-prototype-link strong::after{content:" ↗"}
+
+.manual-place-assignment{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:12px;border-top:1px solid var(--line)}.manual-place-assignment label{flex:1;min-width:200px}.manual-place-assignment input{display:block;width:100%;margin-top:6px}.manual-place-assignment small{flex-basis:100%}
