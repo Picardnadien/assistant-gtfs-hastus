@@ -195,9 +195,9 @@ function mountReportMapViewer({cards,currentPlace,assigned,points,distance,langu
     const background=source.cloneNode(true);background.removeAttribute('data-review-map-toggle');background.removeAttribute('tabindex');background.removeAttribute('role');background.removeAttribute('aria-label');background.setAttribute('aria-hidden','true');background.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vh}`);background.setAttribute('preserveAspectRatio','none');
     background.querySelectorAll('.report-stop,.report-place,.osm-credit').forEach(node=>node.remove());background.classList.add('map-only-background');
     background.querySelectorAll('.map-context-layer').forEach(n=>n.remove());
-    if(typeof mapTools==='function'&&background.querySelector('.osm-fixed-background')){background.querySelector('.osm-fixed-background').remove();background.insertAdjacentHTML('afterbegin',mapTools().background(g,{x:vx,y:vy,width:vw,height:vh}));}
+    if(typeof mapTools==='function'&&background.querySelector('.osm-fixed-background')){const previous=background.querySelector('.osm-fixed-background');previous.insertAdjacentHTML('beforebegin',mapTools().background(g,{x:vx,y:vy,width:vw,height:vh}));previous.remove();background.querySelectorAll('iframe').forEach(frame=>frame.loading='eager');}
     for(const p of selected)background.append(el('circle',{cx:p.x,cy:p.y,r:0,fill:'none'}));
-    if(typeof mapTools==='function'&&background.querySelector('image[href*="tile.openstreetmap.org"]')){background.querySelectorAll('image[href*="tile.openstreetmap.org"]').forEach(n=>n.remove());background.insertAdjacentHTML('afterbegin',mapTools().tiles(g,{x:vx,y:vy,width:vw,height:vh}));}
+    if(typeof mapTools==='function'&&background.querySelector('image[href*="tile.openstreetmap.org"]')){const previous=[...background.querySelectorAll('image[href*="tile.openstreetmap.org"]')];previous[0].insertAdjacentHTML('beforebegin',mapTools().tiles(g,{x:vx,y:vy,width:vw,height:vh}));previous.forEach(n=>n.remove());}
     children.push(background);
     const overlay=el('svg',{viewBox:`0 0 ${W} ${H}`,'aria-label':t('Stops et descriptions','Stops and descriptions'),role:'img',class:'map-only-labels'}),center=mapPoint({x:g.width/2,y:g.height/2});
     overlay.append(el('rect',{x:center.x-6,y:center.y-6,width:12,height:12,fill:'#54742e',stroke:'#fff','stroke-width':2}));

@@ -2,6 +2,8 @@
 
 ## 14.3 — 2026-11-13
 
+- Rapports HTML GTFS : correction du fond OSM masqué par une couche opaque en plein écran. Ordre des couches conservé et chargement immédiat du fond agrandi. Régénérer les rapports existants pour intégrer le correctif.
+
 - Places dont le code commence par `_` : contrôle dédié après les descriptions, propositions selon les règles de nommage, puis une fiche par place avec carte, stops associés, code et description modifiables. Validation individuelle mettant à jour les références, les validations et les exports ; historique des codes validés conservé dans la sauvegarde.
 - Fiches de regroupement : réaffectation des stops non TP également disponible avec la clé d’association choisie. Le menu propose les places présentes dans la fiche ; les correspondances ambiguës sont signalées.
 
