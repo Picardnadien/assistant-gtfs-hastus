@@ -12,3 +12,10 @@ input.value='missing';ctx.window.assignExistingPlace('461',input);assert(input.e
 get('allow-existing-reassignment').checked=false;assert.equal(vm.runInContext('resolvedPlace(state.decisions[0]).id',ctx),'WIkea');
 get('allow-existing-reassignment').checked=true;vm.runInContext("state.workflow='diagnostic'",ctx);assert.equal(ctx.manualExistingReassignmentEnabled(),false);
 console.log('PASS: manual existing-client reassignment gated, exact mixed-case code, export resolver, preserved baseline, invalid targets and diagnostic isolation.');
+
+vm.runInContext("state.workflow='geographic';state.decisions[0].description='Stop test'",ctx);
+const entry={kind:'grouping',ids:['OLD','WIkea'],row:{},places:[]};
+let card=ctx.groupingManualAssignmentControls(entry);assert(card.includes('461'));assert(card.includes('WIkea'));assert(card.includes('assignExistingPlace'));
+assert.equal(ctx.groupingManualAssignmentControls({...entry,ids:['UNRELATED']}),'');
+get('allow-existing-reassignment').checked=false;assert.equal(ctx.groupingManualAssignmentControls(entry),'');
+console.log('PASS: grouping cards expose related stop reassignment only when enabled, including original and current place membership.');

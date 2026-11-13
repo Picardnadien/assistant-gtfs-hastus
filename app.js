@@ -1433,6 +1433,13 @@ function activateDecisionMaps(){
   const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);load(entry.target);}}),{rootMargin:"900px 0px"});placeholders.forEach(element=>observer.observe(element));
 }
 function manualExistingReassignmentEnabled(){return isGeographicExisting()&&!isHastusInput()&&state.workflow!=="diagnostic"&&Boolean($("allow-existing-reassignment")?.checked);}
+function groupingManualAssignmentControls(entry){
+  if(!manualExistingReassignmentEnabled()||!['grouping','assignment'].includes(entry.kind))return '';
+  const placeIds=new Set(entry.ids||[]),stopIds=new Set([entry.row?.stop_id,...(entry.places||[]).flatMap(p=>(p.stops||[]).map(s=>s.id))].filter(Boolean).map(String));
+  const stops=state.decisions.filter(d=>d.status!=='error'&&(placeIds.has(d.originalPlaceId)||placeIds.has(resolvedPlace(d)?.id)||stopIds.has(String(d.originalId||d.id))||stopIds.has(String(d.id))));
+  if(!stops.length)return '';
+  return `<details class="grouping-manual-assignments" open data-no-translate><summary>${gtfsUi('Réaffecter les stops analysés','Reassign analysed stops')} (${stops.length})</summary>${stops.map(d=>`<section><strong>Stop ID ${escapeHtml(d.id)} · ${escapeHtml(d.description)}</strong>${manualExistingPlaceControl(d)}</section>`).join('')}</details>`;
+}
 function manualExistingPlaceControl(d){
   if(!manualExistingReassignmentEnabled())return "";
   return `<div class="manual-place-assignment" data-no-translate><label>${gtfsUi('Autre place HASTUS (code ou description)','Other HASTUS place (code or description)')}<input type="search" list="existing-place-options" value="${escapeHtml(d.choice==='__new__'?'':d.choice||'')}" aria-label="${gtfsUi('Rechercher une place','Find a place')}"></label><button type="button" onclick="assignExistingPlace('${jsString(d.id)}',this.parentElement.querySelector('input'))">${gtfsUi('Affecter','Assign')}</button><small>${gtfsUi('Place d’origine :','Original place:')} ${escapeHtml(d.originalPlaceId||'—')}</small></div>`;
@@ -1443,7 +1450,8 @@ window.assignExistingPlace=(id,input)=>{
   if(!d||!p){input.setCustomValidity(gtfsUi('Sélectionnez un code de place existant dans la liste.','Select an existing place code from the list.'));input.reportValidity();input.oninput=()=>input.setCustomValidity('');return;}
   input.setCustomValidity('');if(d.choice===p.id)return;
   if(!d.candidates.some(x=>x.id===p.id))d.candidates.push({...p,distance:haversine(d.lat,d.lon,p.lat,p.lon)});
-  d.choice=p.id;d.status='review';render();captureGeographicState();queueQuickSave();
+  const openCases=[...document.querySelectorAll?.('.ad-card[open]')||[]].map(el=>el.dataset.adCase);
+  d.choice=p.id;d.status='review';render();for(const key of openCases){const card=document.querySelector(`[data-ad-case="${key}"]`);if(card)card.open=true;}captureGeographicState();queueQuickSave();
 };
 function decisionCard(d) {
   const badge=d.source==="existing"?`<span class="badge ${d.status==="review"?'review':''}">${d.status==="review"?'HASTUS · à réévaluer':'HASTUS · existant'}</span>`:`<span class="badge review">${d.source==="new-stop"?'Stop à créer':'Place à choisir'}</span>`;

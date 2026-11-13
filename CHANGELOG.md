@@ -3,6 +3,7 @@
 ## 14.3 — 2026-11-13
 
 - Préparation GTFS client existant : option « Autoriser les réaffectations manuelles ». Recherche par code ou description parmi les places HASTUS, y compris hors rayon, puis bouton Affecter sur la fiche du stop. Affectation d’origine conservée, cas remis à vérifier et choix repris dans les exports et sauvegardes.
+- Réaffectation également disponible depuis les fiches « Regroupements à valider » : section des stops analysés, recherche de place et bouton Affecter. Les fiches ouvertes restent ouvertes après modification.
 - Explorateur réseau ajouté aux outils complémentaires avec la mention Prototype. Page séparée en français, lecture seule : imports locaux Excel stops/places/variantes, matrice deadhead et shapefile ZIP WGS84 ; recherche, carte OSM, références et tracés de routes.
 - Prototype : coordonnées de place estimées si absentes, emprises indicatives, stops sans coordonnées consultables dans la liste. Connexion Internet requise pour le fond ; pas de sauvegarde automatique. Aucune donnée client embarquée.
 - v14.2 archivée à son dernier état publié ; anciennes notes repliées sur l’accueil. Création de matrice deadhead toujours reportée.
