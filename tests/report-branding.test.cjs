@@ -1,0 +1,10 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const ctx=vm.createContext({window:{},document:{getElementById:()=>({value:'fr'})},URL,console});
+const src=fs.readFileSync('app.js','utf8');vm.runInContext(src.split('const decisionList=')[0],ctx);
+vm.runInContext(`state.parsed.agency={headers:['agency_name','agency_url'],rows:[{agency_name:'Example Transit',agency_url:'https://example.test'}]};`,ctx);
+assert.equal(ctx.agencyClientIdentity().name,'Example Transit');assert.equal(ctx.agencyClientIdentity().logoUrl,'https://example.test/favicon.ico');
+assert(ctx.clientBrandMarkup().includes('Example Transit'));assert(!ctx.clientBrandMarkup().includes('OC Transpo'));
+vm.runInContext(`state.parsed.agency.rows[0].agency_url='';`,ctx);assert(ctx.agencyClientIdentity().logoUrl.startsWith('data:image/svg+xml'));
+vm.runInContext(`state.clientLogo={dataUrl:'data:image/png;base64,TEST',name:'custom'};`,ctx);assert(ctx.clientBrandMarkup().includes('data:image/png;base64,TEST'));
+assert(!/OC_Transpo_logo|Rapport OC Transpo|CSched · OC Transpo/.test(src));
+console.log('PASS: agency identity, website icon, generated fallback, uploaded logo priority, no hardcoded OC Transpo report branding.');

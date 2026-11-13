@@ -5,7 +5,7 @@
   <meta name="application-version" content="14.3">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The GTFS Missing Link</title>
-  <link rel="stylesheet" href="styles.css?v=14.3-r5">
+  <link rel="stylesheet" href="styles.css?v=14.3-r6">
   <link rel="stylesheet" href="clean-theme.css?v=14.3-r2">
   <link rel="stylesheet" href="place-code-layout.css?v=14.3">
   <link rel="stylesheet" href="service-import-plan.css?v=14.3">
@@ -233,12 +233,12 @@
           <label class="client-logo-picker"><span>Logo du client (facultatif)</span><input id="client-logo-file" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG ou WebP, 3 Mo maximum. Il remplace l’identité trouvée dans agency.txt.</small></label>
         </div>
         <p id="existing-report-note" class="hidden">Client existant : le diagnostic HTML présente les références suspectes et toutes les places classées par type de validation, avec recherche et cartes. Les corrections HASTUS sont exportées séparément, avec un journal avant/après ; le rapport GTFS de validation des places reste disponible séparément. Les options de langue, de thème et de cartes ci-dessus s’appliquent aux deux rapports.</p>
-        <div class="place-report-actions"><div id="client-brand-status" class="client-brand-status"></div><button id="clear-client-logo" type="button" class="secondary hidden">Utiliser agency.txt</button><button id="download-existing-html" type="button" class="primary hidden">Rapport HTML · Diagnostic HASTUS</button><button id="download-place-html" type="button" class="secondary">Télécharger le rapport HTML</button><button id="print-place-report" type="button" class="primary">Ouvrir le rapport PDF</button></div>
+        <div class="place-report-actions"><div id="client-brand-status" class="client-brand-status"></div><button id="clear-client-logo" type="button" class="secondary hidden">Utiliser agency.txt</button><button id="download-existing-html" type="button" class="secondary hidden">Rapport HTML · Diagnostic HASTUS</button><button id="download-place-html" type="button" class="primary report-html-featured"><span aria-hidden="true">▤</span><span><strong>Générer le rapport HTML interactif</strong><small>Cartes · Modifications · Validation client</small></span></button><button id="download-times" type="button" class="primary report-gtfs-featured">Télécharger GTFS prêt à importer</button><button id="print-place-report" type="button" class="secondary">Ouvrir le rapport PDF</button></div>
       </section>
-      <div id="export-bar" class="export-bar">
-        <div><strong id="export-title">Prêt à exporter</strong><small id="export-detail"></small></div>
-        <div class="export-actions"><label class="report-type-label"><span>Contenu du rapport PDF</span><select id="report-type"><option value="all">Tous les stops</option><option value="assigned">Sans intervention</option><option value="review">À évaluer</option></select></label><button id="print-client-report" class="secondary">Ouvrir le rapport PDF</button><button id="print-reference-report" class="secondary hidden">Rapport PDF · références suspectes</button><button id="download-collisions" class="secondary hidden">Correspondance des ID</button><button id="download-report" class="secondary">Places par stop</button><button id="download-by-place" class="secondary">Stops par place</button><button id="download-grouping-candidates" class="secondary hidden">Regroupements suggérés</button><button id="download-reference-anomalies" class="secondary hidden">Références éloignées</button><button id="download-unused" class="secondary">Places sans timing point</button><button id="download-places" class="secondary">Places à créer</button><button id="download-times" class="primary">Télécharger GTFS prêt à importer</button><button id="download-gtfs" class="primary">Télécharger stops_enrichi.txt</button></div>
-      </div>
+      <details id="export-bar" class="place-naming-setting additional-exports">
+        <summary><strong>Rapports et exports complémentaires</strong><span class="export-status"><span id="export-title">Prêt à exporter</span> · <small id="export-detail"></small></span></summary>
+        <div class="export-actions"><label class="report-type-label"><span>Contenu du rapport PDF</span><select id="report-type"><option value="all">Tous les stops</option><option value="assigned">Sans intervention</option><option value="review">À évaluer</option></select></label><button id="print-client-report" class="secondary">Ouvrir le rapport PDF</button><button id="print-reference-report" class="secondary hidden">Rapport PDF · références suspectes</button><button id="download-collisions" class="secondary hidden">Correspondance des ID</button><button id="download-report" class="secondary">Places par stop</button><button id="download-by-place" class="secondary">Stops par place</button><button id="download-grouping-candidates" class="secondary hidden">Regroupements suggérés</button><button id="download-reference-anomalies" class="secondary hidden">Références éloignées</button><button id="download-unused" class="secondary">Places sans timing point</button><button id="download-places" class="secondary">Places à créer</button><button id="download-gtfs" class="primary">Télécharger stops_enrichi.txt</button></div>
+      </details>
     </section>
     <section id="scheduling-unit-module" class="panel hidden" aria-labelledby="scu-title">
       <div class="section-heading"><div><p class="eyebrow">WORKFLOW 04</p><h2 id="scu-title">Scheduling units</h2></div><p>Une unité par route, type timetable 1100, avec le script d’import CSched.</p></div>
@@ -260,7 +260,7 @@
   <script src="report-timetable-export.js?v=14.3"></script>
   <script src="report-network-document.js?v=14.3"></script>
   <script src="report-editor.js?v=14.3-r1"></script>
-  <script src="app-translations.js?v=14.3-r1"></script>
+  <script src="app-translations.js?v=14.3-r2"></script>
   <script src="app-shell.js?v=14.3"></script>
   <script src="workspace-storage.js?v=14.3"></script>
   <script src="map-tools.js?v=14.3"></script>
@@ -272,7 +272,7 @@
   <script src="working-timetable.js?v=14.3-r4"></script>
   <script src="day-route-summary.js?v=14.3"></script>
   <script src="stop-description-check.js"></script>
-  <script src="app.js?v=14.3-r5"></script>
+  <script src="app.js?v=14.3-r6"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
   <script src="tutorial.js?v=14.3"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>

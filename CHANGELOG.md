@@ -2,6 +2,9 @@
 
 ## 14.3 — 2026-11-13
 
+- Exports simplifiés : rapport HTML interactif mis en avant en vert lumineux ; téléchargement du GTFS prêt à importer placé à côté en bleu clair. Rapports et exports complémentaires repliés par défaut.
+- Identité des rapports : retrait des logos et mentions OC Transpo imposés dans les anciens PDF. Logo personnalisé prioritaire, puis identité de agency.txt ; monogramme automatique du nom de l’agence en dernier recours.
+
 - Rapports HTML GTFS : correction du fond OSM masqué par une couche opaque en plein écran. Ordre des couches conservé et chargement immédiat du fond agrandi. Régénérer les rapports existants pour intégrer le correctif.
 
 - Places dont le code commence par `_` : contrôle dédié après les descriptions, propositions selon les règles de nommage, puis une fiche par place avec carte, stops associés, code et description modifiables. Validation individuelle mettant à jour les références, les validations et les exports ; historique des codes validés conservé dans la sauvegarde.
