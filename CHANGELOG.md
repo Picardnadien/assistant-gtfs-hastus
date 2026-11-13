@@ -2,6 +2,9 @@
 
 ## 14.3 — 2026-11-13
 
+- Places dont le code commence par `_` : contrôle dédié après les descriptions, propositions selon les règles de nommage, puis une fiche par place avec carte, stops associés, code et description modifiables. Validation individuelle mettant à jour les références, les validations et les exports ; historique des codes validés conservé dans la sauvegarde.
+- Fiches de regroupement : réaffectation des stops non TP également disponible avec la clé d’association choisie. Le menu propose les places présentes dans la fiche ; les correspondances ambiguës sont signalées.
+
 - Préparation GTFS client existant : option « Autoriser les réaffectations manuelles ». Recherche par code ou description parmi les places HASTUS, y compris hors rayon, puis bouton Affecter sur la fiche du stop. Affectation d’origine conservée, cas remis à vérifier et choix repris dans les exports et sauvegardes.
 - Réaffectation également disponible depuis les fiches « Regroupements à valider » : section des stops analysés, recherche de place et bouton Affecter. Les fiches ouvertes restent ouvertes après modification.
 - Explorateur réseau ajouté aux outils complémentaires avec la mention Prototype. Page séparée en français, lecture seule : imports locaux Excel stops/places/variantes, matrice deadhead et shapefile ZIP WGS84 ; recherche, carte OSM, références et tracés de routes.

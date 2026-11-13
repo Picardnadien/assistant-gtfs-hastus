@@ -17,5 +17,37 @@ vm.runInContext("state.workflow='geographic';state.decisions[0].description='Sto
 const entry={kind:'grouping',ids:['OLD','WIkea'],row:{},places:[]};
 let card=ctx.groupingManualAssignmentControls(entry);assert(card.includes('461'));assert(card.includes('WIkea'));assert(card.includes('assignExistingPlace'));
 assert.equal(ctx.groupingManualAssignmentControls({...entry,ids:['UNRELATED']}),'');
-get('allow-existing-reassignment').checked=false;assert.equal(ctx.groupingManualAssignmentControls(entry),'');
+get('allow-existing-reassignment').checked=false;assert(ctx.groupingManualAssignmentControls(entry).includes('Activer les réaffectations'));
 console.log('PASS: grouping cards expose related stop reassignment only when enabled, including original and current place membership.');
+
+get('allow-existing-reassignment').checked=true;
+vm.runInContext(`state.associationKey='stop_code';state.mapping={stopId:'id',placeId:'place',placeDesc:'desc'};state.parsed={stops:{rows:[{stop_id:'GT461',stop_code:'461',stop_name:'Ikea stop',stop_lat:'38',stop_lon:'-77'}]},hastus:{rows:[{id:'461',place:'_10',desc:'Auto'}]}};state.gtfsStops=state.parsed.stops.rows;state.decisions=[];state.places.push({id:'_10',description:'Auto',lat:38,lon:-77});`,ctx);
+const nonTp={kind:'grouping',ids:['_10','WIkea'],row:{},places:[{stops:[{id:'461'}]}]};
+card=ctx.groupingManualAssignmentControls(nonTp);assert(card.includes('<select'));assert(card.includes('WIkea'));assert(card.includes('_10'));assert.equal(vm.runInContext('state.decisions.length',ctx),0,'Rendering does not create a decision');
+input.value='WIkea';ctx.window.assignExistingPlace('GT461',input);assert.equal(vm.runInContext('state.decisions[0].originalId',ctx),'GT461');assert.equal(vm.runInContext('state.decisions[0].originalPlaceId',ctx),'_10');assert.equal(vm.runInContext('resolvedPlace(state.decisions[0]).id',ctx),'WIkea');
+ctx.renderAutomaticPlaceValidation();assert(get('automatic-place-validation').innerHTML.includes('_10'));assert(get('automatic-place-validation').innerHTML.includes('461'));
+vm.runInContext("state.parsed.stops.rows.push({...state.parsed.stops.rows[0],stop_id:'OTHER'})",ctx);assert.equal(ctx.editableExistingStop('461',true),null,'Ambiguous stop_code is not editable');
+console.log('PASS: non-TP association via stop_code, contextual place dropdown, lazy decision creation and underscore-place check.');
+
+vm.runInContext("state.parsed.hastus.rows=[{id:'461',place:'_10',desc:'St Clair Station'},{id:'462',place:'_11',desc:'St Clair Station'}];",ctx);
+get('place-code-max-length').value='6';get('place-code-case').value='lower';get('pad-place-codes').checked=false;
+let proposals=ctx.automaticPlaceCodeProposals();assert.equal(proposals.length,2);assert.notEqual(proposals[0].proposedCode,proposals[1].proposedCode);for(const p of proposals){assert(p.proposedCode.endsWith('stn'));assert(p.proposedCode.length<=6);assert.equal(p.proposedCode,p.proposedCode.toLowerCase());}
+ctx.reserved=proposals[0].proposedCode;vm.runInContext('state.parsed.stops.rows.push({stop_id:reserved})',ctx);assert.notEqual(ctx.automaticPlaceCodeProposals()[0].proposedCode,ctx.reserved);
+get('place-code-max-length').value='8';get('place-code-case').value='upper';proposals=ctx.automaticPlaceCodeProposals();assert(proposals[0].proposedCode.endsWith('STN'));assert(proposals[0].proposedCode.length<=8);assert.equal(vm.runInContext('state.parsed.hastus.rows[0].place',ctx),'_10');
+console.log('PASS: underscore-place proposals reuse 6/8 naming, case and station suffix, avoid duplicates and Stop IDs, preserve source.');
+vm.runInContext(`state.geographicReady=true;state.geographicNeedsRegroup=false;state.decisions=[];state.mapping={stopId:'id',stopDesc:'name',placeId:'place',placeDesc:'desc',referenceId:'ref'};state.parsed={stops:{headers:['stop_id','stop_code','stop_name','stop_lat','stop_lon','location_type','parent_station'],rows:[{stop_id:'GT461',stop_code:'461',stop_name:'Stop',stop_lat:'38',stop_lon:'-77',parent_station:'_10'},{stop_id:'_10',stop_name:'Old',location_type:'1'}]},hastus:{rows:[{id:'461',name:'Stop',place:'_10',desc:'Auto',ref:''},{id:'466',place:'WIkea',desc:'Ikea',ref:'_10'}]}};state.gtfsStops=state.parsed.stops.rows;state.places=[{id:'_10',description:'Auto',lat:38,lon:-77,points:[{id:'461',description:'Stop',lat:38,lon:-77}]},{id:'WIkea',description:'Ikea',referenceId:'_10',referenceIds:['_10']}];state.groupingCandidates=[{place_a_id:'_10',place_a_description:'Auto',place_b_id:'WIkea'}];state.referenceAnomalies=[{reference_place_id:'_10'}];state.unusedPlaceStops=[{place_id:'_10'}];state.stopIdRemap=new Map();`,ctx);
+const before=vm.runInContext('JSON.stringify(state.parsed)',ctx);
+assert.throws(()=>ctx.applyAutomaticPlaceRename('_10','WIkea','Test'));assert.equal(vm.runInContext('JSON.stringify(state.parsed)',ctx),before);
+assert(ctx.automaticPlaceCards(ctx.automaticPlaceCodeProposals()).includes('approveAutomaticPlace'));
+assert(!ctx.automaticPlaceCards(ctx.automaticPlaceCodeProposals()).includes('NaN'));
+ctx.applyAutomaticPlaceRename('_10','NEWIKEA','New Ikea');
+assert.equal(vm.runInContext('state.places[0].id',ctx),'NEWIKEA');
+assert.equal(vm.runInContext('state.places[1].referenceId',ctx),'NEWIKEA');
+assert.equal(vm.runInContext('state.parsed.hastus.rows[0].place',ctx),'NEWIKEA');
+assert.equal(vm.runInContext('state.groupingCandidates[0].place_a_id',ctx),'NEWIKEA');
+assert.equal(vm.runInContext('state.decisions[0].choice',ctx),'NEWIKEA');
+assert.equal(vm.runInContext('state.placeRenameHistory.length',ctx),1);
+assert.equal(ctx.automaticPlaceCodeProposals().length,0);
+const exported=ctx.buildExports();assert(exported.creations.includes('NEWIKEA'));assert(exported.gtfs.includes('New Ikea'));assert(!exported.gtfs.includes('_10'));
+assert.equal(vm.runInContext('state.parsed.stops.rows[0].parent_station',ctx),'_10','Source GTFS stays intact');
+console.log('PASS: per-place approval, collision rejection, references, non-TP export, history, source preservation and removal from pending.');
