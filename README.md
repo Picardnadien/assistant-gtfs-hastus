@@ -6,7 +6,10 @@
 
 Accessible depuis les outils complémentaires, dans un onglet séparé. Prototype
 français en lecture seule, sans sauvegarde ni modification des fichiers source.
-Charger les exports Excel de stops, places et variantes, puis éventuellement la
+Avec un GTFS chargé, le lien ouvre directement le réseau courant : stops, places,
+routes et tracés shapes.txt. Les affectations préparées sont reprises lorsque
+l’analyse est à jour ; sinon, les sources GTFS sont utilisées. Sans GTFS chargé,
+charger les exports Excel de stops, places et variantes, puis éventuellement la
 matrice `linkdt` et un ZIP shapefile de polylignes WGS84 (SHP, DBF, PRJ).
 Les colonnes attendues sont indiquées sur la page. Tous les stops sont listés ;
 ceux sans coordonnées restent consultables sans marqueur. Les centres sans
@@ -14,6 +17,14 @@ coordonnées de place sont estimés à partir de leurs stops, et les surfaces so
 indicatives. Les liens deadhead directs sont distingués des liens de référence.
 La carte OSM et la bibliothèque cartographique nécessitent Internet. Aucune
 donnée client n'est incluse dans le code distribué.
+
+Les nouveaux rapports HTML GTFS contiennent un onglet Explorateur réseau séparé.
+Il reprend les codes, descriptions et affectations modifiés à chaque ouverture.
+Le module reste en consultation seule ; modifier les affectations dans les fiches
+de validation. Ses données et son interface sont intégrées au rapport ; le fond
+OSM et D3 nécessitent Internet, même si les cartes des fiches sont hors ligne.
+Les tracés ne sont pas inventés en l’absence de shapes.txt.
+
 
 ## Client existant : association et descriptions
 

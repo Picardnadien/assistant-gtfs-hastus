@@ -195,7 +195,7 @@ function mountReportMapViewer({cards,currentPlace,assigned,points,distance,langu
     const background=source.cloneNode(true);background.removeAttribute('data-review-map-toggle');background.removeAttribute('tabindex');background.removeAttribute('role');background.removeAttribute('aria-label');background.setAttribute('aria-hidden','true');background.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vh}`);background.setAttribute('preserveAspectRatio','none');
     background.querySelectorAll('.report-stop,.report-place,.osm-credit').forEach(node=>node.remove());background.classList.add('map-only-background');
     background.querySelectorAll('.map-context-layer').forEach(n=>n.remove());
-    if(typeof mapTools==='function'&&background.querySelector('.osm-fixed-background')){const previous=background.querySelector('.osm-fixed-background');previous.insertAdjacentHTML('beforebegin',mapTools().background(g,{x:vx,y:vy,width:vw,height:vh}));previous.remove();background.querySelectorAll('iframe').forEach(frame=>frame.loading='eager');}
+    if(typeof mapTools==='function'&&background.querySelector('.osm-fixed-background')){const previous=background.querySelector('.osm-fixed-background');previous.insertAdjacentHTML('beforebegin',mapTools().background(g,{x:vx,y:vy,width:vw,height:vh},zoom));previous.remove();background.querySelectorAll('iframe').forEach(frame=>frame.loading='eager');}
     for(const p of selected)background.append(el('circle',{cx:p.x,cy:p.y,r:0,fill:'none'}));
     if(typeof mapTools==='function'&&background.querySelector('image[href*="tile.openstreetmap.org"]')){const previous=[...background.querySelectorAll('image[href*="tile.openstreetmap.org"]')];previous[0].insertAdjacentHTML('beforebegin',mapTools().tiles(g,{x:vx,y:vy,width:vw,height:vh}));previous.forEach(n=>n.remove());}
     children.push(background);
@@ -240,7 +240,10 @@ function mountReportReview({data,edits,cards,currentPlace,assigned,points,contro
   let active=false,key=null,trail=[],all=false,ownsFullscreen=false,scrollBefore=0;
   let returnView=null,fullscreenRequest=0;
   const mapSurfaces=new Map();
-  if(typeof mapTools==='function')mapTools().mount(()=>data.mapStops||points,()=>data.language);
+  if(typeof mapTools==='function'){
+    let stopInfoStamp='',stopInfo=[];
+    mapTools().mount(()=>{const stamp=JSON.stringify(edits);if(stamp!==stopInfoStamp){stopInfoStamp=stamp;const base=data.mapStops||points,byId=new Map(base.map(p=>[p.id,p]));stopInfo=base.map(p=>{const key=assigned(p.id),place=key&&key!=='__keep__'?currentPlace(key):null;return {...p,place:place?.code||p.place||p.parent||''};});for(const p of points){const known=byId.get(p.id)||byId.get(p.label)||{},key=assigned(p.id),place=key&&key!=='__keep__'?currentPlace(key):null;const info={...known,...p,routes:known.routes||[],timing:known.timing??null,place:place?.code||p.parent||known.place||''},index=stopInfo.findIndex(s=>s.id===p.id);if(index<0)stopInfo.push(info);else stopInfo[index]=info;}}return stopInfo;},()=>data.language);
+  }
   const mapViewer=mountReportMapViewer({cards,currentPlace,assigned,points,distance:controls.distance,language:data.language});
   const runtime=node=>{node.dataset.reviewRuntime='';return node;};
   const style=runtime(document.createElement('style'));
@@ -566,14 +569,14 @@ function placeReportEditorRuntime() {
   const network=null;
   let networkFrame=null,networkRevision='';
   document.querySelectorAll('[data-report-module]').forEach(button=>button.addEventListener('click',()=>{
-    const isNetwork=button.dataset.reportModule==='network';document.body.classList.toggle('show-network',isNetwork);
+    const explorer=button.dataset.reportModule==='explorer',isNetwork=explorer||button.dataset.reportModule==='network';document.body.classList.toggle('show-network',isNetwork);
     document.querySelectorAll('[data-report-module]').forEach(node=>node.setAttribute('aria-pressed',String(node===button)));
     if(!isNetwork)return;
     let section=document.getElementById('report-network-section');if(!section){section=document.createElement('section');section.id='report-network-section';document.querySelector('main').append(section);}
-    const revision=JSON.stringify(edits);
+    const revision=button.dataset.reportModule+JSON.stringify(edits);
     if(networkFrame&&revision===networkRevision)return;
-    networkRevision=revision;networkFrame=document.createElement('iframe');networkFrame.title=message('Routes et timetables','Routes and timetables');
-    networkFrame.srcdoc=reportNetworkDocumentHtml({...data,places:data.places.map(p=>currentPlace(p.key)),assignments:{...data.assignments,...edits.assignments},lazyNetwork:true});
+    networkRevision=revision;networkFrame=document.createElement('iframe');networkFrame.title=explorer?message('Explorateur réseau','Network explorer'):message('Routes et timetables','Routes and timetables');
+    networkFrame.srcdoc=explorer?networkExplorerDocument(data.explorer.template,networkExplorerReportModel(data.explorer.model,data.places.map(p=>currentPlace(p.key)),{...data.assignments,...edits.assignments})):reportNetworkDocumentHtml({...data,places:data.places.map(p=>currentPlace(p.key)),assignments:{...data.assignments,...edits.assignments},lazyNetwork:true});
     section.replaceChildren(networkFrame);
   }));
   window.addEventListener('message',event=>{if(event.source===networkFrame?.contentWindow&&event.data?.type==='csched-network-view')data.networkView=event.data.view;});

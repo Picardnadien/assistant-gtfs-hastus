@@ -13,3 +13,9 @@ const source={parsed:{stops:{rows:[{stop_id:'01',stop_name:'A <script>',stop_lat
 const before=JSON.stringify(source),stops=tools.stops(source);assert.equal(stops.length,2);assert.equal(stops[0].id,'01');assert.equal(stops[0].timing,true);assert.equal(stops[1].timing,false);assert.equal(stops[0].routes[0],'10');assert.equal(tools.stops(source),stops,'Reuse the index instead of scanning schedules for every map');assert.equal(JSON.stringify(source),before);
 assert.equal(tools.stops({parsed:{stops:source.parsed.stops}})[0].timing,null,'No source means unknown, not non-TP');
 console.log('PASS: map coordinate validity, fixed background projection/zoom, point identity, route/TP metadata, source immutability and cached index.');
+const enlarged=tools.background(g,{x:400,y:150,width:200,height:100},8);
+assert.match(enlarged,/width:1600px;height:800px/);assert.match(enlarged,/transform:scale\(0\.125\)/);
+const bb=new URL(enlarged.match(/src="([^"]+)"/)[1].replaceAll('&amp;','&')).searchParams.get('bbox').split(',').map(Number);
+const nw=tools.project({lat:bb[3],lon:bb[0]},g.zoom),se=tools.project({lat:bb[1],lon:bb[2]},g.zoom);
+assert(Math.abs(se.x-nw.x-198)<1e-5);assert(Math.abs((nw.x+se.x)/2-g.center.x)<1e-5);
+console.log('PASS: full-screen background uses higher resolution without changing the geographic extent or enlarging iframe controls.');

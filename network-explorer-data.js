@@ -25,5 +25,20 @@
     while(p<shp.byteLength){const bytes=v.getInt32(p+4,false)*2,start=p+8,type=v.getInt32(start,true);if(type!==0&&type!==3)throw new Error('Shapefile : polylignes 2D requises.');if(type===3){const parts=v.getInt32(start+36,true),points=v.getInt32(start+40,true),offset=start+44+parts*4;for(let a=0;a<parts;a++){const from=v.getInt32(start+44+a*4,true),to=a+1<parts?v.getInt32(start+48+a*4,true):points,line=[];for(let i=from;i<to;i++){const lon=v.getFloat64(offset+i*16,true),lat=v.getFloat64(offset+i*16+8,true);if(!valid(lat,lon))throw new Error('Coordonnées shapefile hors WGS84.');line.push([lon,lat])}out.push({route:records[n]?.VAR_ROUTE||'',variant:records[n]?.VAR_IDENT||'',points:line})}}p=start+bytes;n++;}
     return out;
   }
-  root.NetworkExplorerData={build,shapes};if(typeof module!=='undefined')module.exports=root.NetworkExplorerData;
+  function fromGTFS(tables,extraPlaces=[]){
+    const rows=key=>tables[key]?.rows||[],routes=Object.fromEntries(rows('routes').map(r=>[str(r.route_id),[r.route_short_name,r.route_long_name].filter(Boolean).join(' · ')]));
+    const trips=new Map(rows('trips').map(t=>[str(t.trip_id),t])),uses=new Map(),tp=new Set(),shapeRoutes=new Map();
+    for(const t of trips.values())if(str(t.shape_id)){if(!shapeRoutes.has(str(t.shape_id)))shapeRoutes.set(str(t.shape_id),new Set());shapeRoutes.get(str(t.shape_id)).add(str(t.route_id));}
+    const known=(tables.times||tables.stop_times)?.headers?.includes('timepoint');
+    for(const r of (tables.times||tables.stop_times)?.rows||[]){const id=str(r.stop_id),route=str(trips.get(str(r.trip_id))?.route_id);if(!uses.has(id))uses.set(id,new Set());if(route)uses.get(id).add(route);if(str(r.timepoint)==='1')tp.add(id);}
+    const stops=rows('stops').filter(r=>!str(r.location_type)||str(r.location_type)==='0').map(r=>({Stop:r.stop_id,Description:r.stop_name,Place:r.parent_station,Latitude:r.stop_lat,Longitude:r.stop_lon}));
+    const places=rows('stops').filter(r=>str(r.location_type)==='1').map(r=>({Place:r.stop_id,Description:r.stop_name,Latitude:r.stop_lat,Longitude:r.stop_lon}));
+    const byPlace=new Map(places.map(p=>[str(p.Place),p]));for(const p of extraPlaces)byPlace.set(p.id,{...(byPlace.get(p.id)||{}),Place:p.id,Description:p.description,Latitude:p.lat,Longitude:p.lon,'Refer.':p.referenceId||''});
+    const model=build(stops,[...byPlace.values()]);model.routes=routes;
+    for(const stop of model.stops){stop.routes=[...(uses.get(stop.id)||[])];stop.tp=known?tp.has(stop.id):null;}
+    const lines=new Map();for(const r of rows('shapes')){const id=str(r.shape_id),lat=number(r.shape_pt_lat),lon=number(r.shape_pt_lon);if(!valid(lat,lon))continue;if(!lines.has(id))lines.set(id,[]);lines.get(id).push({lat,lon,n:Number(r.shape_pt_sequence)});}
+    for(const [id,pts] of lines){pts.sort((a,b)=>a.n-b.n);if(pts.length<2)continue;for(const route of shapeRoutes.get(id)||[])model.shapes.push({route,variant:id,points:pts.map(p=>[p.lon,p.lat])});}
+    return model;
+  }
+  root.NetworkExplorerData={build,shapes,fromGTFS};if(typeof module!=='undefined')module.exports=root.NetworkExplorerData;
 })(typeof globalThis!=='undefined'?globalThis:this);

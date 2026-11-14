@@ -71,7 +71,7 @@
         <button class="mode-card" data-mode="reports" aria-pressed="false">
           <span class="mode-number">05</span><span><strong>Rapports et exports</strong><small>Diagnostic HASTUS, validation client, PDF, HTML et fichiers de sortie.</small></span><span class="mode-check">✓</span>
         </button>
-        <a class="mode-card network-prototype-link" href="network-explorer.html" target="_blank" rel="noopener"><span><strong>Explorateur réseau · Prototype</strong><small>Explorer les stops, places, références et tracés de routes sur la carte. Fichiers chargés localement.</small></span></a>
+        <a class="mode-card network-prototype-link" href="network-explorer.html" target="_blank" rel="noopener"><span><strong>Explorateur réseau · Prototype</strong><small>Explorer le GTFS chargé et ses affectations, ou importer des fichiers HASTUS. Stops, places, références et tracés de routes.</small></span></a>
       </div></details>
       <label id="journey-client-setting">Client GTFS<select id="journey-client"><option value="new">Nouveau client · créer les places</option><option value="existing">Client existant · réutiliser le mapping HASTUS</option></select></label>
       <p id="journey-help">Les affectations existantes sont conservées. Un TP sans place est proposé à une place proche avant toute création.</p>
@@ -259,11 +259,11 @@
   <script src="report-network.js?v=14.3-r3"></script>
   <script src="report-timetable-export.js?v=14.3"></script>
   <script src="report-network-document.js?v=14.3"></script>
-  <script src="report-editor.js?v=14.3-r1"></script>
+  <script src="report-editor.js?v=14.3-r2"></script>
   <script src="app-translations.js?v=14.3-r2"></script>
   <script src="app-shell.js?v=14.3"></script>
   <script src="workspace-storage.js?v=14.3"></script>
-  <script src="map-tools.js?v=14.3"></script>
+  <script src="map-tools.js?v=14.3-r2"></script>
   <script src="hastus-corrections.js?v=14.3"></script>
   <script src="report-existing.js?v=14.3"></script>
   <script src="assignment-diagnostics.js?v=14.3-r1"></script>
@@ -272,7 +272,9 @@
   <script src="working-timetable.js?v=14.3-r4"></script>
   <script src="day-route-summary.js?v=14.3"></script>
   <script src="stop-description-check.js"></script>
-  <script src="app.js?v=14.3-r6"></script>
+  <script src="network-explorer-data.js?v=14.3"></script>
+  <script src="app.js?v=14.3-r7"></script>
+  <script src="network-explorer-bridge.js?v=14.3"></script>
   <dialog id="tutorial-dialog" aria-labelledby="tutorial-title" data-no-translate></dialog>
   <script src="tutorial.js?v=14.3"></script>
   <script>initAppShell();initSchedulingUnits();initTutorial();</script>

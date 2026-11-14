@@ -2,6 +2,10 @@
 
 ## 14.3 — 2026-11-13
 
+- Explorateur réseau : ouverture directe du GTFS chargé, affectations préparées, routes et tracés shapes.txt. Onglet distinct dans les nouveaux rapports HTML GTFS, reprenant les modifications du client à chaque ouverture. Consultation seule ; fond OSM et bibliothèque cartographique nécessitent Internet.
+- Cartes plein écran : résolution du fond adaptée à l’écran ; stops aux alentours avec étiquettes violettes détaillées. Retour automatique aux petits marqueurs et identifiants compacts en mode normal.
+- Fiche au survol ou au toucher des stops : description, routes, statut TP, coordonnées et place associée. Clic pour maintenir la fiche, second clic pour fermer. Régénérer les anciens rapports pour intégrer ces améliorations.
+
 - Exports simplifiés : rapport HTML interactif mis en avant en vert lumineux ; téléchargement du GTFS prêt à importer placé à côté en bleu clair. Rapports et exports complémentaires repliés par défaut.
 - Identité des rapports : retrait des logos et mentions OC Transpo imposés dans les anciens PDF. Logo personnalisé prioritaire, puis identité de agency.txt ; monogramme automatique du nom de l’agence en dernier recours.
 

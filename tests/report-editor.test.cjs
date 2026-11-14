@@ -308,3 +308,11 @@ if (process.argv[2]) {
   for(const entry of completeFiles)if(!['stops.txt','stop_times.txt'].includes(entry.name))assert.equal(entry.text,raw[entry.name]);
   console.log('PASS Metrobus: '+context.realStops.rows.length+' stops / '+context.realTimes.rows.length+' stop times; 1850 reassigned, 5025 retained, no schedule data changed.');
 }
+// The explorer template/data must survive safe report embedding and remain a separate module.
+vm.runInContext(fs.readFileSync(path.join(root,'network-explorer-bridge.js'),'utf8').split('async function loadNetworkExplorerTemplate')[0],context);
+const explorerReport=context.placeBrowserReportHtmlWithMaps('',[],{gtfs:context.placeBrowserGtfsPayload(),explorer:{template:'<!doctype html><body><!--EXPLORER_DATA--><p>Explorer</p></body>',model:{stops:[],places:[],routes:{},shapes:[],links:[],tiles:[],deadheadLoaded:false}}});
+assert(explorerReport.includes('data-report-module="explorer"'));
+const embeddedExplorer=JSON.parse(explorerReport.match(/<script id="report-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);assert(embeddedExplorer.explorer.template.includes('EXPLORER_DATA'));
+for(const match of explorerReport.matchAll(/<script>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
+fs.writeFileSync(path.join(out,'report-with-explorer.html'),explorerReport);
+console.log('PASS: explorer tab, embedded template and safe standalone script syntax.');
