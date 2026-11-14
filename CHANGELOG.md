@@ -2,6 +2,8 @@
 
 ## 14.3 — 2026-11-13
 
+- Correctif du 14 novembre : bouton « Full screen map » des rapports HTML réparé pour les cartes SVG, au clic et au clavier. Régénérer les rapports téléchargés pour intégrer ce correctif.
+
 - Explorateur réseau : ouverture directe du GTFS chargé, affectations préparées, routes et tracés shapes.txt. Onglet distinct dans les nouveaux rapports HTML GTFS, reprenant les modifications du client à chaque ouverture. Consultation seule ; fond OSM et bibliothèque cartographique nécessitent Internet.
 - Cartes plein écran : résolution du fond adaptée à l’écran ; stops aux alentours avec étiquettes violettes détaillées. Retour automatique aux petits marqueurs et identifiants compacts en mode normal.
 - Fiche au survol ou au toucher des stops : description, routes, statut TP, coordonnées et place associée. Clic pour maintenir la fiche, second clic pour fermer. Régénérer les anciens rapports pour intégrer ces améliorations.

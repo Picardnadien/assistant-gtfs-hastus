@@ -75,7 +75,7 @@ function mapTools(){
     }
     let fullscreen=null;
     function expand(svg){
-      const reportSurface=svg.closest('[data-review-map-toggle]');if(reportSurface){reportSurface.click();return;}
+      const reportSurface=svg.closest('[data-review-map-toggle]');if(reportSurface){reportSurface.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0}));return;}
       const dialog=document.createElement('dialog');dialog.className='map-fullscreen-viewer';dialog.dataset.mapRuntime='';dialog.setAttribute('aria-label',tr('Carte plein écran','Full-screen map'));
       const host=document.createElement('div');host.className='map-fullscreen-canvas';const clone=svg.cloneNode(true);clone.removeAttribute('id');clone.classList.remove('interactive-map');clone.removeAttribute('data-route-id');clone.style.transform='';clone.querySelectorAll('.map-context-layer').forEach(n=>n.remove());clone.querySelectorAll('[onclick]').forEach(n=>n.removeAttribute('onclick'));host.append(clone);
       const close=document.createElement('button');close.className='map-fullscreen-close';close.type='button';close.textContent='×';close.setAttribute('aria-label',tr('Fermer la carte','Close map'));
